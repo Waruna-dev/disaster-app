@@ -7,6 +7,7 @@ const morgan = require("morgan");
 
 const connectDB = require("./config/db");
 const reportRoutes = require("./routes/reportRoutes");
+const authRoutes = require("./routes/authRoutes");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
@@ -33,6 +34,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/reports", reportRoutes);
+app.use("/api/auth", authRoutes);
 
 // --- Error handling (must be last) ---
 app.use(notFound);

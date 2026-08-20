@@ -487,7 +487,7 @@ export default function SubmitReport() {
           {submitted && (
             <div className="sr-success-banner" role="status">
               <span className="sr-success-icon">
-                <Icon name="check-circle" size={22} color="#0f5d4a" />
+                <Icon name="check-circle" size={22} color="#004ac6" />
               </span>
               <div className="sr-success-text">
                 <span className="sr-success-title">Report submitted successfully</span>
@@ -507,7 +507,7 @@ export default function SubmitReport() {
                 onClick={handleDismissSuccess}
                 aria-label="Dismiss success message"
               >
-                <Icon name="close" size={14} color="#0f5d4a" />
+                <Icon name="close" size={14} color="#004ac6" />
               </button>
             </div>
           )}
@@ -569,7 +569,7 @@ export default function SubmitReport() {
                 onClick={handleIdentifyLocation}
                 disabled={locating}
               >
-                <Icon name="pin" size={18} color="#0f5d4a" />
+                <Icon name="pin" size={18} color="#004ac6" />
                 <span>
                   {locating
                     ? "Locating..."
@@ -614,7 +614,7 @@ export default function SubmitReport() {
               {mediaItems.length === 0 ? (
                 <label className="sr-upload-box" htmlFor="sr-media-input">
                   <span className="sr-upload-icon">
-                    <Icon name="camera" size={22} color="#0f5d4a" />
+                    <Icon name="camera" size={22} color="#004ac6" />
                   </span>
                   <span className="sr-upload-title">Take Photo/Video</span>
                   <span className="sr-upload-subtitle">or tap to upload from gallery</span>
@@ -634,7 +634,7 @@ export default function SubmitReport() {
                       )}
                       {!item.isImage && !item.isVideo && (
                         <div className="sr-media-thumb-fallback">
-                          <Icon name="camera" size={18} color="#0f5d4a" />
+                          <Icon name="camera" size={18} color="#004ac6" />
                         </div>
                       )}
                       <button
@@ -654,7 +654,7 @@ export default function SubmitReport() {
                     onClick={handleAddMediaClick}
                     aria-label="Add another photo or video"
                   >
-                    <Icon name="plus" size={20} color="#0f5d4a" />
+                    <Icon name="plus" size={20} color="#004ac6" />
                   </button>
                 </div>
               )}
@@ -680,7 +680,7 @@ export default function SubmitReport() {
                   disabled={!VOICE_SUPPORTED}
                 >
                   <span className="sr-voice-btn-icon">
-                    <Icon name="mic" size={18} color="#0f5d4a" />
+                    <Icon name="mic" size={18} color="#004ac6" />
                   </span>
                   <span>Start Voice Recording</span>
                 </button>
@@ -715,7 +715,7 @@ export default function SubmitReport() {
                       onClick={handleReRecord}
                       aria-label="Re-record voice report"
                     >
-                      <Icon name="refresh" size={15} color="#0f5d4a" />
+                      <Icon name="refresh" size={15} color="#004ac6" />
                     </button>
                     <button
                       type="button"
