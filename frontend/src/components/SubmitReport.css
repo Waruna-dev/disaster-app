@@ -8,6 +8,9 @@
   --sr-border: #c3c6d7;
   --sr-bg: #f8f9ff;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 4rem;
   background: var(--sr-bg);
   color: var(--sr-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,

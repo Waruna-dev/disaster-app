@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createReport } from "../api/reports";
+import Navbar from "./Navbar";
+import Footer from "./Footer";
 import "./SubmitReport.css";
 
 const INCIDENT_TYPES = [
@@ -443,38 +445,7 @@ export default function SubmitReport() {
 
   return (
     <div className="sr-page">
-      <header className="sr-header">
-        <div className="sr-header-inner">
-          <div className="sr-brand">
-            <span className="sr-brand-icon">
-              <Icon name="logo" size={22} color="#ffffff" />
-            </span>
-            <span className="sr-brand-name">Resilience Response</span>
-          </div>
-
-          <nav className={`sr-nav ${menuOpen ? "sr-nav-open" : ""}`}>
-            <a href="#home" className="sr-nav-link">Home</a>
-            <a href="#report" className="sr-nav-link sr-nav-link-active">Report</a>
-            <a href="#map" className="sr-nav-link">Map</a>
-            <a href="#safety" className="sr-nav-link">Safety Info</a>
-          </nav>
-
-          <div className="sr-header-actions">
-            <a href="tel:911" className="sr-emergency-btn">
-              <Icon name="phone" size={16} color="#ffffff" />
-              <span>Emergency Call</span>
-            </a>
-            <button
-              type="button"
-              className="sr-menu-toggle"
-              aria-label="Toggle navigation menu"
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              <Icon name="menu" size={22} color="#ffffff" />
-            </button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="sr-main">
         <div className="sr-container">
@@ -756,6 +727,7 @@ export default function SubmitReport() {
           </form>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

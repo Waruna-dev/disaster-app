@@ -1,9 +1,10 @@
-import { useState, useContext, useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import Navbar from "./Navbar";
+import Footer from "./Footer";
 
 export default function ResidentDashboard() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, loading } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -25,110 +26,7 @@ export default function ResidentDashboard() {
 
   return (
     <div className="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col pt-16">
-      {/* TopNavBar */}
-      <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 bg-surface-container-lowest dark:bg-surface-dim shadow-sm dark:shadow-none shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center gap-4">
-          <Link
-            to="/"
-            className="text-headline-md font-headline-md font-bold text-primary dark:text-primary-fixed"
-          >
-            FloodGuard
-          </Link>
-        </div>
-        <div className="hidden md:flex items-center gap-gutter">
-          <Link
-            className="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors text-label-md font-label-md hover:opacity-80 active:scale-95 duration-100"
-            to="/"
-          >
-            Home
-          </Link>
-          <Link
-            className="text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed pb-1 text-label-md font-label-md hover:opacity-80 active:scale-95 duration-100"
-            to="/dashboard"
-          >
-            Dashboard
-          </Link>
-          <Link
-            className="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors text-label-md font-label-md hover:opacity-80 active:scale-95 duration-100"
-            to="/report"
-          >
-            Report
-          </Link>
-          <Link
-            className="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors text-label-md font-label-md hover:opacity-80 active:scale-95 duration-100"
-            to="/dashboard"
-          >
-            Map
-          </Link>
-          <Link
-            className="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors text-label-md font-label-md hover:opacity-80 active:scale-95 duration-100"
-            to="/safety"
-          >
-            Safety Info
-          </Link>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Mobile Menu Toggle */}
-          <button 
-            className="md:hidden p-2 text-primary dark:text-primary-fixed"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <span className="material-symbols-outlined">
-              {isMenuOpen ? "close" : "menu"}
-            </span>
-          </button>
-          
-          <Link to="/profile" className="p-2 text-primary dark:text-primary-fixed hover:opacity-80 transition-opacity active:scale-95 duration-100">
-            <span
-              className="material-symbols-outlined"
-              style={{ fontVariationSettings: "'FILL' 0" }}
-            >
-              account_circle
-            </span>
-          </Link>
-        </div>
-
-        {/* Mobile Menu Dropdown */}
-        {isMenuOpen && (
-          <div className="md:hidden absolute top-16 left-0 w-full bg-surface-container-lowest border-t border-outline-variant shadow-lg flex flex-col p-4 gap-4 z-40">
-            <Link
-              className="text-secondary dark:text-secondary-fixed-dim font-medium font-label-md text-label-md"
-              to="/"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              className="text-primary dark:text-primary-fixed font-bold font-label-md text-label-md"
-              to="/dashboard"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <Link
-              className="text-secondary dark:text-secondary-fixed-dim font-medium font-label-md text-label-md"
-              to="/report"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Report
-            </Link>
-            <Link
-              className="text-secondary dark:text-secondary-fixed-dim font-medium font-label-md text-label-md"
-              to="/dashboard"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Map
-            </Link>
-            <Link
-              className="text-secondary dark:text-secondary-fixed-dim font-medium font-label-md text-label-md"
-              to="/safety"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Safety Info
-            </Link>
-          </div>
-        )}
-      </nav>
+      <Navbar />
 
       {/* Main Content Canvas */}
       <main className="flex-grow w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-stack-lg flex flex-col gap-stack-lg">
@@ -350,41 +248,7 @@ export default function ResidentDashboard() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full py-stack-lg px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-stack-md bg-surface-container-low dark:bg-inverse-surface mt-auto">
-        <div className="text-headline-md font-headline-md text-on-surface dark:text-inverse-on-surface">
-          FloodGuard
-        </div>
-        <div className="flex flex-wrap justify-center gap-gutter">
-          <Link
-            className="text-on-surface-variant dark:text-on-tertiary-fixed-variant text-label-md font-label-md hover:text-primary dark:hover:text-primary-fixed underline transition-all focus:outline-none focus:ring-2 focus:ring-primary"
-            to="/privacy"
-          >
-            Privacy Policy
-          </Link>
-          <Link
-            className="text-on-surface-variant dark:text-on-tertiary-fixed-variant text-label-md font-label-md hover:text-primary dark:hover:text-primary-fixed underline transition-all focus:outline-none focus:ring-2 focus:ring-primary"
-            to="/terms"
-          >
-            Terms of Service
-          </Link>
-          <Link
-            className="text-on-surface-variant dark:text-on-tertiary-fixed-variant text-label-md font-label-md hover:text-primary dark:hover:text-primary-fixed underline transition-all focus:outline-none focus:ring-2 focus:ring-primary"
-            to="/contact"
-          >
-            Contact Support
-          </Link>
-          <Link
-            className="text-on-surface-variant dark:text-on-tertiary-fixed-variant text-label-md font-label-md hover:text-primary dark:hover:text-primary-fixed underline transition-all focus:outline-none focus:ring-2 focus:ring-primary"
-            to="/emergency"
-          >
-            Emergency Protocol
-          </Link>
-        </div>
-        <div className="text-caption font-caption text-on-surface-variant dark:text-on-tertiary-fixed-variant">
-          © 2026 FloodGuard Public Safety. All rights reserved.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
