@@ -1,0 +1,98 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: "class",
+  theme: {
+      extend: {
+          "colors": {
+              "on-tertiary-fixed-variant": "#444749",
+              "error": "#ba1a1a",
+              "tertiary-fixed-dim": "#c4c7c9",
+              "surface-container-low": "#eff4ff",
+              "surface": "#f8f9ff",
+              "on-secondary-fixed": "#0e1d2b",
+              "surface-dim": "#cbdbf5",
+              "on-primary": "#ffffff",
+              "inverse-primary": "#b4c5ff",
+              "tertiary": "#525657",
+              "surface-tint": "#0053db",
+              "secondary": "#516070",
+              "on-secondary-fixed-variant": "#3a4858",
+              "inverse-on-surface": "#eaf1ff",
+              "on-primary-fixed-variant": "#003ea8",
+              "background": "#f8f9ff",
+              "on-primary-fixed": "#00174b",
+              "on-surface-variant": "#434655",
+              "on-background": "#0b1c30",
+              "surface-variant": "#d3e4fe",
+              "tertiary-container": "#6b6e70",
+              "surface-container-high": "#dce9ff",
+              "secondary-fixed-dim": "#b9c8db",
+              "error-container": "#ffdad6",
+              "surface-bright": "#f8f9ff",
+              "surface-container-highest": "#d3e4fe",
+              "outline": "#737686",
+              "secondary-fixed": "#d5e4f8",
+              "primary-fixed": "#dbe1ff",
+              "on-error-container": "#93000a",
+              "primary-fixed-dim": "#b4c5ff",
+              "on-error": "#ffffff",
+              "on-primary-container": "#eeefff",
+              "outline-variant": "#c3c6d7",
+              "primary-container": "#2563eb",
+              "on-surface": "#0b1c30",
+              "on-secondary-container": "#576676",
+              "on-tertiary-container": "#eff1f3",
+              "surface-container": "#e5eeff",
+              "inverse-surface": "#213145",
+              "primary": "#004ac6",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-fixed": "#191c1e",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-fixed": "#e0e3e5",
+              "secondary-container": "#d5e4f8"
+          },
+          "borderRadius": {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+          },
+          "spacing": {
+              "gutter": "24px",
+              "stack-lg": "32px",
+              "margin-desktop": "40px",
+              "stack-md": "16px",
+              "unit": "8px",
+              "stack-sm": "8px",
+              "container-max": "1280px",
+              "margin-mobile": "16px"
+          },
+          "fontFamily": {
+              "headline-lg-mobile": ["Montserrat", "sans-serif"],
+              "body-md": ["Inter", "sans-serif"],
+              "display-lg": ["Montserrat", "sans-serif"],
+              "label-md": ["Inter", "sans-serif"],
+              "body-lg": ["Inter", "sans-serif"],
+              "caption": ["Inter", "sans-serif"],
+              "headline-md": ["Montserrat", "sans-serif"],
+              "headline-lg": ["Montserrat", "sans-serif"]
+          },
+          "fontSize": {
+              "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+              "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+              "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+              "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+              "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+              "caption": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+              "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+              "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }]
+          }
+      }
+  },
+  plugins: [],
+}
