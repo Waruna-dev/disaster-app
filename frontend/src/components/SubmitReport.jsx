@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createReport } from "../api/reports";
 import "./SubmitReport.css";
 
+// Options displayed in the incident-type selector.
 const INCIDENT_TYPES = [
   { id: "flood", label: "Flood", color: "#2563eb", icon: "droplet" },
   { id: "fire", label: "Fire", color: "#dc2626", icon: "flame" },
@@ -11,6 +12,7 @@ const INCIDENT_TYPES = [
   { id: "other", label: "Other", color: "#4b5563", icon: "dots" },
 ];
 
+// Flood reports include an additional severity selection.
 const WATER_LEVELS = [
   {
     id: "low",
@@ -32,6 +34,7 @@ const WATER_LEVELS = [
   },
 ];
 
+// Reusable inline SVG icon renderer used throughout the form.
 function Icon({ name, size = 26, color = "currentColor" }) {
   const common = {
     width: size,
@@ -204,6 +207,7 @@ function Icon({ name, size = 26, color = "currentColor" }) {
   }
 }
 
+// Convert elapsed recording time into a reader-friendly mm:ss value.
 function formatDuration(totalSeconds) {
   const m = Math.floor(totalSeconds / 60)
     .toString()
@@ -214,6 +218,7 @@ function formatDuration(totalSeconds) {
   return `${m}:${s}`;
 }
 
+// Check browser support before exposing microphone controls.
 const VOICE_SUPPORTED =
   typeof navigator !== "undefined" &&
   !!navigator.mediaDevices &&
@@ -247,6 +252,7 @@ export default function SubmitReport() {
   const timerRef = useRef(null);
   const secondsRef = useRef(0);
 
+  // Release browser resources when the report form unmounts.
   useEffect(() => {
     return () => {
       mediaItems.forEach((item) => URL.revokeObjectURL(item.url));
@@ -263,6 +269,7 @@ export default function SubmitReport() {
     if (id !== "flood") setWaterLevel(null);
   };
 
+  // Request the device location only after the user explicitly asks for it.
   const handleIdentifyLocation = () => {
     setLocationError("");
     if (!navigator.geolocation) {
@@ -285,6 +292,7 @@ export default function SubmitReport() {
     );
   };
 
+  // Create local previews for every selected photo or video.
   const handleFilesChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length) {
@@ -316,6 +324,7 @@ export default function SubmitReport() {
     });
   };
 
+  // Capture microphone audio and keep its chunks until recording stops.
   const startRecording = async () => {
     setVoiceError("");
     if (!VOICE_SUPPORTED) {
@@ -393,6 +402,7 @@ export default function SubmitReport() {
     setRecordingSeconds(0);
   };
 
+  // Validate required fields, then package all report data for the API.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
