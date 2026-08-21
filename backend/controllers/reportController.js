@@ -2,9 +2,11 @@ const fs = require("fs");
 const path = require("path");
 const Report = require("../models/Report");
 
+// 1. Wrap async controller functions so errors are forwarded to the Express error middleware.
 /** Wraps an async route handler so rejected promises reach the error middleware. */
 const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
+// 2. Build a public URL for uploaded files so the frontend can access them.
 function buildFileUrl(req, filename) {
   return `${req.protocol}://${req.get("host")}/uploads/${filename}`;
 }
@@ -14,25 +16,31 @@ function buildFileUrl(req, filename) {
  * Creates a new incident report. Accepts multipart/form-data so citizens can
  * attach photos/videos ("media", up to 6) and a single voice memo ("voiceNote").
  */
+// 3. Create a new disaster report from form-data submitted by the user.
 const createReport = asyncHandler(async (req, res) => {
+  // 4. Extract the main report values from the request body.
   const { incidentType, waterLevel, details } = req.body;
 
+  // 5. Store GPS coordinates if both latitude and longitude were sent.
   let location;
   if (req.body.lat !== undefined && req.body.lng !== undefined && req.body.lat !== "") {
     location = { lat: Number(req.body.lat), lng: Number(req.body.lng) };
   }
 
+  // 6. Convert uploaded image/video files into stored metadata objects.
   const media = (req.files?.media || []).map((file) => ({
     url: buildFileUrl(req, file.filename),
     type: file.mimetype.startsWith("video/") ? "video" : "image",
     originalName: file.originalname,
   }));
 
+  // 7. Save the optional voice note as a single file record.
   const voiceFile = req.files?.voiceNote?.[0];
   const voiceNote = voiceFile
     ? { url: buildFileUrl(req, voiceFile.filename), originalName: voiceFile.originalname }
     : undefined;
 
+  // 8. Save the report to MongoDB with validation rules applied by the schema.
   const report = await Report.create({
     incidentType,
     waterLevel: incidentType === "flood" ? waterLevel : undefined,
@@ -42,6 +50,7 @@ const createReport = asyncHandler(async (req, res) => {
     voiceNote,
   });
 
+  // 9. Return the created report data to the client as JSON.
   res.status(201).json({ success: true, data: report });
 });
 
@@ -50,6 +59,7 @@ const createReport = asyncHandler(async (req, res) => {
  * Lists reports, newest first. Supports optional ?incidentType=, ?status=,
  * ?page= and ?limit= query params.
  */
+// 10. Fetch all reports with optional filtering and pagination.
 const getReports = asyncHandler(async (req, res) => {
   const { incidentType, status } = req.query;
   const page = Math.max(Number(req.query.page) || 1, 1);
