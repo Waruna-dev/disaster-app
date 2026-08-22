@@ -49,3 +49,91 @@ This project is built using a modern decoupled architecture, split between a mob
 │   └── middleware/         # JWT authentication and error handling
 ├── docs/                   # UI/UX deliverables, Empathy Maps, and System Blueprints
 └── README.md
+```
+
+> **Note:** the diagram above describes the project's target architecture. This
+> repository's actual folders are `backend/` (Node.js/Express API) and
+> `frontend/` (React + Vite + Tailwind web app) — see the setup guide below.
+
+## 🛠️ Getting Started
+
+### Prerequisites
+* Node.js 18+ and npm
+* A MongoDB connection string (local MongoDB or MongoDB Atlas)
+
+### 1. Backend setup (`/backend`)
+
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file in `backend/` (copy from the variables below):
+
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+NODE_ENV=development
+CLIENT_URL=http://localhost:5173
+MAX_UPLOAD_SIZE=10485760
+JWT_SECRET=change_this_to_a_long_random_string
+
+# Admin dashboard login (defaults shown below if not set)
+ADMIN_EMAIL=admin@gmail.com
+ADMIN_PASSWORD=admin123
+```
+
+> ⚠️ **Security note:** a MongoDB Atlas connection string with a live
+> username/password was previously shared in plain text in project chat/specs.
+> Rotate that database user's password in MongoDB Atlas before deploying this
+> project anywhere, and never commit a `.env` file to version control.
+
+Run the API:
+
+```bash
+npm run dev      # nodemon, auto-restarts on file changes
+# or
+npm start        # plain node
+```
+
+The API will be available at `http://localhost:5000`. Health check:
+`GET http://localhost:5000/api/health`.
+
+### 2. Frontend setup (`/frontend`)
+
+```bash
+cd frontend
+npm install
+```
+
+Create a `.env` file in `frontend/`:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+Run the dev server:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+### 3. Logging in
+
+| Role | URL | Credentials |
+|---|---|---|
+| Resident / Volunteer | `/login` | Create an account via `/register` |
+| **Administrator** | **`/admin/login`** | **Email:** `admin@gmail.com` &nbsp;&nbsp; **Password:** `admin123` |
+
+The administrator account is a single fixed login (not a database user) —
+see `backend/controllers/adminAuthController.js`. Override it with the
+`ADMIN_EMAIL` / `ADMIN_PASSWORD` environment variables for production.
+
+## 🧭 Admin Dashboard (this update)
+
+This update adds the **FloodGuard Administrator Dashboard** under `/admin`,
+built without modifying any of the existing resident/volunteer pages, routes,
+or components. See [`ADMIN_DASHBOARD.md`](./ADMIN_DASHBOARD.md) for a full
+breakdown of what was added, how it works, and its current limitations.

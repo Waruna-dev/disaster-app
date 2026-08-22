@@ -43,4 +43,17 @@ const uploadReportFiles = upload.fields([
   { name: "voiceNote", maxCount: 1 },
 ]);
 
-module.exports = { upload, uploadReportFiles, UPLOAD_DIR };
+// Single image upload used by the admin "Create Announcement" form.
+const imageOnlyUpload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files are allowed"), false);
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: maxFileSize },
+});
+const uploadAnnouncementImage = imageOnlyUpload.single("image");
+
+module.exports = { upload, uploadReportFiles, uploadAnnouncementImage, UPLOAD_DIR };

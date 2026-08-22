@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { createReport } from "../api/reports";
+import Navbar from "./Navbar";
+import Footer from "./Footer";
 import "./SubmitReport.css";
 
-// Options displayed in the incident-type selector.
 const INCIDENT_TYPES = [
   { id: "flood", label: "Flood", color: "#2563eb", icon: "droplet" },
   { id: "fire", label: "Fire", color: "#dc2626", icon: "flame" },
@@ -12,7 +14,6 @@ const INCIDENT_TYPES = [
   { id: "other", label: "Other", color: "#4b5563", icon: "dots" },
 ];
 
-// Flood reports include an additional severity selection.
 const WATER_LEVELS = [
   {
     id: "low",
@@ -34,7 +35,6 @@ const WATER_LEVELS = [
   },
 ];
 
-// Reusable inline SVG icon renderer used throughout the form.
 function Icon({ name, size = 26, color = "currentColor" }) {
   const common = {
     width: size,
@@ -207,7 +207,6 @@ function Icon({ name, size = 26, color = "currentColor" }) {
   }
 }
 
-// Convert elapsed recording time into a reader-friendly mm:ss value.
 function formatDuration(totalSeconds) {
   const m = Math.floor(totalSeconds / 60)
     .toString()
@@ -218,7 +217,6 @@ function formatDuration(totalSeconds) {
   return `${m}:${s}`;
 }
 
-// Check browser support before exposing microphone controls.
 const VOICE_SUPPORTED =
   typeof navigator !== "undefined" &&
   !!navigator.mediaDevices &&
@@ -226,11 +224,14 @@ const VOICE_SUPPORTED =
   !!window.MediaRecorder;
 
 export default function SubmitReport() {
+  const navigate = useNavigate();
   const [incidentType, setIncidentType] = useState(null);
   const [waterLevel, setWaterLevel] = useState(null);
   const [location, setLocation] = useState(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
+  const [incidentTypeError, setIncidentTypeError] = useState("");
+  const [locationRequiredError, setLocationRequiredError] = useState("");
   const [details, setDetails] = useState("");
   const [mediaItems, setMediaItems] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -252,7 +253,6 @@ export default function SubmitReport() {
   const timerRef = useRef(null);
   const secondsRef = useRef(0);
 
-  // Release browser resources when the report form unmounts.
   useEffect(() => {
     return () => {
       mediaItems.forEach((item) => URL.revokeObjectURL(item.url));
@@ -266,12 +266,13 @@ export default function SubmitReport() {
 
   const handleSelectIncidentType = (id) => {
     setIncidentType(id);
+    setIncidentTypeError("");
     if (id !== "flood") setWaterLevel(null);
   };
 
-  // Request the device location only after the user explicitly asks for it.
   const handleIdentifyLocation = () => {
     setLocationError("");
+    setLocationRequiredError("");
     if (!navigator.geolocation) {
       setLocationError("Location services aren't available on this device.");
       return;
@@ -292,7 +293,6 @@ export default function SubmitReport() {
     );
   };
 
-  // Create local previews for every selected photo or video.
   const handleFilesChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length) {
@@ -324,7 +324,6 @@ export default function SubmitReport() {
     });
   };
 
-  // Capture microphone audio and keep its chunks until recording stops.
   const startRecording = async () => {
     setVoiceError("");
     if (!VOICE_SUPPORTED) {
@@ -393,6 +392,8 @@ export default function SubmitReport() {
     setWaterLevel(null);
     setLocation(null);
     setLocationError("");
+    setIncidentTypeError("");
+    setLocationRequiredError("");
     setDetails("");
     mediaItems.forEach((item) => URL.revokeObjectURL(item.url));
     setMediaItems([]);
@@ -402,19 +403,28 @@ export default function SubmitReport() {
     setRecordingSeconds(0);
   };
 
-  // Validate required fields, then package all report data for the API.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
+    setIncidentTypeError("");
+    setLocationRequiredError("");
+
+    let hasError = false;
 
     if (!incidentType) {
-      setSubmitError("Please select the kind of incident you're reporting.");
-      return;
-    }
-    if (incidentType === "flood" && !waterLevel) {
+      setIncidentTypeError("Please select the kind of incident you're reporting.");
+      hasError = true;
+    } else if (incidentType === "flood" && !waterLevel) {
       setSubmitError("Please select a water level for the flood report.");
-      return;
+      hasError = true;
     }
+
+    if (!location) {
+      setLocationRequiredError("Please identify your location.");
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     const formData = new FormData();
     formData.append("incidentType", incidentType);
@@ -436,7 +446,7 @@ export default function SubmitReport() {
       setSubmittedId(result?.data?._id || null);
       resetForm();
       if (successTimerRef.current) window.clearTimeout(successTimerRef.current);
-      successTimerRef.current = window.setTimeout(() => setSubmitted(false), 8000);
+      successTimerRef.current = window.setTimeout(() => navigate("/"), 2200);
     } catch (err) {
       setSubmitError(
         err.message || "Couldn't send your report. Check your connection and try again."
@@ -448,43 +458,12 @@ export default function SubmitReport() {
 
   const handleDismissSuccess = () => {
     if (successTimerRef.current) window.clearTimeout(successTimerRef.current);
-    setSubmitted(false);
+    navigate("/");
   };
 
   return (
     <div className="sr-page">
-      <header className="sr-header">
-        <div className="sr-header-inner">
-          <div className="sr-brand">
-            <span className="sr-brand-icon">
-              <Icon name="logo" size={22} color="#ffffff" />
-            </span>
-            <span className="sr-brand-name">Resilience Response</span>
-          </div>
-
-          <nav className={`sr-nav ${menuOpen ? "sr-nav-open" : ""}`}>
-            <a href="#home" className="sr-nav-link">Home</a>
-            <a href="#report" className="sr-nav-link sr-nav-link-active">Report</a>
-            <a href="#map" className="sr-nav-link">Map</a>
-            <a href="#safety" className="sr-nav-link">Safety Info</a>
-          </nav>
-
-          <div className="sr-header-actions">
-            <a href="tel:911" className="sr-emergency-btn">
-              <Icon name="phone" size={16} color="#ffffff" />
-              <span>Emergency Call</span>
-            </a>
-            <button
-              type="button"
-              className="sr-menu-toggle"
-              aria-label="Toggle navigation menu"
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              <Icon name="menu" size={22} color="#ffffff" />
-            </button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="sr-main">
         <div className="sr-container">
@@ -495,12 +474,12 @@ export default function SubmitReport() {
           </p>
 
           {submitted && (
-            <div className="sr-success-banner" role="status">
-              <span className="sr-success-icon">
-                <Icon name="check-circle" size={22} color="#0f5d4a" />
-              </span>
-              <div className="sr-success-text">
-                <span className="sr-success-title">Report submitted successfully</span>
+            <div className="sr-success-overlay" role="status">
+              <div className="sr-success-card">
+                <span className="sr-success-icon">
+                  <Icon name="check-circle" size={30} color="#ffffff" />
+                </span>
+                <span className="sr-success-title">Submit Successful</span>
                 <span className="sr-success-subtitle">
                   Thank you — responders have been notified and will review it shortly.
                   {submittedId && (
@@ -510,21 +489,23 @@ export default function SubmitReport() {
                     </>
                   )}
                 </span>
+                <button
+                  type="button"
+                  className="sr-success-btn"
+                  onClick={handleDismissSuccess}
+                >
+                  Go to Home
+                </button>
               </div>
-              <button
-                type="button"
-                className="sr-success-dismiss"
-                onClick={handleDismissSuccess}
-                aria-label="Dismiss success message"
-              >
-                <Icon name="close" size={14} color="#0f5d4a" />
-              </button>
             </div>
           )}
 
           <form className="sr-card" onSubmit={handleSubmit}>
             <section className="sr-field">
-              <label className="sr-label">1. What kind of incident are you reporting?</label>
+              <label className="sr-label">
+                1. What kind of incident are you reporting?{" "}
+                <span className="sr-required">*</span>
+              </label>
               <div className="sr-incident-grid">
                 {INCIDENT_TYPES.map((type) => (
                   <button
@@ -541,6 +522,13 @@ export default function SubmitReport() {
                   </button>
                 ))}
               </div>
+
+              {incidentTypeError && (
+                <p className="sr-field-error">
+                  <Icon name="info" size={14} color="#ba1a1a" />
+                  <span>{incidentTypeError}</span>
+                </p>
+              )}
 
               {incidentType === "flood" && (
                 <div className="sr-water-level">
@@ -572,14 +560,18 @@ export default function SubmitReport() {
             </section>
 
             <section className="sr-field">
-              <label className="sr-label">2. Where is it happening?</label>
+              <label className="sr-label">
+                2. Where is it happening? <span className="sr-required">*</span>
+              </label>
               <button
                 type="button"
-                className="sr-location-btn"
+                className={`sr-location-btn ${
+                  locationRequiredError ? "sr-location-btn-error" : ""
+                }`}
                 onClick={handleIdentifyLocation}
                 disabled={locating}
               >
-                <Icon name="pin" size={18} color="#0f5d4a" />
+                <Icon name="pin" size={18} color="#004ac6" />
                 <span>
                   {locating
                     ? "Locating..."
@@ -588,12 +580,19 @@ export default function SubmitReport() {
                     : "Identify My Location"}
                 </span>
               </button>
-              <p className="sr-hint">
-                <Icon name="info" size={14} color="#6b7280" />
-                <span>
-                  {locationError || "This helps responders pinpoint the issue faster."}
-                </span>
-              </p>
+              {locationRequiredError ? (
+                <p className="sr-field-error">
+                  <Icon name="info" size={14} color="#ba1a1a" />
+                  <span>{locationRequiredError}</span>
+                </p>
+              ) : (
+                <p className="sr-hint">
+                  <Icon name="info" size={14} color="#6b7280" />
+                  <span>
+                    {locationError || "This helps responders pinpoint the issue faster."}
+                  </span>
+                </p>
+              )}
             </section>
 
             <section className="sr-field">
@@ -624,7 +623,7 @@ export default function SubmitReport() {
               {mediaItems.length === 0 ? (
                 <label className="sr-upload-box" htmlFor="sr-media-input">
                   <span className="sr-upload-icon">
-                    <Icon name="camera" size={22} color="#0f5d4a" />
+                    <Icon name="camera" size={22} color="#004ac6" />
                   </span>
                   <span className="sr-upload-title">Take Photo/Video</span>
                   <span className="sr-upload-subtitle">or tap to upload from gallery</span>
@@ -644,7 +643,7 @@ export default function SubmitReport() {
                       )}
                       {!item.isImage && !item.isVideo && (
                         <div className="sr-media-thumb-fallback">
-                          <Icon name="camera" size={18} color="#0f5d4a" />
+                          <Icon name="camera" size={18} color="#004ac6" />
                         </div>
                       )}
                       <button
@@ -664,7 +663,7 @@ export default function SubmitReport() {
                     onClick={handleAddMediaClick}
                     aria-label="Add another photo or video"
                   >
-                    <Icon name="plus" size={20} color="#0f5d4a" />
+                    <Icon name="plus" size={20} color="#004ac6" />
                   </button>
                 </div>
               )}
@@ -690,7 +689,7 @@ export default function SubmitReport() {
                   disabled={!VOICE_SUPPORTED}
                 >
                   <span className="sr-voice-btn-icon">
-                    <Icon name="mic" size={18} color="#0f5d4a" />
+                    <Icon name="mic" size={18} color="#004ac6" />
                   </span>
                   <span>Start Voice Recording</span>
                 </button>
@@ -725,7 +724,7 @@ export default function SubmitReport() {
                       onClick={handleReRecord}
                       aria-label="Re-record voice report"
                     >
-                      <Icon name="refresh" size={15} color="#0f5d4a" />
+                      <Icon name="refresh" size={15} color="#004ac6" />
                     </button>
                     <button
                       type="button"
@@ -766,6 +765,7 @@ export default function SubmitReport() {
           </form>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

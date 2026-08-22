@@ -2,11 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const Report = require("../models/Report");
 
-// 1. Wrap async controller functions so errors are forwarded to the Express error middleware.
 /** Wraps an async route handler so rejected promises reach the error middleware. */
 const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-// 2. Build a public URL for uploaded files so the frontend can access them.
 function buildFileUrl(req, filename) {
   return `${req.protocol}://${req.get("host")}/uploads/${filename}`;
 }
@@ -16,31 +14,25 @@ function buildFileUrl(req, filename) {
  * Creates a new incident report. Accepts multipart/form-data so citizens can
  * attach photos/videos ("media", up to 6) and a single voice memo ("voiceNote").
  */
-// 3. Create a new disaster report from form-data submitted by the user.
 const createReport = asyncHandler(async (req, res) => {
-  // 4. Extract the main report values from the request body.
-  const { incidentType, waterLevel, details } = req.body;
+  const { incidentType, waterLevel, details, locationName, reportedByName, severity } = req.body;
 
-  // 5. Store GPS coordinates if both latitude and longitude were sent.
   let location;
   if (req.body.lat !== undefined && req.body.lng !== undefined && req.body.lat !== "") {
     location = { lat: Number(req.body.lat), lng: Number(req.body.lng) };
   }
 
-  // 6. Convert uploaded image/video files into stored metadata objects.
   const media = (req.files?.media || []).map((file) => ({
     url: buildFileUrl(req, file.filename),
     type: file.mimetype.startsWith("video/") ? "video" : "image",
     originalName: file.originalname,
   }));
 
-  // 7. Save the optional voice note as a single file record.
   const voiceFile = req.files?.voiceNote?.[0];
   const voiceNote = voiceFile
     ? { url: buildFileUrl(req, voiceFile.filename), originalName: voiceFile.originalname }
     : undefined;
 
-  // 8. Save the report to MongoDB with validation rules applied by the schema.
   const report = await Report.create({
     incidentType,
     waterLevel: incidentType === "flood" ? waterLevel : undefined,
@@ -48,10 +40,107 @@ const createReport = asyncHandler(async (req, res) => {
     details,
     media,
     voiceNote,
+    ...(locationName ? { locationName } : {}),
+    ...(reportedByName ? { reportedByName } : {}),
+    ...(severity ? { severity } : {}),
   });
 
-  // 9. Return the created report data to the client as JSON.
   res.status(201).json({ success: true, data: report });
+});
+
+/**
+ * PATCH /api/reports/:id/approve
+ * Admin action: marks a report as verified/approved.
+ */
+const approveReport = asyncHandler(async (req, res) => {
+  const report = await Report.findByIdAndUpdate(
+    req.params.id,
+    { approvalStatus: "approved", rejectReason: "", reviewedAt: new Date() },
+    { new: true, runValidators: true }
+  );
+  if (!report) {
+    return res.status(404).json({ success: false, message: "Report not found" });
+  }
+  res.status(200).json({ success: true, data: report });
+});
+
+/**
+ * PATCH /api/reports/:id/reject
+ * Admin action: marks a report as rejected. Body: { reason: string }
+ */
+const rejectReport = asyncHandler(async (req, res) => {
+  const { reason } = req.body;
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ success: false, message: "A rejection reason is required" });
+  }
+
+  const report = await Report.findByIdAndUpdate(
+    req.params.id,
+    { approvalStatus: "rejected", rejectReason: reason.trim(), reviewedAt: new Date() },
+    { new: true, runValidators: true }
+  );
+  if (!report) {
+    return res.status(404).json({ success: false, message: "Report not found" });
+  }
+  res.status(200).json({ success: true, data: report });
+});
+
+/**
+ * GET /api/reports/admin/summary
+ * Aggregated counters used by the admin Summary dashboard.
+ */
+const getAdminSummary = asyncHandler(async (req, res) => {
+  const [
+    activeDisasters,
+    pendingReports,
+    approvedReports,
+    rejectedReports,
+    totalReports,
+  ] = await Promise.all([
+    Report.countDocuments({ approvalStatus: "approved", status: { $ne: "resolved" } }),
+    Report.countDocuments({ approvalStatus: "pending" }),
+    Report.countDocuments({ approvalStatus: "approved" }),
+    Report.countDocuments({ approvalStatus: "rejected" }),
+    Report.countDocuments({}),
+  ]);
+
+  // Daily approve vs reject counts for the last 7 days (used by the report generator).
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const dailyRaw = await Report.aggregate([
+    { $match: { reviewedAt: { $gte: sevenDaysAgo }, approvalStatus: { $in: ["approved", "rejected"] } } },
+    {
+      $group: {
+        _id: {
+          day: { $dateToString: { format: "%Y-%m-%d", date: "$reviewedAt" } },
+          status: "$approvalStatus",
+        },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const dailyMap = {};
+  dailyRaw.forEach((row) => {
+    const day = row._id.day;
+    if (!dailyMap[day]) dailyMap[day] = { date: day, approved: 0, rejected: 0 };
+    dailyMap[day][row._id.status === "approved" ? "approved" : "rejected"] = row.count;
+  });
+  const dailyAnalysis = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
+
+  res.status(200).json({
+    success: true,
+    data: {
+      activeDisasters,
+      pendingReports,
+      approvedReports,
+      rejectedReports,
+      totalReports,
+      dailyAnalysis,
+    },
+  });
 });
 
 /**
@@ -59,7 +148,6 @@ const createReport = asyncHandler(async (req, res) => {
  * Lists reports, newest first. Supports optional ?incidentType=, ?status=,
  * ?page= and ?limit= query params.
  */
-// 10. Fetch all reports with optional filtering and pagination.
 const getReports = asyncHandler(async (req, res) => {
   const { incidentType, status } = req.query;
   const page = Math.max(Number(req.query.page) || 1, 1);
@@ -143,4 +231,7 @@ module.exports = {
   getReportById,
   updateReportStatus,
   deleteReport,
+  approveReport,
+  rejectReport,
+  getAdminSummary,
 };

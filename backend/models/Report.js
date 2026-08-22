@@ -1,14 +1,23 @@
 const mongoose = require("mongoose");
 
-// 1. Connect to MongoDB using Mongoose.
-// 2. Supported incident categories for reports.
-const INCIDENT_TYPES = ["flood", "fire", "road-block", "medical", "power-outage", "other"];
-// 3. Allowed flood water levels for severity tracking.
+const INCIDENT_TYPES = [
+  "flood",
+  "landslide",
+  "heavy-rain",
+  "fire",
+  "road-block",
+  "medical",
+  "power-outage",
+  "other",
+];
 const WATER_LEVELS = ["low", "medium", "high"];
-// 4. Valid lifecycle states for each report.
 const STATUSES = ["pending", "in-progress", "resolved"];
 
-// 5. Uploaded media items attached to a disaster report.
+// Admin verification workflow (separate from the operational `status` above,
+// which is used by the resident/volunteer flow for in-progress/resolved tracking).
+const SEVERITIES = ["low", "medium", "high"];
+const APPROVAL_STATUSES = ["pending", "approved", "rejected"];
+
 const mediaSchema = new mongoose.Schema(
   {
     url: { type: String, required: true },
@@ -18,7 +27,6 @@ const mediaSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 6. Optional voice note recorded by the reporter.
 const voiceNoteSchema = new mongoose.Schema(
   {
     url: { type: String, required: true },
@@ -27,7 +35,6 @@ const voiceNoteSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 7. GPS coordinates for the reported incident location.
 const locationSchema = new mongoose.Schema(
   {
     lat: { type: Number },
@@ -78,15 +85,46 @@ const reportSchema = new mongoose.Schema(
       enum: STATUSES,
       default: "pending",
     },
+
+    // --- Admin dashboard fields (additive; do not remove/rename existing fields above) ---
+    locationName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    reportedByName: {
+      type: String,
+      trim: true,
+      default: "Anonymous Resident",
+    },
+    severity: {
+      type: String,
+      enum: SEVERITIES,
+      default: "medium",
+    },
+    approvalStatus: {
+      type: String,
+      enum: APPROVAL_STATUSES,
+      default: "pending",
+    },
+    rejectReason: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    reviewedAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
 
-// 9. Index report lookups by type, status, and newest creation date.
 reportSchema.index({ incidentType: 1, status: 1, createdAt: -1 });
+reportSchema.index({ approvalStatus: 1, severity: 1, createdAt: -1 });
 
-// 10. Export the report model and related constants.
 module.exports = mongoose.model("Report", reportSchema);
 module.exports.INCIDENT_TYPES = INCIDENT_TYPES;
 module.exports.WATER_LEVELS = WATER_LEVELS;
 module.exports.STATUSES = STATUSES;
+module.exports.SEVERITIES = SEVERITIES;
+module.exports.APPROVAL_STATUSES = APPROVAL_STATUSES;

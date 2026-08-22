@@ -5,20 +5,25 @@ const {
   getReportById,
   updateReportStatus,
   deleteReport,
+  approveReport,
+  rejectReport,
+  getAdminSummary,
 } = require("../controllers/reportController");
 const { uploadReportFiles } = require("../middleware/upload");
+const { protectAdmin } = require("../middleware/adminAuth");
 
-// 1. Create the Express router used for report API endpoints.
 const router = express.Router();
 
-// 2. Main report collection route for creating new reports and listing all reports.
 router.route("/").post(uploadReportFiles, createReport).get(getReports);
 
-// 3. Single report route for fetching and deleting one report by ID.
+// Admin dashboard endpoints (verification workflow). Mounted before "/:id"
+// is fine since Express matches "/admin/summary" literally, not as an :id param.
+router.get("/admin/summary", protectAdmin, getAdminSummary);
+router.patch("/:id/approve", protectAdmin, approveReport);
+router.patch("/:id/reject", protectAdmin, rejectReport);
+
 router.route("/:id").get(getReportById).delete(deleteReport);
 
-// 4. Update only the report status for a specific incident.
 router.patch("/:id/status", updateReportStatus);
 
-// 5. Export the router so the app can mount these API routes.
 module.exports = router;
