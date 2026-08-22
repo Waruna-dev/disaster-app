@@ -1,0 +1,126 @@
+.auth-page {
+  --auth-primary: #105D4B;
+  --auth-primary-hover: #0b4a3c;
+  --auth-bg: #f4f6f5;
+  --auth-card-bg: #ffffff;
+  --auth-text: #1f2937;
+  --auth-text-muted: #6b7280;
+  --auth-border: #e2e5e9;
+  --auth-input-focus: #12684f;
+
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--auth-bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  padding: 20px;
+}
+
+.auth-card {
+  background: var(--auth-card-bg);
+  border: 1px solid var(--auth-border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 28px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  text-align: center;
+}
+
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.auth-icon {
+  background-color: #eaf6f1;
+  padding: 12px;
+  border-radius: 999px;
+  display: inline-flex;
+}
+
+.auth-title {
+  color: var(--auth-primary);
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.auth-subtitle {
+  color: var(--auth-text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--auth-text);
+}
+
+.auth-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--auth-border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--auth-text);
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: var(--auth-input-focus);
+}
+
+.auth-btn {
+  background: var(--auth-primary);
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background-color 0.2s;
+}
+
+.auth-btn:hover {
+  background: var(--auth-primary-hover);
+}
+
+.auth-footer {
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--auth-text-muted);
+}
+
+.auth-link {
+  color: var(--auth-primary);
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
