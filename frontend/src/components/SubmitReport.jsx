@@ -217,6 +217,55 @@ function formatDuration(totalSeconds) {
   return `${m}:${s}`;
 }
 
+function prettifyLocationValue(value) {
+  if (!value || !value.trim()) return "";
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+async function reverseGeocodeLocation(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const address = data.address || {};
+    const placeName = prettifyLocationValue(
+      address.village ||
+      address.town ||
+      address.city ||
+      address.municipality ||
+      address.county ||
+      address.state_district ||
+      address.suburb ||
+      "Unknown area"
+    );
+
+    const district = prettifyLocationValue(
+      address.county ||
+      address.state_district ||
+      address.city_district ||
+      ""
+    );
+
+    const province = prettifyLocationValue(address.state || address.region || "");
+    const locationParts = [placeName, district, province].filter(Boolean);
+    const readableLocation = locationParts.length ? locationParts.join(", ") : "Location";
+
+    return readableLocation;
+  } catch (error) {
+    return null;
+  }
+}
+
 const VOICE_SUPPORTED =
   typeof navigator !== "undefined" &&
   !!navigator.mediaDevices &&
@@ -228,6 +277,7 @@ export default function SubmitReport() {
   const [incidentType, setIncidentType] = useState(null);
   const [waterLevel, setWaterLevel] = useState(null);
   const [location, setLocation] = useState(null);
+  const [locationName, setLocationName] = useState("");
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [incidentTypeError, setIncidentTypeError] = useState("");
@@ -279,11 +329,13 @@ export default function SubmitReport() {
     }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        });
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setLocation({ lat, lng });
+
+        const resolvedName = await reverseGeocodeLocation(lat, lng);
+        setLocationName(resolvedName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
         setLocating(false);
       },
       () => {
@@ -391,6 +443,7 @@ export default function SubmitReport() {
     setIncidentType(null);
     setWaterLevel(null);
     setLocation(null);
+    setLocationName("");
     setLocationError("");
     setIncidentTypeError("");
     setLocationRequiredError("");
@@ -432,6 +485,9 @@ export default function SubmitReport() {
     if (location) {
       formData.append("lat", location.lat);
       formData.append("lng", location.lng);
+    }
+    if (locationName) {
+      formData.append("locationName", locationName);
     }
     formData.append("details", details);
     mediaItems.forEach((item) => formData.append("media", item.file));
@@ -576,7 +632,7 @@ export default function SubmitReport() {
                   {locating
                     ? "Locating..."
                     : location
-                    ? `Location set (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})`
+                    ? locationName || `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
                     : "Identify My Location"}
                 </span>
               </button>

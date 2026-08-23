@@ -12,6 +12,65 @@ const SEVERITY_TABS = [
   { key: "low", label: "Low" },
 ];
 
+function prettifyLocationValue(value) {
+  if (!value || !value.trim()) return "";
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+async function reverseGeocodeLocation(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const address = data.address || {};
+    const placeName = prettifyLocationValue(
+      address.village ||
+      address.town ||
+      address.city ||
+      address.municipality ||
+      address.county ||
+      address.state_district ||
+      address.suburb ||
+      "Unknown area"
+    );
+
+    const district = prettifyLocationValue(
+      address.county ||
+      address.state_district ||
+      address.city_district ||
+      ""
+    );
+
+    const province = prettifyLocationValue(address.state || address.region || "");
+    const locationParts = [placeName, district, province].filter(Boolean);
+    return locationParts.length ? locationParts.join(", ") : "Location";
+  } catch {
+    return null;
+  }
+}
+
+function formatReportLocation(report) {
+  const namedLocation = report.locationName?.trim();
+  if (namedLocation) return namedLocation;
+
+  const lat = Number(report.location?.lat);
+  const lng = Number(report.location?.lng);
+
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+
+  return "N/A";
+}
+
 export default function PendingReports() {
   const { admin } = useContext(AdminAuthContext);
   const [reports, setReports] = useState([]);
@@ -20,6 +79,7 @@ export default function PendingReports() {
   const [severityTab, setSeverityTab] = useState("all");
   const [selectedReport, setSelectedReport] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [locationLookup, setLocationLookup] = useState({});
 
   useEffect(() => {
     load();
@@ -48,6 +108,27 @@ export default function PendingReports() {
     () => reports.filter((r) => r.approvalStatus === "approved" || r.approvalStatus === "rejected"),
     [reports]
   );
+
+  useEffect(() => {
+    const pendingCoords = reports.filter((report) => {
+      const namedLocation = report.locationName?.trim();
+      const lat = Number(report.location?.lat);
+      const lng = Number(report.location?.lng);
+      return !namedLocation && Number.isFinite(lat) && Number.isFinite(lng);
+    });
+
+    pendingCoords.forEach(async (report) => {
+      const lat = Number(report.location?.lat);
+      const lng = Number(report.location?.lng);
+      const resolved = await reverseGeocodeLocation(lat, lng);
+      if (resolved) {
+        setLocationLookup((prev) => ({
+          ...prev,
+          [report._id]: resolved,
+        }));
+      }
+    });
+  }, [reports]);
 
   const handleApprove = async (id) => {
     await approveReport(id);
@@ -156,7 +237,7 @@ export default function PendingReports() {
                   <tr key={r._id} className="border-t border-outline-variant hover:bg-surface-container-low">
                     <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">RPT{r._id.slice(-6).toUpperCase()}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{DISASTER_LABELS[r.incidentType] || r.incidentType}</td>
-                    <td className="px-4 py-3 max-w-[160px] truncate">{r.locationName || "N/A"}</td>
+                    <td className="px-4 py-3 max-w-[160px] truncate">{locationLookup[r._id] || formatReportLocation(r)}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{r.reportedByName || "Anonymous"}</td>
                     <td className="px-4 py-3 capitalize">{r.severity || "medium"}</td>

@@ -1,7 +1,11 @@
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import autoTableImport from "jspdf-autotable";
 import { drawPieChartDataUrl, drawBarChartDataUrl } from "./canvasCharts";
 import logoUrl from "../../assets/floodguard-logo.png";
+
+const autoTable = typeof autoTableImport === "function"
+  ? autoTableImport
+  : autoTableImport?.default || autoTableImport?.autoTable;
 
 function loadImageAsDataUrl(url) {
   return new Promise((resolve, reject) => {
@@ -199,6 +203,10 @@ export async function generateAdminReportPdf({ adminEmail, summary, reviewedRepo
     r.approvalStatus === "approved" ? "Approved" : "Rejected",
     r.approvalStatus === "rejected" ? r.rejectReason || "-" : "-",
   ]);
+
+  if (typeof autoTable !== "function") {
+    throw new Error("PDF table library failed to initialize. Please refresh and try again.");
+  }
 
   autoTable(doc, {
     startY: y + 8,
