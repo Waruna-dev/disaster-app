@@ -34,6 +34,12 @@ const WATER_LEVELS = [
   },
 ];
 
+const SEVERITY_LEVELS = [
+  { id: "low", label: "Low" },
+  { id: "medium", label: "Medium" },
+  { id: "high", label: "High" },
+];
+
 function Icon({ name, size = 26, color = "currentColor" }) {
   const common = {
     width: size,
@@ -226,7 +232,7 @@ function prettifyLocationValue(value) {
 
 async function reverseGeocodeLocation(lat, lng) {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
+    const url = `http://localhost:5000/api/reports/location?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
     const res = await fetch(url, {
       headers: {
         Accept: "application/json",
@@ -236,7 +242,9 @@ async function reverseGeocodeLocation(lat, lng) {
     if (!res.ok) return null;
 
     const data = await res.json();
-    const address = data.address || {};
+    if (data.success && data.data?.locationName) return data.data.locationName;
+    return null;
+    /* const address = data.address || {};
     const placeName = prettifyLocationValue(
       address.village ||
       address.town ||
@@ -259,7 +267,7 @@ async function reverseGeocodeLocation(lat, lng) {
     const locationParts = [placeName, district, province].filter(Boolean);
     const readableLocation = locationParts.length ? locationParts.join(", ") : "Location";
 
-    return readableLocation;
+    return readableLocation; */
   } catch (error) {
     return null;
   }
@@ -274,6 +282,7 @@ const VOICE_SUPPORTED =
 export default function SubmitReport() {
   const [incidentType, setIncidentType] = useState(null);
   const [waterLevel, setWaterLevel] = useState(null);
+  const [severity, setSeverity] = useState("medium");
   const [location, setLocation] = useState(null);
   const [locationName, setLocationName] = useState("");
   const [locating, setLocating] = useState(false);
@@ -329,7 +338,8 @@ export default function SubmitReport() {
         setLocation({ lat, lng });
 
         const resolvedName = await reverseGeocodeLocation(lat, lng);
-        setLocationName(resolvedName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        const displayName = resolvedName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        setLocationName(displayName);
         setLocating(false);
       },
       () => {
@@ -436,6 +446,7 @@ export default function SubmitReport() {
   const resetForm = () => {
     setIncidentType(null);
     setWaterLevel(null);
+    setSeverity("medium");
     setLocation(null);
     setLocationName("");
     setLocationError("");
@@ -463,13 +474,16 @@ export default function SubmitReport() {
 
     const formData = new FormData();
     formData.append("incidentType", incidentType);
+    formData.append("severity", severity || "medium");
     if (incidentType === "flood" && waterLevel) formData.append("waterLevel", waterLevel);
     if (location) {
       formData.append("lat", location.lat);
       formData.append("lng", location.lng);
     }
     if (locationName) {
-      formData.append("locationName", locationName);
+      const normalizedLocationName = String(locationName).trim();
+      const finalLocationName = normalizedLocationName || "Location not specified";
+      formData.append("locationName", finalLocationName);
     }
     formData.append("details", details);
     mediaItems.forEach((item) => formData.append("media", item.file));
@@ -614,7 +628,27 @@ export default function SubmitReport() {
             </section>
 
             <section className="sr-field">
-              <label className="sr-label" htmlFor="sr-details">3. What's happening?</label>
+              <label className="sr-label">3. Severity level</label>
+              <div className="sr-water-level-options">
+                {SEVERITY_LEVELS.map((level) => (
+                  <button
+                    key={level.id}
+                    type="button"
+                    className={`sr-water-level-btn ${severity === level.id ? "sr-water-level-btn-selected" : ""}`}
+                    onClick={() => setSeverity(level.id)}
+                    aria-pressed={severity === level.id}
+                  >
+                    <span className="sr-water-level-dot" />
+                    <span className="sr-water-level-text">
+                      <span className="sr-water-level-name">{level.label}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="sr-field">
+              <label className="sr-label" htmlFor="sr-details">4. What's happening?</label>
               <textarea
                 id="sr-details"
                 className="sr-textarea"

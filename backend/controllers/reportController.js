@@ -9,6 +9,48 @@ function buildFileUrl(req, filename) {
   return `${req.protocol}://${req.get("host")}/uploads/${filename}`;
 }
 
+/** GET /api/reports/location?lat=6.94&lng=79.86 */
+const reverseGeocode = asyncHandler(async (req, res) => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.status(400).json({ success: false, message: "Valid latitude and longitude are required" });
+  }
+
+  const url = new URL("https://api.bigdatacloud.net/data/reverse-geocode-client");
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lng));
+  url.searchParams.set("localityLanguage", "en");
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+    },
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!response.ok) {
+    return res.status(502).json({ success: false, message: "Location service unavailable" });
+  }
+
+  const data = await response.json();
+  const place = data.city || data.locality;
+  const province = data.principalSubdivision;
+  const district = data.localityInfo?.administrative?.find(
+    (item) => item.description?.toLowerCase().includes("district")
+  )?.name;
+  const parts = [place, district, province]
+    .filter(Boolean)
+    .map((part) => part.trim())
+    .filter((part, index, values) => values.indexOf(part) === index);
+
+  res.status(200).json({
+    success: true,
+    data: { locationName: parts.length ? parts.join(", ") : data.display_name || "Unknown location" },
+  });
+});
+
 /**
  * POST /api/reports
  * Creates a new incident report. Accepts multipart/form-data so citizens can
@@ -227,6 +269,7 @@ const deleteReport = asyncHandler(async (req, res) => {
 
 module.exports = {
   createReport,
+  reverseGeocode,
   getReports,
   getReportById,
   updateReportStatus,

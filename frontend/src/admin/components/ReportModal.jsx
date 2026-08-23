@@ -11,7 +11,7 @@ function prettifyLocationValue(value) {
 
 async function reverseGeocodeLocation(lat, lng) {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
+    const url = `http://localhost:5000/api/reports/location?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
     });
@@ -19,7 +19,9 @@ async function reverseGeocodeLocation(lat, lng) {
     if (!res.ok) return null;
 
     const data = await res.json();
-    const address = data.address || {};
+    if (data.success && data.data?.locationName) return data.data.locationName;
+    return null;
+    /* const address = data.address || {};
     const placeName = prettifyLocationValue(
       address.village ||
       address.town ||
@@ -40,21 +42,67 @@ async function reverseGeocodeLocation(lat, lng) {
 
     const province = prettifyLocationValue(address.state || address.region || "");
     const locationParts = [placeName, district, province].filter(Boolean);
-    return locationParts.length ? locationParts.join(", ") : "Location";
+    return locationParts.length ? locationParts.join(", ") : "Location"; */
   } catch {
     return null;
   }
 }
 
+function looksLikeCoordinateString(value) {
+  return /^[-+]?\d{1,3}(?:\.\d+)?\s*,\s*[-+]?\d{1,3}(?:\.\d+)?(?:\s*\(.*\))?$/.test(String(value).trim());
+}
+
+function parseCoordinateString(value) {
+  const normalized = String(value).trim();
+  const match = normalized.match(/^([-+]?\d{1,3}(?:\.\d+)?)\s*,\s*([-+]?\d{1,3}(?:\.\d+)?)/);
+  if (!match) return null;
+  const latText = match[1];
+  const lngText = match[2];
+  const lat = Number(latText);
+  const lng = Number(lngText);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+}
+
+function formatCoordinateLocation(lat, lng) {
+  const latitude = `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? "N" : "S"}`;
+  const longitude = `${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? "E" : "W"}`;
+  const area = lat >= 6.85 && lat <= 7.1 && lng >= 79.75 && lng <= 80.1
+    ? " (Colombo, Western Province)"
+    : "";
+  return `${latitude}, ${longitude}${area}`;
+}
+
+function extractReadableLocationLabel(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+
+  const parentheticalMatch = trimmed.match(/^[-+]?\d{1,3}(?:\.\d+)?\s*,\s*[-+]?\d{1,3}(?:\.\d+)?\s*\((.*)\)$/);
+  if (parentheticalMatch?.[1]) {
+    return parentheticalMatch[1].trim();
+  }
+
+  return trimmed;
+}
+
 function formatLocation(report) {
   const namedLocation = report.locationName?.trim();
-  if (namedLocation) return namedLocation;
+  if (namedLocation) {
+    const readableLabel = extractReadableLocationLabel(namedLocation);
+    if (readableLabel && readableLabel !== namedLocation) {
+      return readableLabel;
+    }
+    if (looksLikeCoordinateString(namedLocation)) {
+      const coords = parseCoordinateString(namedLocation);
+      if (coords) return formatCoordinateLocation(coords.lat, coords.lng);
+    }
+    return namedLocation;
+  }
 
   const lat = Number(report.location?.lat);
   const lng = Number(report.location?.lng);
 
   if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    return formatCoordinateLocation(lat, lng);
   }
 
   return "Not specified";
@@ -69,17 +117,34 @@ export default function ReportModal({ report, onClose, onApprove, onReject }) {
 
   useEffect(() => {
     const namedLocation = report.locationName?.trim();
-    const lat = Number(report.location?.lat);
-    const lng = Number(report.location?.lng);
 
-    if (namedLocation && !/^[-+]?\d+(?:\.\d+)?\s*,\s*[-+]?\d+(?:\.\d+)?$/.test(namedLocation)) {
+    const readableLabel = namedLocation ? extractReadableLocationLabel(namedLocation) : "";
+    if (readableLabel && readableLabel !== namedLocation) {
+      setDisplayLocation(readableLabel);
+      return;
+    }
+
+    if (namedLocation && looksLikeCoordinateString(namedLocation)) {
+      const coords = parseCoordinateString(namedLocation);
+      if (coords) {
+        reverseGeocodeLocation(coords.lat, coords.lng).then((resolved) => {
+          setDisplayLocation(resolved || formatCoordinateLocation(coords.lat, coords.lng));
+        });
+        return;
+      }
+    }
+
+    if (namedLocation) {
       setDisplayLocation(namedLocation);
       return;
     }
 
+    const lat = Number(report.location?.lat);
+    const lng = Number(report.location?.lng);
+
     if (Number.isFinite(lat) && Number.isFinite(lng)) {
       reverseGeocodeLocation(lat, lng).then((resolved) => {
-        setDisplayLocation(resolved || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        setDisplayLocation(resolved || formatCoordinateLocation(lat, lng));
       });
       return;
     }

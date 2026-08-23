@@ -22,7 +22,7 @@ function prettifyLocationValue(value) {
 
 async function reverseGeocodeLocation(lat, lng) {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
+    const url = `http://localhost:5000/api/reports/location?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
     });
@@ -30,7 +30,9 @@ async function reverseGeocodeLocation(lat, lng) {
     if (!res.ok) return null;
 
     const data = await res.json();
-    const address = data.address || {};
+    if (data.success && data.data?.locationName) return data.data.locationName;
+    return null;
+    /* const address = data.address || {};
     const placeName = prettifyLocationValue(
       address.village ||
       address.town ||
@@ -51,21 +53,67 @@ async function reverseGeocodeLocation(lat, lng) {
 
     const province = prettifyLocationValue(address.state || address.region || "");
     const locationParts = [placeName, district, province].filter(Boolean);
-    return locationParts.length ? locationParts.join(", ") : "Location";
+    return locationParts.length ? locationParts.join(", ") : "Location"; */
   } catch {
     return null;
   }
 }
 
+function looksLikeCoordinateString(value) {
+  return /^[-+]?\d{1,3}(?:\.\d+)?\s*,\s*[-+]?\d{1,3}(?:\.\d+)?(?:\s*\(.*\))?$/.test(String(value).trim());
+}
+
+function parseCoordinateString(value) {
+  const normalized = String(value).trim();
+  const match = normalized.match(/^([-+]?\d{1,3}(?:\.\d+)?)\s*,\s*([-+]?\d{1,3}(?:\.\d+)?)/);
+  if (!match) return null;
+  const latText = match[1];
+  const lngText = match[2];
+  const lat = Number(latText);
+  const lng = Number(lngText);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+}
+
+function formatCoordinateLocation(lat, lng) {
+  const latitude = `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? "N" : "S"}`;
+  const longitude = `${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? "E" : "W"}`;
+  const area = lat >= 6.85 && lat <= 7.1 && lng >= 79.75 && lng <= 80.1
+    ? " (Colombo, Western Province)"
+    : "";
+  return `${latitude}, ${longitude}${area}`;
+}
+
+function extractReadableLocationLabel(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+
+  const parentheticalMatch = trimmed.match(/^[-+]?\d{1,3}(?:\.\d+)?\s*,\s*[-+]?\d{1,3}(?:\.\d+)?\s*\((.*)\)$/);
+  if (parentheticalMatch?.[1]) {
+    return parentheticalMatch[1].trim();
+  }
+
+  return trimmed;
+}
+
 function formatReportLocation(report) {
   const namedLocation = report.locationName?.trim();
-  if (namedLocation) return namedLocation;
+  if (namedLocation) {
+    const readableLabel = extractReadableLocationLabel(namedLocation);
+    if (readableLabel && readableLabel !== namedLocation) {
+      return readableLabel;
+    }
+    if (looksLikeCoordinateString(namedLocation)) {
+      const coords = parseCoordinateString(namedLocation);
+      if (coords) return formatCoordinateLocation(coords.lat, coords.lng);
+    }
+    return namedLocation;
+  }
 
   const lat = Number(report.location?.lat);
   const lng = Number(report.location?.lng);
 
   if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    return formatCoordinateLocation(lat, lng);
   }
 
   return "N/A";
@@ -101,7 +149,7 @@ export default function PendingReports() {
   const pending = useMemo(() => {
     const list = reports.filter((r) => r.approvalStatus === "pending");
     if (severityTab === "all") return list;
-    return list.filter((r) => (r.severity || "medium") === severityTab);
+    return list.filter((r) => ((r.severity || "medium").toLowerCase()) === severityTab.toLowerCase());
   }, [reports, severityTab]);
 
   const reviewed = useMemo(
@@ -114,12 +162,27 @@ export default function PendingReports() {
       const namedLocation = report.locationName?.trim();
       const lat = Number(report.location?.lat);
       const lng = Number(report.location?.lng);
+      if (namedLocation && looksLikeCoordinateString(namedLocation)) {
+        return true;
+      }
       return !namedLocation && Number.isFinite(lat) && Number.isFinite(lng);
     });
 
     pendingCoords.forEach(async (report) => {
-      const lat = Number(report.location?.lat);
-      const lng = Number(report.location?.lng);
+      const namedLocation = report.locationName?.trim();
+      let lat = Number(report.location?.lat);
+      let lng = Number(report.location?.lng);
+
+      if (namedLocation && looksLikeCoordinateString(namedLocation)) {
+        const coords = parseCoordinateString(namedLocation);
+        if (coords) {
+          lat = coords.lat;
+          lng = coords.lng;
+        }
+      }
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
       const resolved = await reverseGeocodeLocation(lat, lng);
       if (resolved) {
         setLocationLookup((prev) => ({

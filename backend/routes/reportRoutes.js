@@ -8,6 +8,7 @@ const {
   approveReport,
   rejectReport,
   getAdminSummary,
+  reverseGeocode,
 } = require("../controllers/reportController");
 const { uploadReportFiles } = require("../middleware/upload");
 const { protectAdmin } = require("../middleware/adminAuth");
@@ -15,6 +16,7 @@ const { protectAdmin } = require("../middleware/adminAuth");
 const router = express.Router();
 
 router.route("/").post(uploadReportFiles, createReport).get(getReports);
+router.get("/location", reverseGeocode);
 
 // Admin dashboard endpoints (verification workflow). Mounted before "/:id"
 // is fine since Express matches "/admin/summary" literally, not as an :id param.
