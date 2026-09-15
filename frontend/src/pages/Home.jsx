@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import Footer from "../components/Footer";
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -402,64 +403,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      {/* Footer Component */}
-      <footer className="w-full py-stack-lg px-margin-desktop max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-start gap-stack-md bg-surface-container dark:bg-surface-container-high border-t border-outline-variant mt-12">
-        <div className="flex flex-col gap-4 max-w-sm">
-          <Link
-            className="text-headline-md font-headline-md font-bold text-primary dark:text-inverse-primary flex items-center gap-2"
-            to="/"
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              water_drop
-            </span>
-            FloodGuard
-          </Link>
-          <p className="font-caption text-caption text-on-surface dark:text-on-surface-variant">
-            © 2026 FloodGuard. All rights reserved. Protecting communities
-            through data-driven safety.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2">
-          <h4 className="font-label-md text-label-md font-bold text-on-surface dark:text-on-surface-variant mb-2">
-            Quick Links
-          </h4>
-          <div className="flex flex-col gap-2">
-            <Link
-              className="text-primary dark:text-inverse-primary font-bold font-body-md text-body-md hover:text-primary dark:hover:text-inverse-primary transition-colors"
-              to="/"
-            >
-              Home
-            </Link>
-            <Link
-              className="text-on-surface-variant dark:text-outline-variant font-body-md text-body-md hover:text-primary dark:hover:text-inverse-primary transition-colors"
-              to="/dashboard"
-            >
-              Flood Alerts
-            </Link>
-            <Link
-              className="text-on-surface-variant dark:text-outline-variant font-body-md text-body-md hover:text-primary dark:hover:text-inverse-primary transition-colors"
-              to="/safety"
-            >
-              Safety Tips
-            </Link>
-            <Link
-              className="text-on-surface-variant dark:text-outline-variant font-body-md text-body-md hover:text-primary dark:hover:text-inverse-primary transition-colors"
-              to="/about"
-            >
-              About
-            </Link>
-            <Link
-              className="text-on-surface-variant dark:text-outline-variant font-body-md text-body-md hover:text-primary dark:hover:text-inverse-primary transition-colors"
-              to="/contact"
-            >
-              Contact
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }
