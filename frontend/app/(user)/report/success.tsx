@@ -1,16 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/colors';
 import { Logo } from '../../../components/Logo';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
 export default function SuccessScreen() {
-  const { referenceNumber } = useLocalSearchParams();
+  const { referenceNumber, disasterType, affectedArea } = useLocalSearchParams();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -50,7 +51,7 @@ export default function SuccessScreen() {
             </View>
             <View style={styles.cardTextContent}>
               <Text style={styles.cardLabel}>DISASTER TYPE</Text>
-              <Text style={styles.cardValue}>Flood</Text>
+              <Text style={[styles.cardValue, {textTransform: 'capitalize'}]}>{disasterType || 'Flood'}</Text>
             </View>
             <View style={styles.statusBadge}>
               <View style={styles.statusDot} />
@@ -64,7 +65,7 @@ export default function SuccessScreen() {
             <Ionicons name="location" size={20} color={Colors.primary} style={{marginRight: 16, marginLeft: 8}} />
             <View style={styles.cardTextContent}>
               <Text style={styles.cardLabel}>LOCATION</Text>
-              <Text style={styles.cardValue}>Biyagama Road, Kelaniya</Text>
+              <Text style={styles.cardValue}>{affectedArea || 'Unknown Location'}</Text>
             </View>
           </View>
           
@@ -72,7 +73,7 @@ export default function SuccessScreen() {
             <Text style={styles.cardLabel}>REFERENCE NUMBER</Text>
             <View style={styles.refRight}>
               <Text style={styles.refNumber}>{referenceNumber || 'N/A'}</Text>
-              <TouchableOpacity style={styles.copyButton}>
+              <TouchableOpacity style={styles.copyButton} onPress={() => { Clipboard.setStringAsync(referenceNumber || 'N/A'); Alert.alert('Copied', 'Reference number copied to clipboard!'); }}>
                 <Ionicons name="copy-outline" size={16} color={Colors.primary} />
               </TouchableOpacity>
             </View>

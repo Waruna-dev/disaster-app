@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import {
   View,
@@ -44,6 +44,21 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+      const loadRememberedEmail = async () => {
+        try {
+          const savedEmail = await AsyncStorage.getItem('rememberedEmail');
+          if (savedEmail) {
+            setEmail(savedEmail);
+            setRememberMe(true);
+          }
+        } catch (error) {
+          console.log('Error loading remembered email:', error);
+        }
+      };
+      loadRememberedEmail();
+    }, []);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {

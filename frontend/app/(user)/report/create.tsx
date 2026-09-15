@@ -48,7 +48,7 @@ export default function CreateReportScreen() {
         if (geocode && geocode.length > 0) {
           const place = geocode[0];
           // Try to get a meaningful area name
-          const areaName = place.city || place.subregion || place.region || place.name;
+          const areaName = [place.name, place.street, place.district || place.city || place.subregion, place.postalCode].filter(Boolean).join(', ');
           if (areaName) {
             setAffectedArea(areaName);
           }
@@ -95,7 +95,7 @@ export default function CreateReportScreen() {
       // Navigate to success screen with params
       router.replace({
         pathname: '/(user)/report/success',
-        params: { referenceNumber }
+        params: { referenceNumber, disasterType, affectedArea: affectedArea.trim() }
       });
 
     } catch (error: any) {

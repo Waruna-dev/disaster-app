@@ -25,7 +25,7 @@ export function PhotoUploadCard({ photoUri, onPhotoSelect, onPhotoRemove }: Phot
               return;
             }
             const result = await ImagePicker.launchCameraAsync({
-              allowsEditing: true,
+              allowsEditing: false,
               aspect: [4, 3],
               quality: 0.8,
             });
@@ -44,7 +44,7 @@ export function PhotoUploadCard({ photoUri, onPhotoSelect, onPhotoRemove }: Phot
             }
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ['images'],
-              allowsEditing: true,
+              allowsEditing: false,
               aspect: [4, 3],
               quality: 0.8,
             });

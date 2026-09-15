@@ -16,6 +16,13 @@ export function DashboardHeader() {
   const [firstName, setFirstName] = useState('User');
   const [initial, setInitial] = useState('U');
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning,';
+    if (hour < 18) return 'Good afternoon,';
+    return 'Good evening,';
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       if (user?.uid) {
@@ -96,7 +103,7 @@ export function DashboardHeader() {
 
         {/* Middle Row: Greeting */}
         <View style={styles.greetingContainer}>
-          <Text style={styles.greetingSub}>Good morning,</Text>
+          <Text style={styles.greetingSub}>{getGreeting()}</Text>
           <Text style={styles.greetingName}>{firstName}</Text>
         </View>
 
