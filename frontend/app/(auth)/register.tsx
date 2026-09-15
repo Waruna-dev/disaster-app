@@ -1,0 +1,408 @@
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  useWindowDimensions,
+  Alert,
+} from "react-native";
+import { registerUser } from '../../services/authService';
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, {
+  Path,
+  Circle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+} from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../../constants/colors";
+import { FormInput } from "../../components/FormInput";
+import { PrimaryButton } from "../../components/PrimaryButton";
+import { Logo } from "../../components/Logo";
+
+export default function RegisterScreen() {
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  // Original SVG size: 402 × 200 for the header
+  const headerHeight = width * (200 / 402);
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!fullName || !email || !password || !confirmPassword) {
+      Alert.alert("Error", "Please fill out all fields.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match.");
+      return;
+    }
+    if (!agreeTerms) {
+      Alert.alert("Error", "You must agree to the Terms and Privacy Policy.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await registerUser(email.trim(), password, fullName);
+      // Fallback routing, index.tsx splash will also catch it if mounted
+      router.replace("/(user)/(tabs)" as any);
+    } catch (error: any) {
+      Alert.alert("Registration Failed", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Correct curved header */}
+          <View style={[styles.topSection, { height: headerHeight }]}>
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 402 200"
+              preserveAspectRatio="none"
+              style={StyleSheet.absoluteFill}
+            >
+              <Defs>
+                <SvgLinearGradient
+                  id="headerGradient"
+                  x1="18"
+                  y1="0"
+                  x2="384"
+                  y2="224"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <Stop offset="0" stopColor={Colors.gradientStart} />
+                  <Stop offset="1" stopColor={Colors.gradientEnd} />
+                </SvgLinearGradient>
+              </Defs>
+
+              {/* Exact green wave from the reference SVG */}
+              <Path
+                d="
+                  M0 0
+                  H402
+                  V169
+                  C323 199 247 194 183 173
+                  C117 151 62 157 0 184
+                  V0
+                  Z
+                "
+                fill="url(#headerGradient)"
+              />
+
+              {/* Left background circle */}
+              <Circle
+                cx="-26"
+                cy="91"
+                r="89"
+                fill={Colors.white}
+                fillOpacity={0.035}
+              />
+
+              {/* Right background ring */}
+              <Circle
+                cx="419"
+                cy="78"
+                r="100"
+                fill="none"
+                stroke={Colors.white}
+                strokeOpacity={0.05}
+                strokeWidth={26}
+              />
+            </Svg>
+
+            <View
+              style={[
+                styles.headerContent,
+                { paddingTop: insets.top + 12 },
+              ]}
+            >
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.back()}
+                activeOpacity={0.75}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={23}
+                  color={Colors.white}
+                />
+              </TouchableOpacity>
+
+              <View style={[styles.headerTextContainer, { flexDirection: 'row', alignItems: 'center' }]}>
+                <Logo width={28} height={40} color={Colors.white} variant="outline" />
+                <View style={{ marginLeft: 16 }}>
+                  <Text style={styles.brandTitle}>FloodGuard</Text>
+
+                  <Text style={styles.brandSubtitle}>
+                    Create your safety account
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Registration form */}
+          <View style={styles.formSection}>
+            <Text style={styles.title}>Create account</Text>
+
+            <Text style={styles.subtitle}>
+              Enter your details to get started.
+            </Text>
+
+            <FormInput
+              label="Full name"
+              placeholder="Enter your full name"
+              iconName="person-outline"
+              value={fullName}
+              onChangeText={setFullName}
+              autoCapitalize="words"
+            />
+
+            <FormInput
+              label="Email address"
+              placeholder="Enter your email"
+              iconName="mail-outline"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            <FormInput
+              label="Password"
+              placeholder="Create a password"
+              iconName="lock-closed-outline"
+              value={password}
+              onChangeText={setPassword}
+              isPassword
+            />
+
+            <FormInput
+              label="Confirm password"
+              placeholder="Re-enter your password"
+              iconName="lock-closed-outline"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              isPassword
+            />
+
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => setAgreeTerms((current) => !current)}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  agreeTerms && styles.checkboxActive,
+                ]}
+              >
+                {agreeTerms && (
+                  <Ionicons
+                    name="checkmark"
+                    size={13}
+                    color={Colors.white}
+                  />
+                )}
+              </View>
+
+              <Text style={styles.checkboxText}>
+                I agree to the{" "}
+                <Text style={styles.checkboxTextBold}>
+                  Terms and Privacy Policy
+                </Text>
+              </Text>
+            </TouchableOpacity>
+
+            <PrimaryButton
+              title="Create account"
+              onPress={handleRegister}
+              loading={loading}
+              style={styles.registerButton}
+            />
+
+            <View style={styles.loginLinkContainer}>
+              <Text style={styles.noAccountText}>
+                Already have an account?{" "}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() =>
+                  router.replace("/(auth)/login" as any)
+                }
+              >
+                <Text style={styles.loginText}>Log in</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+
+  keyboardView: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
+
+  topSection: {
+    width: "100%",
+    position: "relative",
+    overflow: "hidden",
+  },
+
+  headerContent: {
+    position: "absolute",
+    top: 0,
+    left: 24,
+    right: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 10,
+  },
+
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.13)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+
+  headerTextContainer: {
+    justifyContent: "center",
+  },
+
+  brandTitle: {
+    color: Colors.white,
+    fontSize: 21,
+    lineHeight: 24,
+    fontWeight: "700",
+  },
+
+  brandSubtitle: {
+    color: Colors.headerSubtitle,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+
+  formSection: {
+    paddingHorizontal: 28,
+    paddingTop: 9,
+  },
+
+  title: {
+    color: Colors.textDark,
+    fontSize: 27,
+    lineHeight: 34,
+    fontWeight: "700",
+  },
+
+  subtitle: {
+    color: Colors.textLight,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 1,
+    marginBottom: 27,
+  },
+
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 3,
+    marginBottom: 25,
+  },
+
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.inputBorder,
+    backgroundColor: Colors.inputBg,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+
+  checkboxActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+
+  checkboxText: {
+    flex: 1,
+    color: Colors.checkboxText,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+
+  checkboxTextBold: {
+    color: Colors.primary,
+    fontWeight: "700",
+  },
+
+  registerButton: {
+    minHeight: 56,
+    borderRadius: 14,
+    marginBottom: 25,
+  },
+
+  loginLinkContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  noAccountText: {
+    color: Colors.bottomText,
+    fontSize: 14,
+  },
+
+  loginText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+});

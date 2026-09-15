@@ -1,0 +1,250 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } from 'react-native-svg';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from '../context/AuthContext';
+import { Colors } from '../constants/colors';
+import { Logo } from './Logo';
+
+export function DashboardHeader() {
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const [firstName, setFirstName] = useState('User');
+  const [initial, setInitial] = useState('U');
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user?.uid) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.fullName) {
+              const first = data.fullName.split(' ')[0];
+              setFirstName(first);
+              setInitial(first.charAt(0).toUpperCase());
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      }
+    };
+    fetchUserData();
+  }, [user]);
+
+  const headerHeight = 280 + insets.top; // Sufficient space for content
+
+  return (
+    <View style={[styles.container, { height: headerHeight }]}>
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 402 ${220 + insets.top}`}
+        preserveAspectRatio="none"
+        style={StyleSheet.absoluteFill}
+      >
+        <Defs>
+          <SvgLinearGradient id="headerGradient" x1="18" y1="0" x2="384" y2="224" gradientUnits="userSpaceOnUse">
+            <Stop offset="0" stopColor={Colors.gradientStart} />
+            <Stop offset="1" stopColor={Colors.gradientEnd} />
+          </SvgLinearGradient>
+        </Defs>
+        <Path
+          d={`
+            M0 0
+            H402
+            V${169 + insets.top}
+            C323 ${199 + insets.top} 247 ${194 + insets.top} 183 ${173 + insets.top}
+            C117 ${151 + insets.top} 62 ${157 + insets.top} 0 ${184 + insets.top}
+            V0
+            Z
+          `}
+          fill="url(#headerGradient)"
+        />
+        {/* Decorative circles from auth screen */}
+        <Circle cx="419" cy="78" r="100" fill="none" stroke={Colors.white} strokeOpacity={0.05} strokeWidth={26} />
+        <Circle cx="-26" cy="91" r="89" fill={Colors.white} fillOpacity={0.035} />
+      </Svg>
+
+      <View style={[styles.content, { paddingTop: insets.top + 16 }]}>
+        {/* Top Row: Logo & Profile */}
+        <View style={styles.topRow}>
+          <View style={styles.logoContainer}>
+            {/* Custom SVG Logo */}
+            <View style={styles.shieldIcon}>
+              <Logo width={18} height={26} color={Colors.primary} />
+            </View>
+            <Text style={styles.brandTitle}>FloodGuard</Text>
+          </View>
+
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity style={styles.bellButton} activeOpacity={0.7}>
+              <Ionicons name="notifications-outline" size={22} color={Colors.white} />
+              <View style={styles.notificationDot} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.avatarButton} activeOpacity={0.7}>
+              <Text style={styles.avatarText}>{initial}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Middle Row: Greeting */}
+        <View style={styles.greetingContainer}>
+          <Text style={styles.greetingSub}>Good morning,</Text>
+          <Text style={styles.greetingName}>{firstName}</Text>
+        </View>
+
+        {/* Bottom Row: Location Pills */}
+        <View style={styles.locationRow}>
+          <TouchableOpacity style={styles.activePill} activeOpacity={0.7}>
+            <Ionicons name="location" size={16} color={Colors.primary} />
+            <Text style={styles.activePillText}>Kelaniya</Text>
+            <Ionicons name="chevron-down" size={16} color={Colors.primary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.inactivePill} activeOpacity={0.7}>
+            <Ionicons name="locate-outline" size={16} color={Colors.white} />
+            <Text style={styles.inactivePillText}>Malabe</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  content: {
+    paddingHorizontal: 24,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  shieldIcon: {
+    width: 32,
+    height: 32,
+    backgroundColor: Colors.white,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  brandTitle: {
+    color: Colors.white,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bellButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    position: 'relative',
+  },
+  notificationDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.warning,
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    borderWidth: 2,
+    borderColor: '#0A7257', // match the background gradient roughly
+  },
+  avatarButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: Colors.textDark,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  greetingContainer: {
+    marginBottom: 20,
+  },
+  greetingSub: {
+    color: Colors.headerSubtitle,
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  greetingName: {
+    color: Colors.white,
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activePillText: {
+    color: Colors.textDark,
+    fontSize: 14,
+    fontWeight: '700',
+    marginHorizontal: 8,
+  },
+  inactivePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  inactivePillText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+});
