@@ -20,7 +20,7 @@ export default function ProfileScreen() {
   const [initial, setInitial] = useState('U');
   const [occupation, setOccupation] = useState('No occupation set');
   const [homeArea, setHomeArea] = useState('Not set');
-  const [uniArea, setUniArea] = useState('Not set');
+  const [workArea, setWorkArea] = useState('Not set');
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -35,7 +35,7 @@ export default function ProfileScreen() {
             }
             if (data.occupation) setOccupation(data.occupation);
             if (data.homeArea) setHomeArea(data.homeArea);
-            if (data.uniArea) setUniArea(data.uniArea);
+            if (data.workArea) setWorkArea(data.workArea);
           }
         } catch (error) {
           console.log("Error fetching user data:", error);
@@ -97,7 +97,7 @@ export default function ProfileScreen() {
           <View style={[styles.headerContent, { paddingTop: insets.top + 16 }]}>
             <View style={styles.headerTopRow}>
               <Text style={styles.headerTitle}>Profile</Text>
-              <TouchableOpacity style={styles.editButton} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.editButton} activeOpacity={0.8} onPress={() => router.push('/(user)/edit-profile')}>
                 <Feather name="edit-2" size={16} color={Colors.white} style={styles.editIcon} />
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
@@ -134,7 +134,7 @@ export default function ProfileScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>Saved areas</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(user)/edit-profile')}>
                 <Text style={styles.manageText}>Manage</Text>
               </TouchableOpacity>
             </View>
@@ -156,8 +156,8 @@ export default function ProfileScreen() {
                 <Ionicons name="school-outline" size={22} color="#4F46E5" />
               </View>
               <View style={styles.rowTextContent}>
-                <Text style={styles.rowLabel}>University area</Text>
-                <Text style={styles.rowValue}>{uniArea}</Text>
+                <Text style={styles.rowLabel}>Work/School area</Text>
+                <Text style={styles.rowValue}>{workArea}</Text>
               </View>
             </View>
           </View>

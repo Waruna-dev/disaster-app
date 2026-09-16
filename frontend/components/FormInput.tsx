@@ -26,6 +26,7 @@ export const FormInput = ({ label, iconName, isPassword, style, ...props }: Form
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          autoCorrect={false}
           {...props}
         />
         {isPassword && (

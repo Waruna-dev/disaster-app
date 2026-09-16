@@ -1,16 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../constants/colors';
 
 interface PhotoUploadCardProps {
-  photoUri?: string;
+  photoUris?: string[];
   onPhotoSelect: (uri: string) => void;
-  onPhotoRemove: () => void;
+  onPhotoRemove: (index: number) => void;
 }
 
-export function PhotoUploadCard({ photoUri, onPhotoSelect, onPhotoRemove }: PhotoUploadCardProps) {
+export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }: PhotoUploadCardProps) {
   const handlePress = async () => {
     Alert.alert(
       'Upload Photo',
@@ -63,32 +63,52 @@ export function PhotoUploadCard({ photoUri, onPhotoSelect, onPhotoRemove }: Phot
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Add a photo <Text style={styles.optional}>(optional)</Text></Text>
+      <View style={styles.header}>
+        <Text style={styles.label}>Add photo evidence <Text style={styles.optional}>({photoUris.length}/3)</Text></Text>
+      </View>
       
-      {photoUri ? (
-        <View style={styles.previewContainer}>
-          <Image source={{ uri: photoUri }} style={styles.previewImage} />
-          <TouchableOpacity style={styles.removeButton} onPress={onPhotoRemove} activeOpacity={0.8}>
-            <Ionicons name="close-circle" size={28} color={Colors.white} />
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {photoUris.length < 3 && (
+          <TouchableOpacity 
+            style={photoUris.length > 0 ? styles.cardSmall : styles.card} 
+            activeOpacity={0.7} 
+            onPress={handlePress}
+          >
+            <Ionicons name="camera-outline" size={28} color={Colors.primary} style={photoUris.length === 0 ? styles.icon : undefined} />
+            {photoUris.length === 0 && (
+              <View>
+                <Text style={styles.title}>Choose photo</Text>
+                <Text style={styles.subtitle}>Max 3 photos, up to 5 MB each</Text>
+              </View>
+            )}
           </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={handlePress}>
-          <Ionicons name="camera-outline" size={28} color={Colors.primary} style={styles.icon} />
-          <View>
-            <Text style={styles.title}>Choose photo</Text>
-            <Text style={styles.subtitle}>JPG or PNG, maximum 5 MB</Text>
-          </View>
-        </TouchableOpacity>
-      )}
+        )}
+
+        {photoUris.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
+            {photoUris.map((uri, index) => (
+              <View key={index} style={styles.previewContainer}>
+                <Image source={{ uri }} style={styles.previewImage} />
+                <TouchableOpacity style={styles.removeButton} onPress={() => onPhotoRemove(index)} activeOpacity={0.8}>
+                  <Ionicons name="close-circle" size={24} color={Colors.white} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 24,
+    /* no padding */
     marginBottom: 32,
+  },
+  optional: {
+    color: Colors.textMuted,
+    fontWeight: '400',
   },
   label: {
     fontSize: 14,
@@ -100,6 +120,10 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontWeight: '400',
   },
+  scrollContainer: {
+    flexDirection: 'row',
+    flex: 1,
+  },
   card: {
     borderWidth: 1.5,
     borderColor: '#C3E0D8',
@@ -109,9 +133,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FAFCFC',
+    marginRight: 12,
+    width: '100%',
+  },
+  cardSmall: {
+    borderWidth: 1.5,
+    borderColor: '#C3E0D8',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAFCFC',
+    marginRight: 12,
   },
   icon: {
-    marginRight: 16,
+    marginRight: 12,
   },
   title: {
     fontSize: 14,
@@ -124,11 +162,12 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   previewContainer: {
-    width: '100%',
-    height: 180,
+    width: 140,
+    height: 100,
     borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
+    marginRight: 12,
   },
   previewImage: {
     width: '100%',
@@ -137,9 +176,9 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 14,
+    borderRadius: 12,
   }
 });

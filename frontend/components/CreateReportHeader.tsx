@@ -8,14 +8,15 @@ import { Colors } from '../constants/colors';
 
 export function CreateReportHeader() {
   const insets = useSafeAreaInsets();
-  const headerHeight = 160 + insets.top; 
+  const safeTop = Math.max(insets.top, 40);
+  const headerHeight = 160 + safeTop; 
 
   return (
     <View style={[styles.container, { height: headerHeight }]}>
       <Svg
         width="100%"
         height="100%"
-        viewBox={`0 0 402 ${180 + insets.top}`}
+        viewBox={`0 0 402 ${180 + safeTop}`}
         preserveAspectRatio="none"
         style={StyleSheet.absoluteFill}
       >
@@ -29,9 +30,9 @@ export function CreateReportHeader() {
           d={`
             M0 0
             H402
-            V${99 + insets.top}
-            C323 ${129 + insets.top} 247 ${124 + insets.top} 183 ${103 + insets.top}
-            C117 ${81 + insets.top} 62 ${87 + insets.top} 0 ${114 + insets.top}
+            V${99 + safeTop}
+            C323 ${129 + safeTop} 247 ${124 + safeTop} 183 ${103 + safeTop}
+            C117 ${81 + safeTop} 62 ${87 + safeTop} 0 ${114 + safeTop}
             V0
             Z
           `}
@@ -47,7 +48,7 @@ export function CreateReportHeader() {
         />
       </Svg>
 
-      <View style={[styles.content, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.content, { paddingTop: safeTop + 10 }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity 
             style={styles.backButton} 
@@ -68,9 +69,8 @@ export function CreateReportHeader() {
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
     position: 'relative',
-    overflow: 'hidden',
+    width: '100%',
   },
   content: {
     paddingHorizontal: 24,

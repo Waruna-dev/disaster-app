@@ -2,25 +2,25 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 
-export function StatsCard() {
+export function StatsCard({ total, pending, approved }: { total: number; pending: number; approved: number }) {
   return (
     <View style={styles.card}>
       <View style={styles.column}>
-        <Text style={styles.valueTotal}>3</Text>
+        <Text style={styles.valueTotal}>{total}</Text>
         <Text style={styles.label}>Total</Text>
       </View>
       
       <View style={styles.divider} />
       
       <View style={styles.column}>
-        <Text style={styles.valuePending}>1</Text>
+        <Text style={styles.valuePending}>{pending}</Text>
         <Text style={styles.label}>Pending</Text>
       </View>
       
       <View style={styles.divider} />
       
       <View style={styles.column}>
-        <Text style={styles.valueApproved}>1</Text>
+        <Text style={styles.valueApproved}>{approved}</Text>
         <Text style={styles.label}>Approved</Text>
       </View>
     </View>

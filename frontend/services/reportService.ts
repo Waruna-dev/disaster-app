@@ -1,5 +1,5 @@
 import { db } from '../config/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import * as FileSystem from 'expo-file-system/legacy';
 
 interface ReportData {
@@ -8,6 +8,7 @@ interface ReportData {
   affectedArea: string;
   description: string;
   photoUrl?: string;
+  photoUrls?: string[];
   status?: 'Pending' | 'Verified' | 'Rejected';
 }
 
@@ -64,4 +65,51 @@ export const createReport = async (reportData: ReportData): Promise<string> => {
   });
 
   return referenceNumber;
+};
+
+/**
+ * Fetches all reports submitted by a specific user.
+ */
+export const fetchUserReports = async (userId: string) => {
+  const q = query(
+    collection(db, 'reports'),
+    where('userId', '==', userId)
+  );
+
+  const querySnapshot = await getDocs(q);
+  const docs = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+  
+  // Sort client-side to avoid requiring a composite index in Firestore
+  return docs.sort((a, b) => {
+    const dateA = (a as any).createdAt?.toDate ? (a as any).createdAt.toDate().getTime() : 0;
+    const dateB = (b as any).createdAt?.toDate ? (b as any).createdAt.toDate().getTime() : 0;
+    return dateB - dateA;
+  });
+};
+
+
+/**
+ * Fetches a single report by its Document ID.
+ */
+export const fetchReportById = async (id: string) => {
+  const reportDoc = await getDoc(doc(db, 'reports', id));
+  if (reportDoc.exists()) {
+    return { id: reportDoc.id, ...reportDoc.data() };
+  }
+  return null;
+};
+
+/**
+ * Deletes a report by its Document ID.
+ */
+export const deleteReport = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, 'reports', id));
+  } catch (error) {
+    console.error("Error deleting report: ", error);
+    throw error;
+  }
 };

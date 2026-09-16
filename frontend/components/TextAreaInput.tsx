@@ -3,8 +3,8 @@ import { View, TextInput, Text, StyleSheet, TextInputProps } from 'react-native'
 import { Colors } from '../constants/colors';
 
 interface TextAreaInputProps extends TextInputProps {
-  label: string;
-  maxLength: number;
+  label?: string;
+  maxLength?: number;
 }
 
 export const TextAreaInput = ({ label, maxLength, style, value, onChangeText, ...props }: TextAreaInputProps) => {
@@ -25,7 +25,7 @@ export const TextAreaInput = ({ label, maxLength, style, value, onChangeText, ..
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label} <Text style={styles.asterisk}>*</Text></Text>
+      {label ? <Text style={styles.label}>{label} <Text style={styles.asterisk}>*</Text></Text> : null}
       
       <View style={[styles.inputContainer, isFocused && styles.inputFocused]}>
         <TextInput
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 24,
     width: '100%',
-    paddingHorizontal: 24,
+    /* paddingHorizontal: 24, */
   },
   label: {
     fontSize: 14,

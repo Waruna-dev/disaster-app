@@ -73,7 +73,7 @@ export default function SuccessScreen() {
             <Text style={styles.cardLabel}>REFERENCE NUMBER</Text>
             <View style={styles.refRight}>
               <Text style={styles.refNumber}>{referenceNumber || 'N/A'}</Text>
-              <TouchableOpacity style={styles.copyButton} onPress={() => { Clipboard.setStringAsync(referenceNumber || 'N/A'); Alert.alert('Copied', 'Reference number copied to clipboard!'); }}>
+              <TouchableOpacity style={styles.copyButton} onPress={() => { Clipboard.setStringAsync(String(referenceNumber || 'N/A')); Alert.alert('Copied', 'Reference number copied to clipboard!'); }}>
                 <Ionicons name="copy-outline" size={16} color={Colors.primary} />
               </TouchableOpacity>
             </View>

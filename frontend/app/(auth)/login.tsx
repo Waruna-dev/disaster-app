@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   View,
@@ -69,6 +70,11 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await loginUser(email.trim(), password);
+      if (rememberMe) {
+        await AsyncStorage.setItem('rememberedEmail', email.trim());
+      } else {
+        await AsyncStorage.removeItem('rememberedEmail');
+      }
       // Fallback routing, index.tsx splash will also catch it if mounted
       router.replace("/(user)/(tabs)" as any);
     } catch (error: any) {

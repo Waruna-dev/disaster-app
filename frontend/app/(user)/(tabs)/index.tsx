@@ -46,7 +46,7 @@ export default function DashboardScreen() {
                 subtitle="Track report status" 
                 icon="document-text-outline" 
                 variant="outline" 
-                onPress={() => {}} 
+                onPress={() => router.push('/(user)/(tabs)/reports')} 
               />
             </View>
           </View>

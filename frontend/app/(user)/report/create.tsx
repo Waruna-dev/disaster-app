@@ -20,7 +20,7 @@ export default function CreateReportScreen() {
   const [disasterType, setDisasterType] = useState<'flood' | 'landslide'>('flood');
   const [affectedArea, setAffectedArea] = useState('');
   const [description, setDescription] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | undefined>();
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(true);
 
@@ -79,9 +79,10 @@ export default function CreateReportScreen() {
     try {
       setIsLoading(true);
 
-      let photoUrl: string | undefined = undefined;
-      if (photoUri) {
-        photoUrl = await uploadReportPhoto(photoUri);
+      let uploadedUrls: string[] = [];
+      if (photoUris.length > 0) {
+        const uploadPromises = photoUris.map(uri => uploadReportPhoto(uri));
+        uploadedUrls = await Promise.all(uploadPromises);
       }
 
       const referenceNumber = await createReport({
@@ -89,7 +90,7 @@ export default function CreateReportScreen() {
         disasterType,
         affectedArea: affectedArea.trim(),
         description: description.trim(),
-        photoUrl
+        photoUrls: uploadedUrls
       });
 
       // Navigate to success screen with params
@@ -103,6 +104,18 @@ export default function CreateReportScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePhotoSelect = (uri: string) => {
+    if (photoUris.length < 3) {
+      setPhotoUris([...photoUris, uri]);
+    }
+  };
+
+  const handlePhotoRemove = (index: number) => {
+    const newUris = [...photoUris];
+    newUris.splice(index, 1);
+    setPhotoUris(newUris);
   };
 
   return (
@@ -142,19 +155,23 @@ export default function CreateReportScreen() {
             )}
           </View>
 
-          <TextAreaInput 
-            label="Short description"
-            placeholder="Describe what is happening..."
-            maxLength={200}
-            value={description}
-            onChangeText={setDescription}
-          />
+          <View style={styles.inputWrapper}>
+            <TextAreaInput 
+              label="Short description"
+              placeholder="Describe what is happening..."
+              maxLength={200}
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
 
-          <PhotoUploadCard 
-            photoUri={photoUri}
-            onPhotoSelect={setPhotoUri}
-            onPhotoRemove={() => setPhotoUri(undefined)}
-          />
+          <View style={styles.inputWrapper}>
+            <PhotoUploadCard 
+              photoUris={photoUris}
+              onPhotoSelect={handlePhotoSelect}
+              onPhotoRemove={handlePhotoRemove}
+            />
+          </View>
 
         </ScrollView>
         
@@ -197,7 +214,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 32,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: '#F0F5F4',
   },

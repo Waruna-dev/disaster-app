@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 
+import { TouchableOpacity } from 'react-native';
+
 interface ReportCardProps {
   type: 'flood' | 'landslide';
   status: 'pending' | 'approved' | 'rejected';
@@ -10,9 +12,10 @@ interface ReportCardProps {
   location: string;
   date: string;
   rejectReason?: string;
+  onPress?: () => void;
 }
 
-export function ReportCard({ type, status, id, location, date, rejectReason }: ReportCardProps) {
+export function ReportCard({ type, status, id, location, date, rejectReason, onPress }: ReportCardProps) {
   const getStatusConfig = () => {
     switch (status) {
       case 'pending': return { bg: '#FEF5E7', text: '#D68910', label: 'PENDING' };
@@ -34,8 +37,9 @@ export function ReportCard({ type, status, id, location, date, rejectReason }: R
   
   const title = type === 'flood' ? 'Flood report' : 'Landslide report';
 
+  const CardContainer = onPress ? TouchableOpacity : View;
   return (
-    <View style={styles.card}>
+    <CardContainer style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
         <View style={styles.leftGroup}>
           <View style={[styles.iconWrapper, { backgroundColor: iconConfig.bg }]}>
@@ -64,7 +68,7 @@ export function ReportCard({ type, status, id, location, date, rejectReason }: R
           <Text style={styles.reasonText}>Reason: {rejectReason}</Text>
         </View>
       )}
-    </View>
+    </CardContainer>
   );
 }
 
@@ -125,6 +129,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   location: {
+    flex: 1,
+    marginRight: 12,
     fontSize: 13,
     color: Colors.textLight,
   },

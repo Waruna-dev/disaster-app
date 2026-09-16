@@ -4,17 +4,18 @@ import { Colors } from '../constants/colors';
 
 const filters = ['All', 'Pending', 'Approved', 'Rejected'];
 
-export function FilterPills() {
+export function FilterPills({ activeFilter, onSelectFilter }: { activeFilter: string; onSelectFilter: (filter: string) => void; }) {
   return (
     <View style={styles.container}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {filters.map((filter, index) => {
-          const isActive = index === 0; // 'All' is active for now
+          const isActive = filter === activeFilter;
           return (
             <TouchableOpacity 
               key={filter} 
               style={[styles.pill, isActive ? styles.pillActive : styles.pillInactive]}
               activeOpacity={0.7}
+              onPress={() => onSelectFilter(filter)}
             >
               <Text style={[styles.pillText, isActive ? styles.textActive : styles.textInactive]}>
                 {filter}
