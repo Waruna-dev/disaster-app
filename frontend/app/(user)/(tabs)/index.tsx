@@ -42,14 +42,21 @@ export default function DashboardScreen() {
             </View>
             <View style={styles.actionColumn}>
               <QuickActionCard 
-                title="My reports" 
-                subtitle="Track report status" 
-                icon="document-text-outline" 
-                variant="outline" 
-                onPress={() => {}} 
+                title="My reports"
+                subtitle="Track report status"
+                icon="document-text-outline"
+                variant="outline"
+                onPress={() => router.push('/(user)/(tabs)/reports')}
               />
             </View>
           </View>
+        </View>
+
+        {/* TEMP dev shortcut — remove once admin sign-in/redirect is wired up */}
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.devButton} activeOpacity={0.7} onPress={() => router.push('/(DMC)/incidents' as any)}>
+            <Text style={styles.devButtonText}>Dev: View Submitted Reports (Admin)</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -127,5 +134,19 @@ const styles = StyleSheet.create({
   },
   actionColumn: {
     flex: 1,
+  },
+  devButton: {
+    borderWidth: 1.5,
+    borderColor: '#C3E0D8',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#FAFCFC',
+  },
+  devButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primary,
   },
 });

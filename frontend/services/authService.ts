@@ -13,7 +13,7 @@ export const registerUser = async (email: string, password: string, fullName: st
   await saveUserProfile(userCredential.user.uid, {
     fullName,
     email,
-    role: 'user', // Available roles: 'user', 'admin'
+    role: 'admin', // TEMP: defaulted to 'admin' for testing the admin screens — flip back to 'user' before shipping. Available roles: 'user', 'admin'
     createdAt: new Date().toISOString()
   });
   return userCredential;
