@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   useWindowDimensions,
   Alert,
+  ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { loginUser } from '../../services/authService';
 
 import { router } from "expo-router";
@@ -27,6 +28,7 @@ import Svg, {
 } from "react-native-svg";
 
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from 'react-i18next';
 
 import { Colors } from "../../constants/colors";
 import { FormInput } from "../../components/FormInput";
@@ -40,20 +42,48 @@ export default function LoginScreen() {
   const headerHeight = 314 * scale;
   const cardOverlap = 83 * scale;
 
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+      const loadRememberedEmail = async () => {
+        try {
+          const savedEmail = await AsyncStorage.getItem('rememberedEmail');
+          if (savedEmail) {
+            setEmail(savedEmail);
+            setRememberMe(true);
+          }
+        } catch (error) {
+          console.log('Error loading remembered email:', error);
+        }
+      };
+      loadRememberedEmail();
+    }, []);
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter both email and password.");
+      Alert.alert(t('register.error') || "Error", "Please enter both email and password.");
+      return;
+    }
+
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert(t('register.error') || "Error", t('register.invalidEmail') || "Invalid email address format.");
       return;
     }
 
     try {
       setLoading(true);
       await loginUser(email.trim(), password);
+      if (rememberMe) {
+        await AsyncStorage.setItem('rememberedEmail', email.trim());
+      } else {
+        await AsyncStorage.removeItem('rememberedEmail');
+      }
       // Fallback routing, index.tsx splash will also catch it if mounted
       router.replace("/(user)/(tabs)" as any);
     } catch (error: any) {
@@ -67,14 +97,13 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.keyboardView}
-      >
-        <ScrollView
+      <View style={styles.keyboardView}>
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          extraScrollHeight={20}
         >
           {/* Exact login header */}
           <View style={[styles.topSection, { height: headerHeight }]}>
@@ -185,25 +214,26 @@ export default function LoginScreen() {
               },
             ]}
           >
-            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.title}>{t('login.welcomeBack')}</Text>
 
             <Text style={styles.subtitle}>
-              Log in to view local safety updates.
+              {t('login.signInToContinue')}
             </Text>
 
             <FormInput
-              label="Email address"
-              placeholder="Enter your email"
+              label={t('login.email')}
+              placeholder={t('login.emailPlaceholder')}
               iconName="mail-outline"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
             />
 
             <FormInput
-              label="Password"
-              placeholder="Enter your password"
+              label={t('login.password')}
+              placeholder={t('login.passwordPlaceholder')}
               iconName="lock-closed-outline"
               value={password}
               onChangeText={setPassword}
@@ -234,7 +264,7 @@ export default function LoginScreen() {
                 </View>
 
                 <Text style={styles.checkboxText}>
-                  Remember me
+                  {t('login.rememberMe')}
                 </Text>
               </TouchableOpacity>
 
@@ -245,13 +275,13 @@ export default function LoginScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.forgotPasswordText}>
-                  Forgot password?
+                  {t('login.forgotPassword')}
                 </Text>
               </TouchableOpacity>
             </View>
 
             <PrimaryButton
-              title="Log in"
+              title={t('login.loginButton')}
               onPress={handleLogin}
               loading={loading}
               style={styles.loginButton}
@@ -259,7 +289,7 @@ export default function LoginScreen() {
 
             <View style={styles.registerLinkContainer}>
               <Text style={styles.noAccountText}>
-                Don’t have an account?{" "}
+                {t('login.dontHaveAccount')}{" "}
               </Text>
 
               <TouchableOpacity
@@ -269,13 +299,13 @@ export default function LoginScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.registerText}>
-                  Register
+                  {t('login.register')}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
+      </View>
     </View>
   );
 }
@@ -292,7 +322,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: 150,
   },
 
   topSection: {

@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Text, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Platform, Text, Alert, ActivityIndicator, Animated } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
 import { Colors } from '../../../constants/colors';
-import { CreateReportHeader } from '../../../components/CreateReportHeader';
+import { CreateReportHeader, CreateReportStickyBar } from '../../../components/CreateReportHeader';
 import { SafetyBanner } from '../../../components/SafetyBanner';
 import { DisasterSelector } from '../../../components/DisasterSelector';
 import { FormInput } from '../../../components/FormInput';
@@ -12,15 +15,18 @@ import { useFocusEffect, router } from 'expo-router';
 import * as Location from 'expo-location';
 import { useAuth } from '../../../context/AuthContext';
 import { createReport, uploadReportPhoto } from '../../../services/reportService';
+import { useTranslation } from 'react-i18next';
 
 export default function CreateReportScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
-  const scrollRef = React.useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const [disasterType, setDisasterType] = useState<'flood' | 'landslide'>('flood');
   const [affectedArea, setAffectedArea] = useState('');
   const [description, setDescription] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | undefined>();
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(true);
@@ -50,7 +56,7 @@ export default function CreateReportScreen() {
         if (geocode && geocode.length > 0) {
           const place = geocode[0];
           // Try to get a meaningful area name
-          const areaName = place.city || place.subregion || place.region || place.name;
+          const areaName = [place.name, place.street, place.district || place.city || place.subregion, place.postalCode].filter(Boolean).join(', ');
           if (areaName) {
             setAffectedArea(areaName);
           }
@@ -65,25 +71,26 @@ export default function CreateReportScreen() {
 
   const handleSubmit = async () => {
     if (!affectedArea.trim()) {
-      Alert.alert('Required Field', 'Please provide the affected area.');
+      Alert.alert(t('reportCreate.requiredField'), t('reportCreate.provideArea'));
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Required Field', 'Please enter a short description.');
+      Alert.alert(t('reportCreate.requiredField'), t('reportCreate.enterDescription'));
       return;
     }
 
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to submit a report.');
+      Alert.alert('Error', t('reportCreate.errorLoggedIn'));
       return;
     }
 
     try {
       setIsLoading(true);
 
-      let photoUrl: string | undefined = undefined;
-      if (photoUri) {
-        photoUrl = await uploadReportPhoto(photoUri);
+      let uploadedUrls: string[] = [];
+      if (photoUris.length > 0) {
+        const uploadPromises = photoUris.map(uri => uploadReportPhoto(uri));
+        uploadedUrls = await Promise.all(uploadPromises);
       }
 
       const referenceNumber = await createReport({
@@ -92,35 +99,48 @@ export default function CreateReportScreen() {
         affectedArea: affectedArea.trim(),
         location: coords,
         description: description.trim(),
-        photoUrl
+        photoUrls: uploadedUrls
       });
 
       // Navigate to success screen with params
       router.replace({
         pathname: '/(user)/report/success',
-        params: { referenceNumber }
+        params: { referenceNumber, disasterType, affectedArea: affectedArea.trim() }
       });
 
     } catch (error: any) {
-      Alert.alert('Submission Failed', error.message || 'An error occurred while submitting.');
+      Alert.alert(t('reportCreate.submissionFailed'), error.message || 'An error occurred while submitting.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handlePhotoSelect = (uri: string) => {
+    if (photoUris.length < 3) {
+      setPhotoUris([...photoUris, uri]);
+    }
+  };
+
+  const handlePhotoRemove = (index: number) => {
+    const newUris = [...photoUris];
+    newUris.splice(index, 1);
+    setPhotoUris(newUris);
+  };
+
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}
-      >
-        <ScrollView 
-          ref={scrollRef}
-          contentContainerStyle={styles.scrollContent}
+      <CreateReportStickyBar scrollY={scrollY} />
+      <View style={styles.keyboardView}>
+        <AnimatedKeyboardAwareScrollView 
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          extraScrollHeight={120}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+          scrollEventThrottle={16}
         >
-          <CreateReportHeader />
+          <CreateReportHeader scrollY={scrollY} />
           <SafetyBanner />
 
           <DisasterSelector 
@@ -129,46 +149,50 @@ export default function CreateReportScreen() {
           />
 
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Affected area <Text style={styles.asterisk}>*</Text></Text>
+            <Text style={styles.inputLabel}>{t('reportCreate.affectedAreaLabel')} <Text style={styles.asterisk}>*</Text></Text>
             {isFetchingLocation ? (
               <View style={styles.loadingArea}>
                 <ActivityIndicator size="small" color={Colors.primary} />
-                <Text style={styles.loadingText}>Detecting location...</Text>
+                <Text style={styles.loadingText}>{t('reportCreate.detectingLocation')}</Text>
               </View>
             ) : (
               <FormInput 
                 iconName="location"
                 value={affectedArea}
                 onChangeText={setAffectedArea}
-                placeholder="Enter affected area"
+                placeholder={t('reportCreate.enterAffectedArea')}
               />
             )}
           </View>
 
-          <TextAreaInput 
-            label="Short description"
-            placeholder="Describe what is happening..."
-            maxLength={200}
-            value={description}
-            onChangeText={setDescription}
-          />
+          <View style={styles.inputWrapper}>
+            <TextAreaInput 
+              label={t('reportCreate.shortDescription')}
+              placeholder={t('reportCreate.describeHappening')}
+              maxLength={200}
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
 
-          <PhotoUploadCard 
-            photoUri={photoUri}
-            onPhotoSelect={setPhotoUri}
-            onPhotoRemove={() => setPhotoUri(undefined)}
-          />
+          <View style={styles.inputWrapper}>
+            <PhotoUploadCard 
+              photoUris={photoUris}
+              onPhotoSelect={handlePhotoSelect}
+              onPhotoRemove={handlePhotoRemove}
+            />
+          </View>
 
-        </ScrollView>
+        </AnimatedKeyboardAwareScrollView>
         
         <View style={styles.footer}>
           <PrimaryButton 
-            title={isLoading ? "Submitting..." : "Submit report"} 
+            title={isLoading ? t('reportCreate.submitting') : t('reportCreate.submitReport')} 
             onPress={handleSubmit} 
             disabled={isLoading || isFetchingLocation}
           />
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
@@ -200,7 +224,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 32,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: '#F0F5F4',
   },

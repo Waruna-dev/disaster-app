@@ -1,21 +1,61 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { Colors } from '../constants/colors';
 
-export function CreateReportHeader() {
+export function CreateReportStickyBar({ scrollY }: { scrollY: Animated.Value }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const headerHeight = 160 + insets.top; 
+  const safeTop = Math.max(insets.top, 40);
+  
+  const headerBgOpacity = scrollY.interpolate({
+    inputRange: [0, 80, 120],
+    outputRange: [0, 0.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <View style={styles.stickyBar}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
+      <View style={[styles.stickyBarContent, { paddingTop: safeTop + 10 }]}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          activeOpacity={0.8}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="chevron-back" size={24} color={Colors.white} />
+        </TouchableOpacity>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{t('reportCreate.title')}</Text>
+          <Text style={styles.subtitle}>{t('reportCreate.subtitle')}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export function CreateReportHeader({ scrollY }: { scrollY: Animated.Value }) {
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, 40);
+  const headerHeight = 160 + safeTop; 
+
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [-100, 0, 200],
+    outputRange: [-50, 0, 100],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={[styles.container, { height: headerHeight }]}>
-      <Svg
+      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ translateY: headerTranslateY }] }]}>
+        <Svg
         width="100%"
         height="100%"
-        viewBox={`0 0 402 ${180 + insets.top}`}
+        viewBox={`0 0 402 ${180 + safeTop}`}
         preserveAspectRatio="none"
         style={StyleSheet.absoluteFill}
       >
@@ -29,9 +69,9 @@ export function CreateReportHeader() {
           d={`
             M0 0
             H402
-            V${99 + insets.top}
-            C323 ${129 + insets.top} 247 ${124 + insets.top} 183 ${103 + insets.top}
-            C117 ${81 + insets.top} 62 ${87 + insets.top} 0 ${114 + insets.top}
+            V${99 + safeTop}
+            C323 ${129 + safeTop} 247 ${124 + safeTop} 183 ${103 + safeTop}
+            C117 ${81 + safeTop} 62 ${87 + safeTop} 0 ${114 + safeTop}
             V0
             Z
           `}
@@ -45,22 +85,11 @@ export function CreateReportHeader() {
           strokeWidth="30"
           strokeOpacity={0.05}
         />
-      </Svg>
+        </Svg>
+      </Animated.View>
 
-      <View style={[styles.content, { paddingTop: insets.top + 10 }]}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            activeOpacity={0.8}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="chevron-back" size={24} color={Colors.white} />
-          </TouchableOpacity>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Report incident</Text>
-            <Text style={styles.subtitle}>Share only what you can safely observe</Text>
-          </View>
-        </View>
+      <View style={[styles.content, { paddingTop: safeTop + 10 + 60 }]}>
+        {/* Content */}
       </View>
     </View>
   );
@@ -68,9 +97,21 @@ export function CreateReportHeader() {
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
     position: 'relative',
-    overflow: 'hidden',
+    width: '100%',
+  },
+  stickyBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  stickyBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
   },
   content: {
     paddingHorizontal: 24,
@@ -80,10 +121,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+
   backButton: {
     width: 44,
     height: 44,

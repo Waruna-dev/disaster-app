@@ -1,16 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/colors';
 import { Logo } from '../../../components/Logo';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 export default function SuccessScreen() {
-  const { referenceNumber } = useLocalSearchParams();
+  const { t } = useTranslation();
+  const { referenceNumber, disasterType, affectedArea } = useLocalSearchParams();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,8 +41,8 @@ export default function SuccessScreen() {
               <Ionicons name="checkmark" size={60} color={Colors.white} />
             </View>
           </View>
-          <Text style={styles.bannerTitle}>Report submitted!</Text>
-          <Text style={styles.bannerSubtitle}>Thank you for helping keep the community safe.</Text>
+          <Text style={styles.bannerTitle}>{t('reportSuccess.reportSubmitted')}</Text>
+          <Text style={styles.bannerSubtitle}>{t('reportSuccess.thankYou')}</Text>
         </View>
 
         {/* Details Card */}
@@ -49,30 +52,29 @@ export default function SuccessScreen() {
               <Ionicons name="water" size={24} color={Colors.primary} />
             </View>
             <View style={styles.cardTextContent}>
-              <Text style={styles.cardLabel}>DISASTER TYPE</Text>
-              <Text style={styles.cardValue}>Flood</Text>
-            </View>
-            <View style={styles.statusBadge}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>PENDING</Text>
+              <Text style={styles.cardLabel}>{t('reportSuccess.disasterType')}</Text>
+              <Text style={styles.cardValue}>
+                {String(disasterType).toLowerCase() === 'flood' ? t('reportCreate.flood') : t('reportCreate.landslide')}
+              </Text>
             </View>
           </View>
-          
+
           <View style={styles.divider} />
-          
-          <View style={[styles.cardRow, { marginBottom: 16 }]}>
-            <Ionicons name="location" size={20} color={Colors.primary} style={{marginRight: 16, marginLeft: 8}} />
+
+          <View style={styles.cardRow}>
             <View style={styles.cardTextContent}>
-              <Text style={styles.cardLabel}>LOCATION</Text>
-              <Text style={styles.cardValue}>Biyagama Road, Kelaniya</Text>
+              <Text style={styles.cardLabel}>{t('reportSuccess.affectedArea')}</Text>
+              <Text style={styles.cardValue}>{affectedArea}</Text>
             </View>
           </View>
-          
+
+          <View style={styles.divider} />
+
           <View style={styles.refRow}>
-            <Text style={styles.cardLabel}>REFERENCE NUMBER</Text>
+            <Text style={styles.cardLabel}>{t('reportSuccess.referenceNumber')}</Text>
             <View style={styles.refRight}>
               <Text style={styles.refNumber}>{referenceNumber || 'N/A'}</Text>
-              <TouchableOpacity style={styles.copyButton}>
+              <TouchableOpacity style={styles.copyButton} onPress={() => { Clipboard.setStringAsync(String(referenceNumber || 'N/A')); Alert.alert(t('reportSuccess.copied'), t('reportSuccess.refCopied')); }}>
                 <Ionicons name="copy-outline" size={16} color={Colors.primary} />
               </TouchableOpacity>
             </View>
@@ -80,7 +82,7 @@ export default function SuccessScreen() {
         </View>
 
         {/* What happens next */}
-        <Text style={styles.sectionTitle}>What happens next?</Text>
+        <Text style={styles.sectionTitle}>{t('reportSuccess.whatHappensNext')}</Text>
         
         <View style={styles.stepperCard}>
           <View style={styles.stepperRow}>
@@ -89,7 +91,7 @@ export default function SuccessScreen() {
               <View style={[styles.stepCircle, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}>
                 <Ionicons name="checkmark" size={16} color={Colors.white} />
               </View>
-              <Text style={styles.stepTextActive}>Submitted</Text>
+              <Text style={styles.stepTextActive}>{t('reportSuccess.submitted')}</Text>
             </View>
             
             {/* Line 1 */}
@@ -102,7 +104,7 @@ export default function SuccessScreen() {
               <View style={[styles.stepCircle, { borderColor: '#E69C24', backgroundColor: '#FFF9ED' }]}>
                 <View style={styles.stepDotOrange} />
               </View>
-              <Text style={[styles.stepTextActive, { color: '#E69C24' }]}>Under review</Text>
+              <Text style={[styles.stepTextActive, { color: '#E69C24' }]}>{t('reportSuccess.underReview')}</Text>
             </View>
             
             {/* Line 2 */}
@@ -111,11 +113,11 @@ export default function SuccessScreen() {
             {/* Step 3 */}
             <View style={styles.step}>
               <View style={[styles.stepCircle, { borderColor: '#D1D5DB' }]} />
-              <Text style={styles.stepTextInactive}>Decision</Text>
+              <Text style={styles.stepTextInactive}>{t('reportSuccess.decision')}</Text>
             </View>
           </View>
           
-          <Text style={styles.stepperFooterText}>You can track this report from My Reports.</Text>
+          <Text style={styles.stepperFooterText}>{t('reportSuccess.trackReport')}</Text>
         </View>
 
       </ScrollView>
@@ -127,7 +129,7 @@ export default function SuccessScreen() {
           activeOpacity={0.8}
           onPress={() => router.replace('/(user)/(tabs)/reports' as any)}
         >
-          <Text style={styles.primaryBtnText}>View My Reports</Text>
+          <Text style={styles.primaryBtnText}>{t('reportSuccess.viewMyReports')}</Text>
           <Ionicons name="chevron-forward" size={20} color={Colors.white} style={styles.btnIcon} />
         </TouchableOpacity>
         
@@ -136,7 +138,7 @@ export default function SuccessScreen() {
           activeOpacity={0.8}
           onPress={() => router.replace('/(user)/(tabs)' as any)}
         >
-          <Text style={styles.outlineBtnText}>Return Home</Text>
+          <Text style={styles.outlineBtnText}>{t('reportSuccess.returnHome')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
@@ -9,12 +10,13 @@ interface DisasterSelectorProps {
 }
 
 export function DisasterSelector({ selected, onSelect }: DisasterSelectorProps) {
+  const { t } = useTranslation();
   const isFlood = selected === 'flood';
   const isLandslide = selected === 'landslide';
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Disaster type <Text style={styles.asterisk}>*</Text></Text>
+      <Text style={styles.label}>{t('reportCreate.disasterTypeLabel')} <Text style={styles.asterisk}>*</Text></Text>
       
       <View style={styles.row}>
         <TouchableOpacity 
@@ -25,7 +27,7 @@ export function DisasterSelector({ selected, onSelect }: DisasterSelectorProps) 
           <View style={[styles.iconWrapper, { backgroundColor: isFlood ? Colors.primary : '#F0F5F4' }]}>
             <Ionicons name="water" size={20} color={isFlood ? Colors.white : Colors.placeholder} />
           </View>
-          <Text style={[styles.cardText, isFlood && styles.textActive]}>Flood</Text>
+          <Text style={[styles.cardText, isFlood && styles.textActive]}>{t('reportCreate.flood')}</Text>
           {isFlood ? (
             <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
           ) : (
@@ -41,7 +43,7 @@ export function DisasterSelector({ selected, onSelect }: DisasterSelectorProps) 
           <View style={[styles.iconWrapper, { backgroundColor: isLandslide ? '#D1D5DB' : '#F0F5F4' }]}>
             <Ionicons name="image" size={20} color={isLandslide ? Colors.textDark : Colors.placeholder} />
           </View>
-          <Text style={[styles.cardText, isLandslide && styles.textActive]}>Landslide</Text>
+          <Text style={[styles.cardText, isLandslide && styles.textActive]}>{t('reportCreate.landslide')}</Text>
           {isLandslide ? (
             <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
           ) : (
@@ -60,7 +62,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: Colors.textDark,
     marginBottom: 12,
@@ -71,13 +73,13 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12, 
+    gap: 8, 
   },
   card: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 8,
     borderRadius: 16,
     borderWidth: 1.5,
   },
@@ -95,7 +97,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 6,
   },
   cardText: {
     flex: 1,

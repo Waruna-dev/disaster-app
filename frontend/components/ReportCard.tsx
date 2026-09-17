@@ -2,6 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
+
+import { TouchableOpacity } from 'react-native';
 
 interface ReportCardProps {
   type: 'flood' | 'landslide';
@@ -10,14 +13,17 @@ interface ReportCardProps {
   location: string;
   date: string;
   rejectReason?: string;
+  onPress?: () => void;
 }
 
-export function ReportCard({ type, status, id, location, date, rejectReason }: ReportCardProps) {
+export function ReportCard({ type, status, id, location, date, rejectReason, onPress }: ReportCardProps) {
+  const { t } = useTranslation();
+  
   const getStatusConfig = () => {
     switch (status) {
-      case 'pending': return { bg: '#FEF5E7', text: '#D68910', label: 'PENDING' };
-      case 'approved': return { bg: '#E8F5F2', text: Colors.primary, label: 'APPROVED' };
-      case 'rejected': return { bg: '#FDEDEC', text: Colors.danger, label: 'REJECTED' };
+      case 'pending': return { bg: '#FEF5E7', text: '#D68910', label: t('reports.pending').toUpperCase() };
+      case 'approved': return { bg: '#E8F5F2', text: Colors.primary, label: t('reports.approved').toUpperCase() };
+      case 'rejected': return { bg: '#FDEDEC', text: Colors.danger, label: t('reports.rejected').toUpperCase() };
     }
   };
 
@@ -32,18 +38,19 @@ export function ReportCard({ type, status, id, location, date, rejectReason }: R
   const statusConfig = getStatusConfig();
   const iconConfig = getIconConfig();
   
-  const title = type === 'flood' ? 'Flood report' : 'Landslide report';
+  const title = type === 'flood' ? t('reports.floodReport') : t('reports.landslideReport');
 
+  const CardContainer = onPress ? TouchableOpacity : View;
   return (
-    <View style={styles.card}>
+    <CardContainer style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
         <View style={styles.leftGroup}>
           <View style={[styles.iconWrapper, { backgroundColor: iconConfig.bg }]}>
             <Ionicons name={iconConfig.name as any} size={20} color={iconConfig.color} />
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.title}>{title}</Text>
-            <Text style={styles.reportId}>Report ID: {id}</Text>
+            <Text style={styles.reportId}>{t('reports.reportId')}{id}</Text>
           </View>
         </View>
 
@@ -64,7 +71,7 @@ export function ReportCard({ type, status, id, location, date, rejectReason }: R
           <Text style={styles.reasonText}>Reason: {rejectReason}</Text>
         </View>
       )}
-    </View>
+    </CardContainer>
   );
 }
 
@@ -85,6 +92,8 @@ const styles = StyleSheet.create({
   leftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
   },
   iconWrapper: {
     width: 44,
@@ -125,6 +134,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   location: {
+    flex: 1,
+    marginRight: 12,
     fontSize: 13,
     color: Colors.textLight,
   },
