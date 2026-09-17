@@ -1,0 +1,48 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // "admin" isn't a custom claim in this project — it's the `role` field
+    // authService.ts's registerUser writes onto users/{uid} (see hooks that used
+    // to read it client-side before the role-check screen guard was removed).
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if false;
+    }
+
+    match /reports/{reportId} {
+      allow read: if isSignedIn();
+
+      // A resident can only create a report attributed to themselves.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      // Admin review: only an admin can update, only while the report is still
+      // Pending, only transitioning it to Verified/Rejected, and the original
+      // report content (who submitted it, what it says) can't be changed in the
+      // same write — this is what was missing, and why approve/reject silently
+      // failed for anyone reviewing someone else's report.
+      allow update: if isAdmin()
+        && resource.data.status == 'Pending'
+        && request.resource.data.status in ['Verified', 'Rejected']
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.affectedArea == resource.data.affectedArea
+        && request.resource.data.description == resource.data.description
+        && request.resource.data.disasterType == resource.data.disasterType
+        && request.resource.data.referenceNumber == resource.data.referenceNumber;
+
+      allow delete: if false;
+    }
+  }
+}
