@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, PanResponder, Image, ScrollView } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -21,19 +21,19 @@ export default function MapScreen() {
   // Pan Responder for swipe gestures on bottom card
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only claim the touch if they actually swipe (move > 10px vertically)
+        return Math.abs(gestureState.dy) > 10;
+      },
       onPanResponderRelease: (evt, gestureState) => {
         // Swipe Down
         if (gestureState.dy > 50) {
-          setIsCardMinimized(true);
+          setCardState(prev => prev === 'expanded' ? 'default' : 'minimized');
         }
         // Swipe Up
         else if (gestureState.dy < -50) {
-          setIsCardMinimized(false);
-        }
-        // Simple tap
-        else if (Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5) {
-          setIsCardMinimized(prev => !prev);
+          setCardState(prev => prev === 'minimized' ? 'default' : 'expanded');
         }
       }
     })
@@ -47,7 +47,7 @@ export default function MapScreen() {
   const webViewRef = useRef<WebView>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
-  const [isCardMinimized, setIsCardMinimized] = useState(false);
+  const [cardState, setCardState] = useState<'minimized' | 'default' | 'expanded'>('default');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'flood' | 'landslide'>('all');
 
@@ -132,12 +132,13 @@ export default function MapScreen() {
         const coords = { latitude: data.lat, longitude: data.lng };
         setSelectedLocation(coords);
         setSelectedReport(null);
+        setCardState('default');
         fetchAddress(coords);
       } else if (data.type === 'reportTap' && data.id) {
         const report = reports.find(r => r.id === data.id);
         if (report) {
           setSelectedReport(report);
-          setIsCardMinimized(false);
+          setCardState('default');
         }
       }
     } catch (e) {
@@ -280,7 +281,7 @@ export default function MapScreen() {
       <TouchableOpacity 
         style={[
           styles.locateButton, 
-          { bottom: isCardMinimized ? 100 : (selectedReport ? 210 : 280) }
+          { bottom: cardState === 'minimized' ? 100 : (selectedReport ? (cardState === 'expanded' ? 450 : 210) : 280) }
         ]} 
         onPress={handleLocateMe}
       >
@@ -288,15 +289,16 @@ export default function MapScreen() {
       </TouchableOpacity>
 
       {/* Bottom Sheet / Card */}
-      <View style={styles.bottomCard}>
-        <View 
+      <View style={[styles.bottomCard, cardState === 'expanded' && { maxHeight: '70%' }]} {...panResponder.panHandlers}>
+        <TouchableOpacity 
           style={styles.dragHandleContainer} 
-          {...panResponder.panHandlers}
+          activeOpacity={0.7} 
+          onPress={() => setCardState(prev => prev === 'minimized' ? 'default' : 'minimized')}
         >
           <View style={styles.dragHandle} />
-        </View>
+        </TouchableOpacity>
 
-        {!isCardMinimized && (
+        {cardState !== 'minimized' && (
           <>
             {selectedReport ? (
               <View>
@@ -313,6 +315,28 @@ export default function MapScreen() {
             )}
             
             <Text style={styles.cardDescription}>{selectedReport.description}</Text>
+            {cardState === 'expanded' && (
+              <View style={{ marginTop: 16, minHeight: 160, justifyContent: 'center' }}>
+                {(selectedReport.photoUrls?.length > 0 || selectedReport.photoUrl) ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {(selectedReport.photoUrls || [selectedReport.photoUrl]).map((url: string, index: number) => url ? (
+                      <Image 
+                        key={index}
+                        source={{ uri: url }} 
+                        style={{ width: 160, height: 160, borderRadius: 12, marginRight: 12 }} 
+                        resizeMode="cover" 
+                      />
+                    ) : null)}
+                  </ScrollView>
+                ) : (
+                  <View style={{ alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: Colors.background, borderRadius: 12 }}>
+                    <Ionicons name="image-outline" size={48} color={Colors.textMuted} />
+                    <Text style={{ marginTop: 8, color: Colors.textMuted }}>No images attached to this report.</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedReport(null)}>
               <Ionicons name="close" size={20} color={Colors.textDark} />
             </TouchableOpacity>
