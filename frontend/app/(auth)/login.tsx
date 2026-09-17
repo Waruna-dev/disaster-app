@@ -6,12 +6,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   useWindowDimensions,
   Alert,
+  ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { loginUser } from '../../services/authService';
 
 import { router } from "expo-router";
@@ -63,9 +63,16 @@ export default function LoginScreen() {
       loadRememberedEmail();
     }, []);
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter both email and password.");
+      Alert.alert(t('register.error') || "Error", "Please enter both email and password.");
+      return;
+    }
+
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert(t('register.error') || "Error", t('register.invalidEmail') || "Invalid email address format.");
       return;
     }
 
@@ -90,14 +97,13 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.keyboardView}
-      >
-        <ScrollView
+      <View style={styles.keyboardView}>
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          extraScrollHeight={20}
         >
           {/* Exact login header */}
           <View style={[styles.topSection, { height: headerHeight }]}>
@@ -298,8 +304,8 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
+      </View>
     </View>
   );
 }
@@ -316,7 +322,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: 150,
   },
 
   topSection: {

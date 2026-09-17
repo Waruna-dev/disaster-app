@@ -41,8 +41,10 @@
     "login": "ලොග් වන්න",
     "error": "දෝෂයක්",
     "fillFields": "කරුණාකර සියලුම ක්ෂේත්‍ර පුරවන්න",
+    "agreeRequired": "ඔබ නියමයන් සහ රහස්‍යතා ප්‍රතිපත්තියට එකඟ විය යුතුය",
     "passwordMismatch": "මුරපද නොගැලපේ",
-    "errorRegistering": "ලියාපදිංචි වීමේ දෝෂයක්"
+    "errorRegistering": "ලියාපදිංචි වීමේ දෝෂයක්",
+    "emailInUse": "මෙම විද්‍යුත් තැපෑල දැනටමත් වෙනත් ගිණුමක් විසින් භාවිතා කරනු ලැබේ."
   },
   "forgotPassword": {
     "headerTitle": "FloodGuard",

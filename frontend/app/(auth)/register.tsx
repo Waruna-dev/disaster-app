@@ -4,12 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   useWindowDimensions,
   Alert,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { registerUser } from '../../services/authService';
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -43,9 +42,36 @@ export default function RegisterScreen() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validatePassword = (pwd: string) => {
+    if (pwd.length < 8) return t('register.passwordTooShort') || "Password must be at least 8 characters.";
+    if (!/[A-Z]/.test(pwd)) return t('register.passwordNoUpper') || "Password must contain at least one uppercase letter.";
+    if (!/[a-z]/.test(pwd)) return t('register.passwordNoLower') || "Password must contain at least one lowercase letter.";
+    if (!/[0-9]/.test(pwd)) return t('register.passwordNoNumber') || "Password must contain at least one number.";
+    if (!/[^A-Za-z0-9]/.test(pwd)) return t('register.passwordNoSpecial') || "Password must contain at least one special character.";
+    return null;
+  };
+
   const handleRegister = async () => {
-    if (!fullName || !email || !password || !confirmPassword || !agreeTerms) {
+    if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert(t('register.error'), t('register.fillFields'));
+      return;
+    }
+    
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert(t('register.error'), t('register.invalidEmail') || "Invalid email address format.");
+      return;
+    }
+
+    const pwdError = validatePassword(password);
+    if (pwdError) {
+      Alert.alert(t('register.error'), pwdError);
+      return;
+    }
+
+    if (!agreeTerms) {
+      Alert.alert(t('register.error'), t('register.agreeRequired') || "You must agree to the Terms and Privacy Policy.");
       return;
     }
     if (password !== confirmPassword) {
@@ -55,14 +81,18 @@ export default function RegisterScreen() {
 
     try {
       setLoading(true);
-      await createUser(email.trim(), password, fullName);
+      await registerUser(email.trim(), password, fullName);
       // Fallback routing, index.tsx splash will also catch it if mounted
       router.replace("/(user)/(tabs)" as any);
     } catch (error: any) {
-      Alert.alert(
-        t('register.errorRegistering'),
-        error.message || "Failed to create account"
-      );
+      if (error.code === 'auth/email-already-in-use') {
+        Alert.alert(t('register.errorRegistering'), t('register.emailInUse') || "This email is already in use by another account.");
+      } else {
+        Alert.alert(
+          t('register.errorRegistering'),
+          error.message || "Failed to create account"
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -72,14 +102,13 @@ export default function RegisterScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.keyboardView}
-      >
-        <ScrollView
+      <View style={styles.keyboardView}>
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          extraScrollHeight={20}
         >
           {/* Correct curved header */}
           <View style={[styles.topSection, { height: headerHeight }]}>
@@ -264,8 +293,8 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
+      </View>
     </View>
   );
 }
@@ -282,7 +311,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: 150,
   },
 
   topSection: {

@@ -41,8 +41,10 @@
     "login": "Log in",
     "error": "Error",
     "fillFields": "Please fill in all fields",
+    "agreeRequired": "You must agree to the Terms and Privacy Policy",
     "passwordMismatch": "Passwords do not match",
-    "errorRegistering": "Registration Error"
+    "errorRegistering": "Registration Error",
+    "emailInUse": "This email is already in use by another account."
   },
   "forgotPassword": {
     "headerTitle": "FloodGuard",

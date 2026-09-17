@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
+    flexShrink: 1,
   },
   verifiedText: {
     color: Colors.primary,
@@ -85,6 +86,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
+    flexShrink: 1,
   },
   severityText: {
     color: '#D68910',

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image, Modal, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, Modal, Animated } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
@@ -183,13 +186,13 @@ export default function EditProfileScreen() {
         </View>
       </View>
 
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <Animated.ScrollView 
+      <View style={{ flex: 1 }}>
+        <AnimatedKeyboardAwareScrollView 
           showsVerticalScrollIndicator={false} 
           contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 50 }]}
+          enableOnAndroid={true}
+          extraScrollHeight={120}
+          keyboardShouldPersistTaps="handled"
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true }
@@ -280,9 +283,9 @@ export default function EditProfileScreen() {
                 activeOpacity={0.7}
                 onPress={() => setShowLanguageModal(true)}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}>
                   <Ionicons name="language-outline" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, color: Colors.textDark }}>
+                  <Text style={{ fontSize: 16, color: Colors.textDark, flexShrink: 1 }} numberOfLines={1}>
                     {LANGUAGES.find(l => l.code === language)?.name || 'English'}
                   </Text>
                 </View>
@@ -315,8 +318,8 @@ export default function EditProfileScreen() {
 
           {/* Spacer before footer */}
           <View style={{ height: 40 }} />
-        </Animated.ScrollView>
-      </KeyboardAvoidingView>
+        </AnimatedKeyboardAwareScrollView>
+      </View>
 
       {/* Fixed Footer */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
@@ -427,6 +430,7 @@ const styles = StyleSheet.create({
   languageOptionText: {
     fontSize: 16,
     color: Colors.textDark,
+    flexShrink: 1,
   },
   languageOptionActive: {
     color: Colors.primary,
@@ -472,7 +476,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 120, // space for footer
+    paddingBottom: 180, // space for footer + keyboard extra space
   },
   avatarContainer: {
     alignItems: 'center',

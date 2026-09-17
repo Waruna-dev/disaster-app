@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flex: 1,
   },
-  card: {
+  cardLarge: {
     borderWidth: 1.5,
     borderColor: '#C3E0D8',
     borderStyle: 'dashed',
@@ -137,6 +137,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFCFC',
     marginRight: 12,
     width: '100%',
+  },
+  textContent: {
+    flex: 1,
   },
   cardSmall: {
     borderWidth: 1.5,

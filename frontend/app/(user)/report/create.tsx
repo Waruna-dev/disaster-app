@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Text, Alert, ActivityIndicator, Animated } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, Text, Alert, ActivityIndicator, Animated } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
 import { Colors } from '../../../constants/colors';
 import { CreateReportHeader, CreateReportStickyBar } from '../../../components/CreateReportHeader';
 import { SafetyBanner } from '../../../components/SafetyBanner';
@@ -124,14 +127,13 @@ export default function CreateReportScreen() {
   return (
     <View style={styles.container}>
       <CreateReportStickyBar scrollY={scrollY} />
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}
-      >
-        <Animated.ScrollView 
+      <View style={styles.keyboardView}>
+        <AnimatedKeyboardAwareScrollView 
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          extraScrollHeight={120}
           onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
           scrollEventThrottle={16}
         >
@@ -178,7 +180,7 @@ export default function CreateReportScreen() {
             />
           </View>
 
-        </Animated.ScrollView>
+        </AnimatedKeyboardAwareScrollView>
         
         <View style={styles.footer}>
           <PrimaryButton 
@@ -187,7 +189,7 @@ export default function CreateReportScreen() {
             disabled={isLoading || isFetchingLocation}
           />
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
