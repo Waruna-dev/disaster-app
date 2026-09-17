@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { AuthProvider } from '../context/AuthContext';
+import '../i18n'; // Import i18n configuration
 
 export default function RootLayout() {
   return (

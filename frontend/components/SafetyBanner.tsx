@@ -1,15 +1,17 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet } from 'react-native';
 
 export function SafetyBanner() {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
         <Text style={styles.exclamation}>!</Text>
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.title}>Your safety comes first</Text>
-        <Text style={styles.subtitle}>Do not enter a dangerous area to collect evidence.</Text>
+        <Text style={styles.title}>{t('reportCreate.safetyBannerTitle')}</Text>
+        <Text style={styles.subtitle}>{t('reportCreate.safetyBannerSubtitle')}</Text>
       </View>
     </View>
   );

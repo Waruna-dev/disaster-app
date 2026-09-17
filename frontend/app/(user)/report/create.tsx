@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Text, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Text, Alert, ActivityIndicator, Animated } from 'react-native';
 import { Colors } from '../../../constants/colors';
-import { CreateReportHeader } from '../../../components/CreateReportHeader';
+import { CreateReportHeader, CreateReportStickyBar } from '../../../components/CreateReportHeader';
 import { SafetyBanner } from '../../../components/SafetyBanner';
 import { DisasterSelector } from '../../../components/DisasterSelector';
 import { FormInput } from '../../../components/FormInput';
@@ -12,10 +12,13 @@ import { useFocusEffect, router } from 'expo-router';
 import * as Location from 'expo-location';
 import { useAuth } from '../../../context/AuthContext';
 import { createReport, uploadReportPhoto } from '../../../services/reportService';
+import { useTranslation } from 'react-i18next';
 
 export default function CreateReportScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
-  const scrollRef = React.useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const [disasterType, setDisasterType] = useState<'flood' | 'landslide'>('flood');
   const [affectedArea, setAffectedArea] = useState('');
@@ -63,16 +66,16 @@ export default function CreateReportScreen() {
 
   const handleSubmit = async () => {
     if (!affectedArea.trim()) {
-      Alert.alert('Required Field', 'Please provide the affected area.');
+      Alert.alert(t('reportCreate.requiredField'), t('reportCreate.provideArea'));
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Required Field', 'Please enter a short description.');
+      Alert.alert(t('reportCreate.requiredField'), t('reportCreate.enterDescription'));
       return;
     }
 
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to submit a report.');
+      Alert.alert('Error', t('reportCreate.errorLoggedIn'));
       return;
     }
 
@@ -100,7 +103,7 @@ export default function CreateReportScreen() {
       });
 
     } catch (error: any) {
-      Alert.alert('Submission Failed', error.message || 'An error occurred while submitting.');
+      Alert.alert(t('reportCreate.submissionFailed'), error.message || 'An error occurred while submitting.');
     } finally {
       setIsLoading(false);
     }
@@ -120,17 +123,19 @@ export default function CreateReportScreen() {
 
   return (
     <View style={styles.container}>
+      <CreateReportStickyBar scrollY={scrollY} />
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
-        <ScrollView 
-          ref={scrollRef}
-          contentContainerStyle={styles.scrollContent}
+        <Animated.ScrollView 
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+          scrollEventThrottle={16}
         >
-          <CreateReportHeader />
+          <CreateReportHeader scrollY={scrollY} />
           <SafetyBanner />
 
           <DisasterSelector 
@@ -139,26 +144,26 @@ export default function CreateReportScreen() {
           />
 
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Affected area <Text style={styles.asterisk}>*</Text></Text>
+            <Text style={styles.inputLabel}>{t('reportCreate.affectedAreaLabel')} <Text style={styles.asterisk}>*</Text></Text>
             {isFetchingLocation ? (
               <View style={styles.loadingArea}>
                 <ActivityIndicator size="small" color={Colors.primary} />
-                <Text style={styles.loadingText}>Detecting location...</Text>
+                <Text style={styles.loadingText}>{t('reportCreate.detectingLocation')}</Text>
               </View>
             ) : (
               <FormInput 
                 iconName="location"
                 value={affectedArea}
                 onChangeText={setAffectedArea}
-                placeholder="Enter affected area"
+                placeholder={t('reportCreate.enterAffectedArea')}
               />
             )}
           </View>
 
           <View style={styles.inputWrapper}>
             <TextAreaInput 
-              label="Short description"
-              placeholder="Describe what is happening..."
+              label={t('reportCreate.shortDescription')}
+              placeholder={t('reportCreate.describeHappening')}
               maxLength={200}
               value={description}
               onChangeText={setDescription}
@@ -173,11 +178,11 @@ export default function CreateReportScreen() {
             />
           </View>
 
-        </ScrollView>
+        </Animated.ScrollView>
         
         <View style={styles.footer}>
           <PrimaryButton 
-            title={isLoading ? "Submitting..." : "Submit report"} 
+            title={isLoading ? t('reportCreate.submitting') : t('reportCreate.submitReport')} 
             onPress={handleSubmit} 
             disabled={isLoading || isFetchingLocation}
           />

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -11,17 +12,18 @@ interface PhotoUploadCardProps {
 }
 
 export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }: PhotoUploadCardProps) {
+  const { t } = useTranslation();
   const handlePress = async () => {
     Alert.alert(
-      'Upload Photo',
-      'Choose an option',
+      t('reportCreate.uploadPhoto'),
+      t('reportCreate.chooseOption'),
       [
         {
-          text: 'Take Photo',
+          text: t('reportCreate.takePhoto'),
           onPress: async () => {
             const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
             if (permissionResult.granted === false) {
-              Alert.alert('Permission needed', 'You need to grant camera permissions to take a photo.');
+              Alert.alert(t('reportCreate.permissionNeeded'), t('reportCreate.cameraPermission'));
               return;
             }
             const result = await ImagePicker.launchCameraAsync({
@@ -35,11 +37,11 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
           }
         },
         {
-          text: 'Choose from Gallery',
+          text: t('reportCreate.chooseGallery'),
           onPress: async () => {
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (permissionResult.granted === false) {
-              Alert.alert('Permission needed', 'You need to grant gallery permissions to pick a photo.');
+              Alert.alert(t('reportCreate.permissionNeeded'), t('reportCreate.galleryPermission'));
               return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -54,7 +56,7 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
           }
         },
         {
-          text: 'Cancel',
+          text: t('reportCreate.cancel'),
           style: 'cancel'
         }
       ]
@@ -64,7 +66,7 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.label}>Add photo evidence <Text style={styles.optional}>({photoUris.length}/3)</Text></Text>
+        <Text style={styles.label}>{t('reportCreate.addPhotoEvidence')} <Text style={styles.optional}>({photoUris.length}/3)</Text></Text>
       </View>
       
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -77,8 +79,8 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
             <Ionicons name="camera-outline" size={28} color={Colors.primary} style={photoUris.length === 0 ? styles.icon : undefined} />
             {photoUris.length === 0 && (
               <View>
-                <Text style={styles.title}>Choose photo</Text>
-                <Text style={styles.subtitle}>Max 3 photos, up to 5 MB each</Text>
+                <Text style={styles.title}>{t('reportCreate.choosePhoto')}</Text>
+                <Text style={styles.subtitle}>{t('reportCreate.photoMax')}</Text>
               </View>
             )}
           </TouchableOpacity>

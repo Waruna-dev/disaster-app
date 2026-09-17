@@ -28,6 +28,7 @@ import Svg, {
 } from "react-native-svg";
 
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from 'react-i18next';
 
 import { Colors } from "../../constants/colors";
 import { FormInput } from "../../components/FormInput";
@@ -41,6 +42,7 @@ export default function LoginScreen() {
   const headerHeight = 314 * scale;
   const cardOverlap = 83 * scale;
 
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -206,25 +208,26 @@ export default function LoginScreen() {
               },
             ]}
           >
-            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.title}>{t('login.welcomeBack')}</Text>
 
             <Text style={styles.subtitle}>
-              Log in to view local safety updates.
+              {t('login.signInToContinue')}
             </Text>
 
             <FormInput
-              label="Email address"
-              placeholder="Enter your email"
+              label={t('login.email')}
+              placeholder={t('login.emailPlaceholder')}
               iconName="mail-outline"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
             />
 
             <FormInput
-              label="Password"
-              placeholder="Enter your password"
+              label={t('login.password')}
+              placeholder={t('login.passwordPlaceholder')}
               iconName="lock-closed-outline"
               value={password}
               onChangeText={setPassword}
@@ -255,7 +258,7 @@ export default function LoginScreen() {
                 </View>
 
                 <Text style={styles.checkboxText}>
-                  Remember me
+                  {t('login.rememberMe')}
                 </Text>
               </TouchableOpacity>
 
@@ -266,13 +269,13 @@ export default function LoginScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.forgotPasswordText}>
-                  Forgot password?
+                  {t('login.forgotPassword')}
                 </Text>
               </TouchableOpacity>
             </View>
 
             <PrimaryButton
-              title="Log in"
+              title={t('login.loginButton')}
               onPress={handleLogin}
               loading={loading}
               style={styles.loginButton}
@@ -280,7 +283,7 @@ export default function LoginScreen() {
 
             <View style={styles.registerLinkContainer}>
               <Text style={styles.noAccountText}>
-                Don’t have an account?{" "}
+                {t('login.dontHaveAccount')}{" "}
               </Text>
 
               <TouchableOpacity
@@ -290,7 +293,7 @@ export default function LoginScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.registerText}>
-                  Register
+                  {t('login.register')}
                 </Text>
               </TouchableOpacity>
             </View>

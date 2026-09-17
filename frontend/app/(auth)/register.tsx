@@ -26,10 +26,12 @@ import { Colors } from "../../constants/colors";
 import { FormInput } from "../../components/FormInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { Logo } from "../../components/Logo";
+import { useTranslation } from 'react-i18next';
 
 export default function RegisterScreen() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   // Original SVG size: 402 × 200 for the header
   const headerHeight = width * (200 / 402);
@@ -42,26 +44,25 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!fullName || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "Please fill out all fields.");
+    if (!fullName || !email || !password || !confirmPassword || !agreeTerms) {
+      Alert.alert(t('register.error'), t('register.fillFields'));
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match.");
-      return;
-    }
-    if (!agreeTerms) {
-      Alert.alert("Error", "You must agree to the Terms and Privacy Policy.");
+      Alert.alert(t('register.error'), t('register.passwordMismatch'));
       return;
     }
 
     try {
       setLoading(true);
-      await registerUser(email.trim(), password, fullName);
+      await createUser(email.trim(), password, fullName);
       // Fallback routing, index.tsx splash will also catch it if mounted
       router.replace("/(user)/(tabs)" as any);
     } catch (error: any) {
-      Alert.alert("Registration Failed", error.message);
+      Alert.alert(
+        t('register.errorRegistering'),
+        error.message || "Failed to create account"
+      );
     } finally {
       setLoading(false);
     }
@@ -159,10 +160,10 @@ export default function RegisterScreen() {
               <View style={[styles.headerTextContainer, { flexDirection: 'row', alignItems: 'center' }]}>
                 <Logo width={28} height={40} color={Colors.white} variant="outline" />
                 <View style={{ marginLeft: 16 }}>
-                  <Text style={styles.brandTitle}>FloodGuard</Text>
+                  <Text style={styles.brandTitle}>{t('register.headerTitle')}</Text>
 
                   <Text style={styles.brandSubtitle}>
-                    Create your safety account
+                    {t('register.headerSubtitle')}
                   </Text>
                 </View>
               </View>
@@ -171,15 +172,15 @@ export default function RegisterScreen() {
 
           {/* Registration form */}
           <View style={styles.formSection}>
-            <Text style={styles.title}>Create account</Text>
+            <Text style={styles.title}>{t('register.title')}</Text>
 
             <Text style={styles.subtitle}>
-              Enter your details to get started.
+              {t('register.subtitle')}
             </Text>
 
             <FormInput
-              label="Full name"
-              placeholder="Enter your full name"
+              label={t('register.fullName')}
+              placeholder={t('register.fullNamePlaceholder')}
               iconName="person-outline"
               value={fullName}
               onChangeText={setFullName}
@@ -187,8 +188,8 @@ export default function RegisterScreen() {
             />
 
             <FormInput
-              label="Email address"
-              placeholder="Enter your email"
+              label={t('register.email')}
+              placeholder={t('register.emailPlaceholder')}
               iconName="mail-outline"
               value={email}
               onChangeText={setEmail}
@@ -197,8 +198,8 @@ export default function RegisterScreen() {
             />
 
             <FormInput
-              label="Password"
-              placeholder="Create a password"
+              label={t('register.password')}
+              placeholder={t('register.passwordPlaceholder')}
               iconName="lock-closed-outline"
               value={password}
               onChangeText={setPassword}
@@ -206,8 +207,8 @@ export default function RegisterScreen() {
             />
 
             <FormInput
-              label="Confirm password"
-              placeholder="Re-enter your password"
+              label={t('register.confirmPassword')}
+              placeholder={t('register.confirmPasswordPlaceholder')}
               iconName="lock-closed-outline"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -235,15 +236,15 @@ export default function RegisterScreen() {
               </View>
 
               <Text style={styles.checkboxText}>
-                I agree to the{" "}
+                {t('register.agreeTo')}{" "}
                 <Text style={styles.checkboxTextBold}>
-                  Terms and Privacy Policy
+                  {t('register.terms')}
                 </Text>
               </Text>
             </TouchableOpacity>
 
             <PrimaryButton
-              title="Create account"
+              title={t('register.createAccount')}
               onPress={handleRegister}
               loading={loading}
               style={styles.registerButton}
@@ -251,7 +252,7 @@ export default function RegisterScreen() {
 
             <View style={styles.loginLinkContainer}>
               <Text style={styles.noAccountText}>
-                Already have an account?{" "}
+                {t('register.alreadyHaveAccount')}{" "}
               </Text>
 
               <TouchableOpacity
@@ -259,7 +260,7 @@ export default function RegisterScreen() {
                   router.replace("/(auth)/login" as any)
                 }
               >
-                <Text style={styles.loginText}>Log in</Text>
+                <Text style={styles.loginText}>{t('register.login')}</Text>
               </TouchableOpacity>
             </View>
           </View>

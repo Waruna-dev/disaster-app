@@ -1,54 +1,74 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } from 'react-native-svg';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { Colors } from '../constants/colors';
 import { Logo } from './Logo';
+import { useTranslation } from 'react-i18next';
 
-export function DashboardHeader() {
+export function DashboardStickyBar({ scrollY, initial }: { scrollY: Animated.Value, initial: string }) {
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-  const [firstName, setFirstName] = useState('User');
-  const [initial, setInitial] = useState('U');
+  
+  const headerBgOpacity = scrollY.interpolate({
+    inputRange: [0, 80, 120],
+    outputRange: [0, 0.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <View style={styles.stickyBar}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
+      <View style={[styles.stickyBarContent, { paddingTop: insets.top + 16 }]}>
+        <View style={styles.logoContainer}>
+          <View style={styles.shieldIcon}>
+            <Logo width={18} height={26} color={Colors.primary} />
+          </View>
+          <Text style={styles.brandTitle}>FloodGuard</Text>
+        </View>
+
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity style={styles.bellButton} activeOpacity={0.7}>
+            <Ionicons name="notifications-outline" size={22} color={Colors.white} />
+            <View style={styles.notificationDot} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.avatarButton} activeOpacity={0.7}>
+            <Text style={styles.avatarText}>{initial}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export function DashboardHeader({ scrollY, firstName }: { scrollY: Animated.Value, firstName: string }) {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning,';
-    if (hour < 18) return 'Good afternoon,';
-    return 'Good evening,';
+    if (hour < 12) return t('dashboard.goodMorning');
+    if (hour < 18) return t('dashboard.goodAfternoon');
+    return t('dashboard.goodEvening');
   };
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (user?.uid) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (data.fullName) {
-              const first = data.fullName.split(' ')[0];
-              setFirstName(first);
-              setInitial(first.charAt(0).toUpperCase());
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      }
-    };
-    fetchUserData();
-  }, [user]);
 
   const headerHeight = 280 + insets.top; // Sufficient space for content
 
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [-100, 0, 200],
+    outputRange: [-50, 0, 100],
+    extrapolate: 'clamp',
+  });
+
   return (
     <View style={[styles.container, { height: headerHeight }]}>
-      <Svg
+      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ translateY: headerTranslateY }] }]}>
+        <Svg
         width="100%"
         height="100%"
         viewBox={`0 0 402 ${220 + insets.top}`}
@@ -76,31 +96,10 @@ export function DashboardHeader() {
         {/* Decorative circles from auth screen */}
         <Circle cx="419" cy="78" r="100" fill="none" stroke={Colors.white} strokeOpacity={0.05} strokeWidth={26} />
         <Circle cx="-26" cy="91" r="89" fill={Colors.white} fillOpacity={0.035} />
-      </Svg>
+        </Svg>
+      </Animated.View>
 
-      <View style={[styles.content, { paddingTop: insets.top + 16 }]}>
-        {/* Top Row: Logo & Profile */}
-        <View style={styles.topRow}>
-          <View style={styles.logoContainer}>
-            {/* Custom SVG Logo */}
-            <View style={styles.shieldIcon}>
-              <Logo width={18} height={26} color={Colors.primary} />
-            </View>
-            <Text style={styles.brandTitle}>FloodGuard</Text>
-          </View>
-
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.bellButton} activeOpacity={0.7}>
-              <Ionicons name="notifications-outline" size={22} color={Colors.white} />
-              <View style={styles.notificationDot} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.avatarButton} activeOpacity={0.7}>
-              <Text style={styles.avatarText}>{initial}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
+      <View style={[styles.content, { paddingTop: insets.top + 16 + 50 }]}>
         {/* Middle Row: Greeting */}
         <View style={styles.greetingContainer}>
           <Text style={styles.greetingSub}>{getGreeting()}</Text>
@@ -130,6 +129,20 @@ const styles = StyleSheet.create({
     width: '100%',
     position: 'relative',
     overflow: 'hidden',
+  },
+  stickyBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  stickyBarContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
   },
   content: {
     paddingHorizontal: 24,

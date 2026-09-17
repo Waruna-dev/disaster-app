@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../../../constants/colors';
+import { useTranslation } from 'react-i18next';
 
 export default function AlertsScreen() {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Alerts Screen</Text>
+      <Text style={styles.text}>{t('alerts.title')}</Text>
     </View>
   );
 }

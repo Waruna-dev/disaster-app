@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image, Modal, Animated } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
@@ -10,8 +10,17 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
 import { getUserProfile, saveUserProfile, deleteUserData } from '../../services/userService';
 import { updateUserPassword, deleteUserAccount, logoutUser } from '../../services/authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
+
+const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'si', name: 'Sinhala' },
+  { code: 'ta', name: 'Tamil' }
+];
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   
@@ -25,8 +34,30 @@ export default function EditProfileScreen() {
   const [occupation, setOccupation] = useState('');
   const [homeArea, setHomeArea] = useState('');
   const [workArea, setWorkArea] = useState('');
-  const [language, setLanguage] = useState('English');
   const [newPassword, setNewPassword] = useState('');
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const { i18n } = useTranslation();
+  const language = i18n.language?.split('-')[0] || 'en';
+
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  
+  const headerBgOpacity = scrollY.interpolate({
+    inputRange: [0, 80, 120],
+    outputRange: [0, 0.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [-100, 0, 200],
+    outputRange: [0, 0, -50],
+    extrapolate: 'clamp',
+  });
+
+  const avatarScale = scrollY.interpolate({
+    inputRange: [-100, 0, 100],
+    outputRange: [1.2, 1, 0.8],
+    extrapolate: 'clamp',
+  });
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -40,7 +71,6 @@ export default function EditProfileScreen() {
           setOccupation(profile.occupation || '');
           setHomeArea(profile.homeArea || '');
           setWorkArea(profile.workArea || '');
-          setLanguage(profile.language || 'English');
         }
       } catch (error) {
         console.error('Error loading profile', error);
@@ -71,13 +101,13 @@ export default function EditProfileScreen() {
         setNewPassword(''); // clear after success
       }
 
-      Alert.alert('Success', 'Profile updated successfully!');
+      Alert.alert(t('editProfile.success'), t('editProfile.profileUpdated'));
     } catch (error: any) {
       console.log('Error updating profile:', error);
       if (error.code === 'auth/requires-recent-login') {
-        Alert.alert('Authentication Required', 'Changing your password requires you to log in again recently. Please log out and log back in.');
+        Alert.alert(t('editProfile.authRequired'), t('editProfile.reloginPassword'));
       } else {
-        Alert.alert('Error', 'Failed to update profile.');
+        Alert.alert(t('editProfile.error'), t('editProfile.updateFailed'));
       }
     } finally {
       setSaving(false);
@@ -86,12 +116,12 @@ export default function EditProfileScreen() {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      t('editProfile.deleteTitle'),
+      t('editProfile.deleteMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('editProfile.cancel'), style: 'cancel' },
         { 
-          text: 'Delete', 
+          text: t('editProfile.delete'), 
           style: 'destructive', 
           onPress: async () => {
             if (!user) return;
@@ -101,14 +131,14 @@ export default function EditProfileScreen() {
               await deleteUserData(user.uid);
               // 2. Delete auth user
               await deleteUserAccount();
-              Alert.alert('Success', 'Your account has been deleted.');
+              Alert.alert(t('editProfile.success'), t('editProfile.accountDeleted'));
               // Will trigger onAuthStateChanged to unauthenticated automatically
             } catch (error: any) {
               console.log('Error deleting account:', error);
               if (error.code === 'auth/requires-recent-login') {
-                Alert.alert('Authentication Required', 'Deleting your account requires you to log in again recently. Please log out and log back in.');
+                Alert.alert(t('editProfile.authRequired'), t('editProfile.reloginDelete'));
               } else {
-                Alert.alert('Error', 'Failed to delete account.');
+                Alert.alert(t('editProfile.error'), t('editProfile.updateFailed'));
               }
               setSaving(false);
             }
@@ -131,56 +161,67 @@ export default function EditProfileScreen() {
   return (
     <View style={styles.container}>
       {/* Header Background */}
-      <View style={[styles.headerContainer, { height: headerHeight }]}>
+      <Animated.View style={[styles.headerContainer, { height: headerHeight, transform: [{ translateY: headerTranslateY }] }]}>
         <Svg width="100%" height="100%" viewBox={`0 0 402 180`} preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
           <Path
             d="M0 0 H402 V120 Q201 200 0 120 Z"
             fill={Colors.gradientStart}
           />
         </Svg>
-      </View>
+      </Animated.View>
 
       {/* Custom Header Bar */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-          <Ionicons name="chevron-back" size={24} color={Colors.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        {/* Placeholder for balance */}
-        <View style={styles.iconButton} />
+      <View style={styles.headerBar}>
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
+        <View style={[styles.headerBarContent, { paddingTop: insets.top + 10 }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+            <Ionicons name="chevron-back" size={24} color={Colors.white} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('editProfile.title')}</Text>
+          {/* Placeholder for balance */}
+          <View style={styles.iconButton} />
+        </View>
       </View>
 
       <KeyboardAvoidingView 
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 50 }]}>
+        <Animated.ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 50 }]}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+        >
           
           {/* Profile Avatar Badge */}
-          <View style={styles.avatarContainer}>
+          <Animated.View style={[styles.avatarContainer, { transform: [{ scale: avatarScale }] }]}>
             <View style={styles.avatarCircle}>
               <Ionicons name="person" size={50} color={Colors.primary} />
               <TouchableOpacity style={styles.cameraBadge} activeOpacity={0.8}>
                 <Ionicons name="camera" size={16} color={Colors.white} />
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Personal Information */}
-          <Text style={styles.sectionTitle}>Personal information</Text>
+          <Text style={styles.sectionTitle}>{t('editProfile.personalInfo')}</Text>
           <View style={styles.formGroup}>
             <FormInput
-              label="Full name"
+              label={t('editProfile.fullName')}
               iconName="person-outline"
               value={fullName}
               onChangeText={setFullName}
-              placeholder="Enter your full name"
+              placeholder={t('register.fullNamePlaceholder')}
             />
             
             <View style={styles.row}>
               <View style={styles.halfWidth}>
                 <FormInput
-                  label="Age"
+                  label={t('editProfile.age')}
                   value={age}
                   onChangeText={setAge}
                   keyboardType="numeric"
@@ -189,17 +230,17 @@ export default function EditProfileScreen() {
               </View>
               <View style={styles.halfWidth}>
                 <FormInput
-                  label="Occupation"
+                  label={t('editProfile.occupation')}
                   value={occupation}
                   onChangeText={setOccupation}
-                  placeholder="Student"
+                  placeholder=""
                   iconName="ellipse"
                 />
               </View>
             </View>
 
             <FormInput
-              label="Email address"
+              label={t('login.email')}
               iconName="mail-outline"
               value={email}
               onChangeText={setEmail}
@@ -209,48 +250,57 @@ export default function EditProfileScreen() {
           </View>
 
           {/* Alert areas */}
-          <Text style={styles.sectionTitle}>Alert areas</Text>
+          <Text style={styles.sectionTitle}>{t('editProfile.alertAreas')}</Text>
           <View style={styles.formGroup}>
             <View style={styles.row}>
               <View style={styles.halfWidth}>
                 <FormInput
-                  label="Home area"
+                  label={t('editProfile.homeArea')}
                   iconName="home-outline"
                   value={homeArea}
                   onChangeText={setHomeArea}
-                  placeholder="e.g. Kelaniya"
+                  placeholder=""
                 />
               </View>
               <View style={styles.halfWidth}>
                 <FormInput
-                  label="Work area"
+                  label={t('editProfile.workArea')}
                   iconName="business-outline"
                   value={workArea}
                   onChangeText={setWorkArea}
-                  placeholder="e.g. Malabe"
+                  placeholder=""
                 />
               </View>
             </View>
             
-            <FormInput
-              label="Preferred language"
-              iconName="language-outline"
-              value={language}
-              onChangeText={setLanguage}
-              placeholder="English"
-            />
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.textDark, marginBottom: 8 }}>{t('Preferred language') || 'Preferred language'}</Text>
+              <TouchableOpacity 
+                style={styles.languageDropdown}
+                activeOpacity={0.7}
+                onPress={() => setShowLanguageModal(true)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="language-outline" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, color: Colors.textDark }}>
+                    {LANGUAGES.find(l => l.code === language)?.name || 'English'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-down" size={20} color={Colors.placeholder} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Security */}
-          <Text style={styles.sectionTitle}>Security</Text>
+          <Text style={styles.sectionTitle}>{t('editProfile.security')}</Text>
           <View style={styles.formGroup}>
             <FormInput
-              label="Change Password"
+              label={t('editProfile.changePassword')}
               iconName="lock-closed-outline"
               value={newPassword}
               onChangeText={setNewPassword}
               isPassword
-              placeholder="Enter new password"
+              placeholder={t('editProfile.newPasswordPlaceholder')}
             />
             
             <TouchableOpacity 
@@ -259,29 +309,129 @@ export default function EditProfileScreen() {
               onPress={handleDeleteAccount}
             >
               <Ionicons name="trash-outline" size={20} color={Colors.danger} />
-              <Text style={styles.deleteButtonText}>Delete Account</Text>
+              <Text style={styles.deleteButtonText}>{t('editProfile.deleteAccount')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Spacer before footer */}
           <View style={{ height: 40 }} />
-        </ScrollView>
+        </Animated.ScrollView>
       </KeyboardAvoidingView>
 
       {/* Fixed Footer */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
         <PrimaryButton 
-          title="Save Changes"
+          title={t('editProfile.saveChanges')}
           onPress={handleSave}
           loading={saving}
           icon="checkmark"
         />
       </View>
+
+      {/* Language Modal */}
+      <Modal visible={showLanguageModal} transparent animationType="fade">
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1}
+          onPress={() => setShowLanguageModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Language</Text>
+              <TouchableOpacity onPress={() => setShowLanguageModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.textDark} />
+              </TouchableOpacity>
+            </View>
+            {LANGUAGES.map(lang => (
+              <TouchableOpacity 
+                key={lang.code}
+                style={styles.languageOption}
+                onPress={() => {
+                  setShowLanguageModal(false);
+                  Alert.alert(
+                    'Change Language',
+                    'Are you sure you want to change the app language?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { 
+                        text: 'Change',
+                        onPress: async () => {
+                          await AsyncStorage.setItem('appLanguage', lang.code);
+                          await i18n.changeLanguage(lang.code);
+                        }
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Text style={[styles.languageOptionText, language === lang.code && styles.languageOptionActive]}>
+                  {lang.name}
+                </Text>
+                {language === lang.code && (
+                  <Ionicons name="checkmark" size={20} color={Colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  languageDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  languageOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  languageOptionText: {
+    fontSize: 16,
+    color: Colors.textDark,
+  },
+  languageOptionActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -298,12 +448,14 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 20,
+  },
+  headerBarContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 16,
-    zIndex: 20,
   },
   iconButton: {
     width: 44,

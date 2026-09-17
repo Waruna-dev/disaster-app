@@ -8,26 +8,28 @@ import { router } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { FormInput } from '../../components/FormInput';
 import { resetPassword } from '../../services/authService';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 export default function ForgotPasswordScreen() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleReset = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter your registered email address.");
+      Alert.alert(t('forgotPassword.error'), t('forgotPassword.enterEmail'));
       return;
     }
 
     try {
       setLoading(true);
       await resetPassword(email.trim());
-      Alert.alert("Link Sent", "Check your email for the password reset link!");
+      Alert.alert(t('forgotPassword.linkSent'), t('forgotPassword.checkEmail'));
       router.back();
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      Alert.alert(t('forgotPassword.error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -53,7 +55,7 @@ export default function ForgotPasswordScreen() {
             
             <View style={styles.headerTitleRow}>
               <Logo width={28} height={28} variant="solid" />
-              <Text style={styles.headerTitle}>FloodGuard</Text>
+              <Text style={styles.headerTitle}>{t('forgotPassword.headerTitle')}</Text>
             </View>
           </View>
 
@@ -82,14 +84,14 @@ export default function ForgotPasswordScreen() {
 
           {/* Form Section */}
           <View style={styles.formSection}>
-            <Text style={styles.title}>Forgot your password?</Text>
+            <Text style={styles.title}>{t('forgotPassword.title')}</Text>
             <Text style={styles.subtitle}>
-              Enter your registered email address and we will send you a password-reset link.
+              {t('forgotPassword.subtitle')}
             </Text>
 
             <FormInput
-              label="Email address"
-              placeholder="Enter your email address"
+              label={t('forgotPassword.email')}
+              placeholder={t('forgotPassword.emailPlaceholder')}
               iconName="mail-outline"
               value={email}
               onChangeText={setEmail}
@@ -107,7 +109,7 @@ export default function ForgotPasswordScreen() {
                 <ActivityIndicator color={Colors.white} />
               ) : (
                 <>
-                  <Text style={styles.primaryBtnText}>Send Reset Link</Text>
+                  <Text style={styles.primaryBtnText}>{t('forgotPassword.sendLink')}</Text>
                   <Ionicons name="chevron-forward" size={20} color={Colors.white} style={styles.btnIcon} />
                 </>
               )}
@@ -119,9 +121,8 @@ export default function ForgotPasswordScreen() {
               onPress={() => router.back()}
             >
               <Ionicons name="chevron-back" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
-              <Text style={styles.backToLoginText}>Back to Login</Text>
+              <Text style={styles.backToLoginText}>{t('forgotPassword.login')}</Text>
             </TouchableOpacity>
-
           </View>
         </ScrollView>
 
