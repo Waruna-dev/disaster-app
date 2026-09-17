@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, PanResponder } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -15,7 +15,30 @@ export default function MapScreen() {
   const { t } = useTranslation();
 
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+
+  // Pan Responder for swipe gestures on bottom card
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderRelease: (evt, gestureState) => {
+        // Swipe Down
+        if (gestureState.dy > 50) {
+          setIsCardMinimized(true);
+        }
+        // Swipe Up
+        else if (gestureState.dy < -50) {
+          setIsCardMinimized(false);
+        }
+        // Simple tap
+        else if (Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5) {
+          setIsCardMinimized(prev => !prev);
+        }
+      }
+    })
+  ).current;
+
   const [selectedLocation, setSelectedLocation] = useState<{ latitude: number, longitude: number } | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string>('Loading address...');
   
@@ -266,13 +289,12 @@ export default function MapScreen() {
 
       {/* Bottom Sheet / Card */}
       <View style={styles.bottomCard}>
-        <TouchableOpacity 
+        <View 
           style={styles.dragHandleContainer} 
-          activeOpacity={0.7} 
-          onPress={() => setIsCardMinimized(!isCardMinimized)}
+          {...panResponder.panHandlers}
         >
           <View style={styles.dragHandle} />
-        </TouchableOpacity>
+        </View>
 
         {!isCardMinimized && (
           <>
