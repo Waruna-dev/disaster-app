@@ -22,6 +22,7 @@ export interface Report {
   longitude?: number;
   description: string;
   photoUrl?: string | null;
+  photoUrls?: string[] | null;
   status: ReportStatus;
   referenceNumber: string;
   createdAt: Timestamp | null;
