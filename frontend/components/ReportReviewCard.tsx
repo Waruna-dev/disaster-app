@@ -23,6 +23,7 @@ function formatDate(timestamp: Report['createdAt']): string {
 
 export function ReportReviewCard({ report, onViewDetails, onApprove, onReject }: ReportReviewCardProps) {
   const disaster = DISASTER_CONFIG[report.disasterType];
+  const thumbnailUri = report.photoUrls && report.photoUrls.length > 0 ? report.photoUrls[0] : report.photoUrl;
 
   return (
     <View style={styles.card}>
@@ -57,7 +58,7 @@ export function ReportReviewCard({ report, onViewDetails, onApprove, onReject }:
           </Text>
         </View>
 
-        {report.photoUrl && <Image source={{ uri: report.photoUrl }} style={styles.thumbnail} />}
+        {thumbnailUri && <Image source={{ uri: thumbnailUri }} style={styles.thumbnail} />}
       </View>
 
       <View style={styles.divider} />
