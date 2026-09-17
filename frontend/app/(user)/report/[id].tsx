@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Dimensions, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Dimensions, Modal, Alert, Animated } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
@@ -7,15 +7,31 @@ import { fetchReportById, deleteReport } from '../../../services/reportService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { format, formatDistanceToNow, isToday } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
 export default function ReportDetailsScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+
+  const headerBgOpacity = scrollY.interpolate({
+    inputRange: [0, 80, 120],
+    outputRange: [0, 0.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [-100, 0, 200],
+    outputRange: [0, 0, -50],
+    extrapolate: 'clamp',
+  });
 
   useEffect(() => {
     const loadReport = async () => {
@@ -43,9 +59,9 @@ export default function ReportDetailsScreen() {
   if (!report) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text>Report not found</Text>
+        <Text>{t('reportDetails.notFound') || 'Report not found'}</Text>
         <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
-          <Text style={{ color: Colors.primary }}>Go back</Text>
+          <Text style={{ color: Colors.primary }}>{t('reportDetails.goBack') || 'Go back'}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -93,39 +109,41 @@ export default function ReportDetailsScreen() {
       </Modal>
 
       {/* Header Background */}
-      <View style={[styles.headerContainer, { height: headerHeight }]}>
+      <Animated.View style={[styles.headerContainer, { height: headerHeight, transform: [{ translateY: headerTranslateY }] }]}>
         <Svg width="100%" height="100%" viewBox={`0 0 402 180`} preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
           <Path
             d="M0 0 H402 V150 Q201 190 0 150 Z"
             fill={Colors.gradientStart}
           />
         </Svg>
-      </View>
+      </Animated.View>
 
       {/* Custom Header Bar */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-          <Ionicons name="chevron-back" size={24} color={Colors.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Report Details</Text>
-        <TouchableOpacity 
+      <View style={styles.headerBar}>
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
+        <View style={[styles.headerBarContent, { paddingTop: insets.top + 10 }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+            <Ionicons name="chevron-back" size={24} color={Colors.white} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('reportDetails.reportDetails') || 'Report Details'}</Text>
+          <TouchableOpacity 
           style={styles.iconButton}
           onPress={() => {
             Alert.alert(
-              'Delete Report',
-              'Are you sure you want to delete this report? This action cannot be undone.',
+              t('reportDetails.deleteReport') || 'Delete Report',
+              t('reportDetails.deleteConfirm') || 'Are you sure you want to delete this report? This action cannot be undone.',
               [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('reportDetails.cancel') || 'Cancel', style: 'cancel' },
                 { 
-                  text: 'Delete', 
+                  text: t('reportDetails.delete') || 'Delete', 
                   style: 'destructive',
                   onPress: async () => {
                     try {
                       await deleteReport(id as string);
-                      Alert.alert('Success', 'Report deleted successfully');
+                      Alert.alert(t('reportDetails.success') || 'Success', t('reportDetails.deletedSuccess') || 'Report deleted successfully');
                       router.replace('/(user)/(tabs)/reports');
                     } catch (e) {
-                      Alert.alert('Error', 'Failed to delete report');
+                      Alert.alert(t('reportDetails.error') || 'Error', t('reportDetails.deleteFailed') || 'Failed to delete report');
                     }
                   }
                 }
@@ -134,10 +152,19 @@ export default function ReportDetailsScreen() {
           }}
         >
           <Ionicons name="trash-outline" size={22} color={Colors.white} />
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <Animated.ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 100 }]}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+      >
         {/* Main Summary Card */}
         <View style={styles.summaryCard}>
           <View style={[styles.statusMarker, { backgroundColor: statusColor }]} />
@@ -163,48 +190,48 @@ export default function ReportDetailsScreen() {
         </View>
 
         {/* Report Status Progress */}
-        <Text style={styles.sectionTitle}>Report status</Text>
+        <Text style={styles.sectionTitle}>{t('reportDetails.reportStatus') || 'Report status'}</Text>
         <View style={styles.card}>
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack} />
-            <View style={[styles.progressTrackActive, { width: statusLabel === 'APPROVED' ? '100%' : '50%' }]} />
+            <View style={[styles.progressTrackActive, statusLabel === 'APPROVED' ? { right: 45 } : { right: '50%' }]} />
             
             <View style={styles.progressNode}>
               <View style={[styles.nodeCircle, styles.nodeCompleted]}>
                 <Ionicons name="checkmark" size={16} color={Colors.white} />
               </View>
-              <Text style={styles.nodeLabelCompleted}>Submitted</Text>
+              <Text style={styles.nodeLabelCompleted}>{t('reportDetails.submitted') || 'Submitted'}</Text>
             </View>
             
             <View style={styles.progressNode}>
               <View style={[styles.nodeCircle, statusLabel === 'APPROVED' ? styles.nodeCompleted : statusLabel === 'REJECTED' ? styles.nodeRejected : styles.nodeActive]}>
                 {statusLabel === 'APPROVED' ? <Ionicons name="checkmark" size={16} color={Colors.white} /> : statusLabel === 'REJECTED' ? <Ionicons name="close" size={16} color={Colors.white} /> : <View style={styles.nodeActiveInner} />}
               </View>
-              <Text style={statusLabel === 'APPROVED' || statusLabel === 'REJECTED' ? styles.nodeLabelCompleted : styles.nodeLabelActive}>{statusLabel === 'REJECTED' ? 'Rejected' : 'Pending'}</Text>
+              <Text style={statusLabel === 'APPROVED' || statusLabel === 'REJECTED' ? styles.nodeLabelCompleted : styles.nodeLabelActive}>{statusLabel === 'REJECTED' ? 'Rejected' : t('reportDetails.inReview') || 'Pending'}</Text>
             </View>
 
             <View style={styles.progressNode}>
               <View style={[styles.nodeCircle, statusLabel === 'APPROVED' ? styles.nodeCompleted : styles.nodeInactive]}>
                  {statusLabel === 'APPROVED' && <Ionicons name="checkmark" size={16} color={Colors.white} />}
               </View>
-              <Text style={styles.nodeLabelInactive}>Approved</Text>
+              <Text style={styles.nodeLabelInactive}>{t('reportDetails.decision') || 'Approved'}</Text>
             </View>
           </View>
 
           <View style={styles.statusMessageBox}>
              <Text style={styles.statusMessageText}>
-               {statusLabel === 'APPROVED' ? 'Your report has been verified by an official.' : statusLabel === 'REJECTED' ? `Rejected: ${report.rejectionReason || 'No reason provided.'}` : 'A disaster-management officer is reviewing your report.'}
+               {statusLabel === 'APPROVED' ? (t('reportDetails.reviewStatusApproved') || 'Your report has been verified by an official.') : statusLabel === 'REJECTED' ? `Rejected: ${report.rejectionReason || 'No reason provided.'}` : (t('reportDetails.reviewStatusPending') || 'A disaster-management officer is reviewing your report.')}
              </Text>
           </View>
         </View>
 
         {/* Report Information */}
-        <Text style={styles.sectionTitle}>Report information</Text>
+        <Text style={styles.sectionTitle}>{t('reportDetails.reportInformation') || 'Report information'}</Text>
         <View style={styles.card}>
           <View style={styles.infoRow}>
             <Ionicons name="location" size={24} color={Colors.primary} style={styles.infoIcon} />
             <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>LOCATION</Text>
+              <Text style={styles.infoLabel}>{t('reportDetails.location') || 'LOCATION'}</Text>
               <Text style={styles.infoValue}>{report.affectedArea}</Text>
             </View>
           </View>
@@ -212,7 +239,7 @@ export default function ReportDetailsScreen() {
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={24} color={Colors.primary} style={styles.infoIcon} />
             <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>SUBMITTED</Text>
+              <Text style={styles.infoLabel}>{t('reportDetails.timeReported') || 'SUBMITTED'}</Text>
               <Text style={styles.infoValue}>{exactDate}</Text>
             </View>
             <TouchableOpacity>
@@ -225,7 +252,7 @@ export default function ReportDetailsScreen() {
               <View style={styles.infoRow}>
                 <Ionicons name={statusLabel === 'REJECTED' ? "close-circle-outline" : "shield-checkmark-outline"} size={24} color={statusLabel === 'REJECTED' ? Colors.danger : Colors.primary} style={styles.infoIcon} />
                 <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>{statusLabel === 'REJECTED' ? 'REJECTED ON' : 'APPROVED ON'}</Text>
+                  <Text style={styles.infoLabel}>{statusLabel === 'REJECTED' ? (t('reportDetails.rejectedOn') || 'REJECTED ON') : (t('reportDetails.approvedOn') || 'APPROVED ON')}</Text>
                   <Text style={styles.infoValue}>{exactReviewedDate}</Text>
                 </View>
               </View>
@@ -234,16 +261,16 @@ export default function ReportDetailsScreen() {
         </View>
 
         {/* Description */}
-        <Text style={styles.sectionTitle}>Description</Text>
+        <Text style={styles.sectionTitle}>{t('reportDetails.description') || 'Description'}</Text>
         <View style={[styles.card, { paddingVertical: 16 }]}>
           <Text style={styles.descriptionText}>
-            {report.description || 'No description provided.'}
+            {report.description || t('reportDetails.noDescription') || 'No description provided.'}
           </Text>
-          <Text style={styles.reporterText}>Reported by {report.userId === 'anonymous' ? 'Anonymous' : 'User'}</Text>
+          <Text style={styles.reporterText}>{t('reportDetails.reportedBy') || 'Reported by'} {report.userId === 'anonymous' ? (t('reportDetails.anonymous') || 'Anonymous') : (t('reportDetails.user') || 'User')}</Text>
         </View>
 
         {/* Photo Evidence */}
-        <Text style={styles.sectionTitle}>Photo evidence</Text>
+        <Text style={styles.sectionTitle}>{t('reportDetails.photoEvidence') || 'Photo evidence'}</Text>
         {photos.length > 0 ? (
           photos.map((uri, index) => (
             <View key={index} style={styles.photoCard}>
@@ -263,7 +290,7 @@ export default function ReportDetailsScreen() {
           </View>
         )}
 
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -294,12 +321,18 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   headerBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  headerBarContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 20,
-    zIndex: 10,
   },
   iconButton: {
     width: 40,
@@ -316,7 +349,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 10,
     paddingBottom: 40,
   },
   summaryCard: {
@@ -432,16 +464,16 @@ const styles = StyleSheet.create({
   progressTrack: {
     position: 'absolute',
     top: 14,
-    left: 20,
-    right: 20,
+    left: 45,
+    right: 45,
     height: 4,
-    backgroundColor: '#F0F5F4',
+    backgroundColor: '#C8D6D5',
     zIndex: 1,
   },
   progressTrackActive: {
     position: 'absolute',
     top: 14,
-    left: 20,
+    left: 45,
     height: 4,
     backgroundColor: Colors.primary,
     zIndex: 2,
@@ -466,16 +498,18 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   nodeActive: {
-    borderColor: '#D68910',
+    borderColor: '#F39C12',
+    backgroundColor: '#FEF5E7',
   },
   nodeActiveInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#D68910',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#F39C12',
   },
   nodeInactive: {
-    borderColor: '#E2E8F0',
+    borderColor: '#C8D6D5',
+    backgroundColor: '#F0F5F4',
   },
   nodeRejected: {
     backgroundColor: Colors.danger,
@@ -489,11 +523,12 @@ const styles = StyleSheet.create({
   nodeLabelActive: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#D68910',
+    color: '#B9770E',
   },
   nodeLabelInactive: {
     fontSize: 12,
-    color: Colors.textLight,
+    fontWeight: '600',
+    color: '#7F8C8D',
   },
   statusMessageBox: {
     backgroundColor: '#FFF8EB',

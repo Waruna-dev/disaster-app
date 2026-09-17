@@ -2,8 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
 
 export function AlertCard() {
+  const { t } = useTranslation();
   return (
     <View style={styles.card}>
       <View style={styles.borderLeft} />
@@ -12,20 +14,22 @@ export function AlertCard() {
         <View style={styles.header}>
           <View style={styles.verifiedBadge}>
             <Ionicons name="checkmark-circle" size={14} color={Colors.primary} />
-            <Text style={styles.verifiedText}>VERIFIED</Text>
+            <Text style={styles.verifiedText}>{t('alertCard.verified')}</Text>
           </View>
           <View style={styles.severityBadge}>
-            <Text style={styles.severityText}>MODERATE</Text>
+            <Text style={styles.severityText}>{t('alertCard.moderate')}</Text>
           </View>
         </View>
 
-        <Text style={styles.title}>Flood warning</Text>
-        <Text style={styles.location}>Biyagama Road, Kelaniya</Text>
+        <Text style={styles.title}>{t('alertCard.floodWarning')}</Text>
+        <Text style={styles.location}>{t('alertCard.location')}</Text>
 
         <View style={styles.footer}>
-          <Text style={styles.timestamp}>Updated 10 minutes ago</Text>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.viewDetails}>View details ›</Text>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.timestamp}>{t('alertCard.updatedTime')}</Text>
+          </View>
+          <TouchableOpacity activeOpacity={0.7} style={{ flexShrink: 0 }}>
+            <Text style={styles.viewDetails}>{t('alertCard.viewDetails')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -68,6 +72,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
+    flexShrink: 1,
   },
   verifiedText: {
     color: Colors.primary,
@@ -81,6 +86,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
+    flexShrink: 1,
   },
   severityText: {
     color: '#D68910',
@@ -102,7 +108,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   timestamp: {
     fontSize: 13,

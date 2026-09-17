@@ -1,16 +1,19 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import { Colors } from '../../../constants/colors';
-import { ReportsHeader } from '../../../components/ReportsHeader';
+import { ReportsHeader, ReportsStickyBar } from '../../../components/ReportsHeader';
 import { StatsCard } from '../../../components/StatsCard';
 import { FilterPills } from '../../../components/FilterPills';
 import { ReportCard } from '../../../components/ReportCard';
 import { useFocusEffect, router } from 'expo-router';
 import { useAuth } from '../../../context/AuthContext';
 import { fetchUserReports } from '../../../services/reportService';
+import { useTranslation } from 'react-i18next';
 
 export default function ReportsScreen() {
+  const { t } = useTranslation();
   const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,24 +53,26 @@ export default function ReportsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
-        ref={scrollRef}
-        contentContainerStyle={styles.scrollContent}
+      <ReportsStickyBar scrollY={scrollY} />
+      <Animated.ScrollView 
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
       >
-        <ReportsHeader />
+        <ReportsHeader scrollY={scrollY} />
         
         <StatsCard total={total} pending={pending} approved={approved} />
 
         <FilterPills activeFilter={filter} onSelectFilter={setFilter} />
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent reports</Text>
+          <Text style={styles.sectionTitle}>{t('reports.recentReports')}</Text>
 
           {loading ? (
             <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
           ) : filteredReports.length === 0 ? (
-            <Text style={{ textAlign: 'center', marginTop: 40, color: Colors.placeholder }}>No reports found.</Text>
+            <Text style={{ textAlign: 'center', marginTop: 40, color: Colors.placeholder }}>{t('reports.noReports')}</Text>
           ) : (
             filteredReports.map(report => {
               const d = report.createdAt?.toDate ? report.createdAt.toDate() : new Date();
@@ -88,7 +93,7 @@ export default function ReportsScreen() {
           )}
         </View>
 
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }

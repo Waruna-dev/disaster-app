@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/colors';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -7,26 +7,28 @@ import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } fr
 import { useAuth } from '../../../context/AuthContext';
 import { auth, db } from '../../../config/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { router } from 'expo-router';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { router, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
   const [fullName, setFullName] = useState('User');
   const [initial, setInitial] = useState('U');
-  const [occupation, setOccupation] = useState('No occupation set');
-  const [homeArea, setHomeArea] = useState('Not set');
-  const [workArea, setWorkArea] = useState('Not set');
+  const [occupation, setOccupation] = useState(t('profile.noOccupation'));
+  const [homeArea, setHomeArea] = useState(t('profile.notSet'));
+  const [workArea, setWorkArea] = useState(t('profile.notSet'));
 
-  useEffect(() => {
-    const fetchUserData = async () => {
+  useFocusEffect(
+    useCallback(() => {
+      let unsubscribe: () => void;
       if (user?.uid) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
+        unsubscribe = onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
           if (userDoc.exists()) {
             const data = userDoc.data();
             if (data.fullName) {
@@ -34,16 +36,18 @@ export default function ProfileScreen() {
               setInitial(data.fullName.charAt(0).toUpperCase());
             }
             if (data.occupation) setOccupation(data.occupation);
-            if (data.homeArea) setHomeArea(data.homeArea);
-            if (data.workArea) setWorkArea(data.workArea);
+            if (data.homeArea) setHomeArea(data.homeArea || t('profile.notSet'));
+            if (data.workArea) setWorkArea(data.workArea || t('profile.notSet'));
           }
-        } catch (error) {
+        }, (error) => {
           console.log("Error fetching user data:", error);
-        }
+        });
       }
-    };
-    fetchUserData();
-  }, [user]);
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }, [user])
+  );
 
   const email = user?.email || 'N/A';
 
@@ -56,75 +60,102 @@ export default function ProfileScreen() {
     }
   };
 
-  const headerHeight = 280 + insets.top; // Increased from 240 to push the wave down
+  const headerHeight = 220 + insets.top; // Adjusted to remove empty space
+
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+
+  const headerBgOpacity = scrollY.interpolate({
+    inputRange: [0, 80, 120],
+    outputRange: [0, 0.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [-100, 0, 200],
+    outputRange: [0, 0, -50],
+    extrapolate: 'clamp',
+  });
+
+  const avatarScale = scrollY.interpolate({
+    inputRange: [-100, 0, 100],
+    outputRange: [1.2, 1, 0.8],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* Header Section */}
-        <View style={[styles.headerContainer, { height: headerHeight }]}>
-          <Svg
-            width="100%"
-            height="100%"
-            viewBox={`0 0 402 ${250 + insets.top}`}
-            preserveAspectRatio="none"
-            style={StyleSheet.absoluteFill}
-          >
-            <Defs>
-              <SvgLinearGradient id="headerGradient" x1="18" y1="0" x2="384" y2="224" gradientUnits="userSpaceOnUse">
-                <Stop offset="0" stopColor={Colors.gradientStart} />
-                <Stop offset="1" stopColor={Colors.gradientEnd} />
-              </SvgLinearGradient>
-            </Defs>
-            <Path
-              d={`
-                M0 0
-                H402
-                V${199 + insets.top}
-                C323 ${229 + insets.top} 247 ${224 + insets.top} 183 ${203 + insets.top}
-                C117 ${181 + insets.top} 62 ${187 + insets.top} 0 ${214 + insets.top}
-                V0
-                Z
-              `}
-              fill="url(#headerGradient)"
-            />
-            {/* Decorative circles */}
-            <Circle cx="419" cy="78" r="100" fill="none" stroke={Colors.white} strokeOpacity={0.05} strokeWidth={26} />
-            <Circle cx="-26" cy="91" r="89" fill={Colors.white} fillOpacity={0.035} />
-          </Svg>
+      {/* Header Background */}
+      <Animated.View style={[styles.headerContainer, { height: headerHeight, transform: [{ translateY: headerTranslateY }] }]}>
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 402 ${190 + insets.top}`}
+          preserveAspectRatio="none"
+          style={StyleSheet.absoluteFill}
+        >
+          <Defs>
+            <SvgLinearGradient id="headerGradient" x1="18" y1="0" x2="384" y2="224" gradientUnits="userSpaceOnUse">
+              <Stop offset="0" stopColor={Colors.gradientStart} />
+              <Stop offset="1" stopColor={Colors.gradientEnd} />
+            </SvgLinearGradient>
+          </Defs>
+          <Path
+            d={`
+              M0 0
+              H402
+              V${139 + insets.top}
+              C323 ${169 + insets.top} 247 ${164 + insets.top} 183 ${143 + insets.top}
+              C117 ${121 + insets.top} 62 ${127 + insets.top} 0 ${154 + insets.top}
+              V0
+              Z
+            `}
+            fill="url(#headerGradient)"
+          />
+          {/* Decorative circles */}
+          <Circle cx="419" cy="48" r="100" fill="none" stroke={Colors.white} strokeOpacity={0.05} strokeWidth={26} />
+          <Circle cx="-26" cy="61" r="89" fill={Colors.white} fillOpacity={0.035} />
+        </Svg>
+      </Animated.View>
 
-          <View style={[styles.headerContent, { paddingTop: insets.top + 16 }]}>
-            <View style={styles.headerTopRow}>
-              <Text style={styles.headerTitle}>Profile</Text>
-              <TouchableOpacity style={styles.editButton} activeOpacity={0.8} onPress={() => router.push('/(user)/edit-profile')}>
-                <Feather name="edit-2" size={16} color={Colors.white} style={styles.editIcon} />
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.profileInfoContainer}>
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarInitial}>{initial}</Text>
-              </View>
-              <Text style={styles.profileName}>{fullName}</Text>
-              <Text style={styles.profileOccupation}>{occupation}</Text>
-            </View>
-          </View>
+      {/* Sticky Header Bar */}
+      <View style={styles.headerBar}>
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
+        <View style={[styles.headerBarContent, { paddingTop: insets.top + 16 }]}>
+          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
+          <TouchableOpacity style={styles.editButton} activeOpacity={0.8} onPress={() => router.push('/(user)/edit-profile')}>
+            <Feather name="edit-2" size={16} color={Colors.white} style={styles.editIcon} />
+            <Text style={styles.editButtonText}>{t('profile.edit')}</Text>
+          </TouchableOpacity>
         </View>
+      </View>
+
+      <Animated.ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 120 }]} 
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+      >
+        
+        <Animated.View style={[styles.profileInfoContainer, { transform: [{ scale: avatarScale }] }]}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarInitial}>{initial}</Text>
+          </View>
+          <Text style={styles.profileName}>{fullName}</Text>
+          <Text style={styles.profileOccupation}>{occupation}</Text>
+        </Animated.View>
 
         {/* Content Section */}
         <View style={styles.mainContent}>
           
           {/* Personal information */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Personal information</Text>
+            <Text style={styles.cardTitle}>{t('editProfile.personalInfo')}</Text>
             <View style={styles.cardRow}>
               <View style={[styles.iconContainer, { backgroundColor: '#E8F5F2' }]}>
                 <Ionicons name="mail-outline" size={22} color={Colors.primary} />
               </View>
               <View style={styles.rowTextContent}>
-                <Text style={styles.rowLabel}>Email address</Text>
+                <Text style={styles.rowLabel}>{t('login.email')}</Text>
                 <Text style={styles.rowValue}>{email}</Text>
               </View>
             </View>
@@ -133,9 +164,9 @@ export default function ProfileScreen() {
           {/* Saved areas */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardTitle}>Saved areas</Text>
+              <Text style={styles.cardTitle}>{t('profile.savedAreas')}</Text>
               <TouchableOpacity onPress={() => router.push('/(user)/edit-profile')}>
-                <Text style={styles.manageText}>Manage</Text>
+                <Text style={styles.manageText}>{t('profile.manage')}</Text>
               </TouchableOpacity>
             </View>
             
@@ -144,7 +175,7 @@ export default function ProfileScreen() {
                 <Ionicons name="home" size={22} color={Colors.primary} />
               </View>
               <View style={styles.rowTextContent}>
-                <Text style={styles.rowLabel}>Home area</Text>
+                <Text style={styles.rowLabel}>{t('profile.homeArea')}</Text>
                 <Text style={styles.rowValue}>{homeArea}</Text>
               </View>
             </View>
@@ -153,10 +184,10 @@ export default function ProfileScreen() {
             
             <View style={styles.cardRow}>
               <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
-                <Ionicons name="school-outline" size={22} color="#4F46E5" />
+                <Ionicons name="business-outline" size={22} color="#4F46E5" />
               </View>
               <View style={styles.rowTextContent}>
-                <Text style={styles.rowLabel}>Work/School area</Text>
+                <Text style={styles.rowLabel}>{t('profile.workArea')}</Text>
                 <Text style={styles.rowValue}>{workArea}</Text>
               </View>
             </View>
@@ -168,7 +199,7 @@ export default function ProfileScreen() {
               <View style={[styles.iconContainer, { backgroundColor: '#E8F5F2' }]}>
                 <Ionicons name="notifications-outline" size={22} color={Colors.primary} />
               </View>
-              <Text style={styles.settingsText}>Notification settings</Text>
+              <Text style={styles.settingsText}>{t('profile.notificationSettings')}</Text>
               <Ionicons name="chevron-forward" size={20} color={Colors.placeholder} />
             </TouchableOpacity>
 
@@ -178,7 +209,7 @@ export default function ProfileScreen() {
               <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
                 <Ionicons name="help-circle-outline" size={22} color="#4F46E5" />
               </View>
-              <Text style={styles.settingsText}>Help and support</Text>
+              <Text style={styles.settingsText}>{t('profile.privacyPolicy')}</Text>
               <Ionicons name="chevron-forward" size={20} color={Colors.placeholder} />
             </TouchableOpacity>
           </View>
@@ -186,12 +217,12 @@ export default function ProfileScreen() {
           {/* Logout Button */}
           <TouchableOpacity style={styles.logoutButton} activeOpacity={0.8} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={24} color={Colors.danger} style={{ transform: [{ scaleX: -1 }] }} />
-            <Text style={styles.logoutText}>Log out</Text>
+            <Text style={styles.logoutText}>{t('profile.logout')}</Text>
           </TouchableOpacity>
 
         </View>
 
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -205,20 +236,23 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   headerContainer: {
-    width: '100%',
-    position: 'relative',
-    marginBottom: -20,
-  },
-  headerContent: {
-    paddingHorizontal: 24,
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0, left: 0, right: 0,
+    zIndex: 0,
   },
-  headerTopRow: {
+  headerBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  headerBarContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 20,
   },
   headerTitle: {
     fontSize: 28,
@@ -264,12 +298,12 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 22,
     fontWeight: '700',
-    color: Colors.white,
+    color: Colors.textDark,
     marginBottom: 4,
   },
   profileOccupation: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    color: Colors.placeholder,
   },
   mainContent: {
     paddingHorizontal: 24,

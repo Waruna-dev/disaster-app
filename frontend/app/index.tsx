@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, useWindowDimensions } from '
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/colors';
 import { Logo } from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
@@ -24,11 +25,20 @@ export default function SplashScreen() {
   useEffect(() => {
     if (step === 'loading' && !isLoading) {
       // Add a small artificial delay so the loading text is readable for a moment
-      const redirectTimer = setTimeout(() => {
+      const redirectTimer = setTimeout(async () => {
         if (user) {
           router.replace('/(user)/(tabs)' as any);
         } else {
-          router.replace('/(auth)/login' as any);
+          try {
+            const hasSelected = await AsyncStorage.getItem('hasSelectedLanguage');
+            if (hasSelected === 'true') {
+              router.replace('/(auth)/login' as any);
+            } else {
+              router.replace('/(auth)/language-select' as any);
+            }
+          } catch (e) {
+            router.replace('/(auth)/language-select' as any);
+          }
         }
       }, 1500);
       return () => clearTimeout(redirectTimer);

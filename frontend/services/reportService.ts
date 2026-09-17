@@ -1,5 +1,5 @@
 import { db } from '../config/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import * as FileSystem from 'expo-file-system/legacy';
 
 interface ReportData {
@@ -110,6 +110,28 @@ export const deleteReport = async (id: string) => {
     await deleteDoc(doc(db, 'reports', id));
   } catch (error) {
     console.error("Error deleting report: ", error);
+    throw error;
+  }
+};
+
+/**
+ * Anonymizes a user's reports when they delete their account.
+ */
+export const anonymizeUserReports = async (userId: string) => {
+  try {
+    const q = query(collection(db, 'reports'), where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
+    
+    const updatePromises = querySnapshot.docs.map(docSnapshot => 
+      updateDoc(doc(db, 'reports', docSnapshot.id), {
+        userId: 'anonymous',
+        authorName: 'Anonymous User'
+      })
+    );
+    
+    await Promise.all(updatePromises);
+  } catch (error) {
+    console.error('Error anonymizing reports: ', error);
     throw error;
   }
 };

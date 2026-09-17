@@ -1,40 +1,73 @@
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { Colors } from '../../../constants/colors';
-import { DashboardHeader } from '../../../components/DashboardHeader';
+import { DashboardHeader, DashboardStickyBar } from '../../../components/DashboardHeader';
 import { AlertCard } from '../../../components/AlertCard';
 import { QuickActionCard } from '../../../components/QuickActionCard';
 import { UpdateListItem } from '../../../components/UpdateListItem';
 import { router, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../../config/firebase';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const [firstName, setFirstName] = useState('User');
+  const [initial, setInitial] = useState('U');
+
+  useEffect(() => {
+    let unsubscribe: () => void;
+    if (user?.uid) {
+      unsubscribe = onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.fullName) {
+            const first = data.fullName.split(' ')[0];
+            setFirstName(first);
+            setInitial(first.charAt(0).toUpperCase());
+          }
+        }
+      }, (error) => {
+        console.error("Error fetching user data:", error);
+      });
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user]);
 
   useFocusEffect(
     React.useCallback(() => {
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      // scrollRef.current?.scrollTo({ y: 0, animated: false });
     }, [])
   );
   return (
     <View style={styles.container}>
-      <ScrollView 
-        ref={scrollRef}
-        contentContainerStyle={styles.scrollContent}
+      <DashboardStickyBar scrollY={scrollY} initial={initial} />
+      <Animated.ScrollView 
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
       >
-        <DashboardHeader />
+        <DashboardHeader scrollY={scrollY} firstName={firstName} />
         
         <View style={styles.alertWrapper}>
           <AlertCard />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick actions</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.quickActions')}</Text>
           <View style={styles.quickActionsRow}>
             <View style={styles.actionColumn}>
               <QuickActionCard 
-                title="Report incident" 
-                subtitle="Flood or landslide" 
+                title={t('dashboard.reportIncident')} 
+                subtitle={t('dashboard.floodOrLandslide')} 
                 icon="add" 
                 variant="solid" 
                 onPress={() => router.push('/(user)/report/create')} 
@@ -42,8 +75,8 @@ export default function DashboardScreen() {
             </View>
             <View style={styles.actionColumn}>
               <QuickActionCard 
-                title="My reports" 
-                subtitle="Track report status" 
+                title={t('dashboard.myReports')} 
+                subtitle={t('dashboard.trackReportStatus')} 
                 icon="document-text-outline" 
                 variant="outline" 
                 onPress={() => router.push('/(user)/(tabs)/reports')} 
@@ -54,30 +87,30 @@ export default function DashboardScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitleNoMargin}>Recent updates</Text>
+            <Text style={styles.sectionTitleNoMargin}>{t('dashboard.recentUpdates')}</Text>
             <TouchableOpacity activeOpacity={0.7}>
-              <Text style={styles.viewAllText}>View all</Text>
+              <Text style={styles.viewAllText}>{t('dashboard.viewAll')}</Text>
             </TouchableOpacity>
           </View>
           
           <UpdateListItem 
-            title="Water level rising" 
-            description="Kelaniya • 20 minutes ago" 
+            title={t('dashboard.waterLevelRising')} 
+            description={t('dashboard.waterLevelDesc')} 
             icon="water" 
             iconColor="#D68910" 
             iconBg="#FEF5E7" 
           />
           
           <UpdateListItem 
-            title="No active alerts in Malabe" 
-            description="Area status is currently safe" 
+            title={t('dashboard.noActiveAlerts')} 
+            description={t('dashboard.noActiveAlertsDesc')} 
             icon="checkmark" 
             iconColor={Colors.success} 
             iconBg="#E8F5F2" 
           />
         </View>
         
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
