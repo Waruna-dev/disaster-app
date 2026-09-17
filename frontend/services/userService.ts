@@ -1,5 +1,6 @@
 import { db } from '../config/firebase';
 import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { anonymizeUserReports } from './reportService';
 
 /**
  * Saves extra user information (name, role, etc.) to Firestore.
@@ -34,6 +35,10 @@ export const getUserProfile = async (userId: string) => {
  */
 export const deleteUserData = async (userId: string) => {
   try {
+    // First, anonymize their reports instead of deleting them
+    await anonymizeUserReports(userId);
+    
+    // Then delete the user's profile document
     await deleteDoc(doc(db, 'users', userId));
   } catch (error) {
     console.error('Error deleting user profile:', error);
