@@ -1,18 +1,57 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } from 'react-native-svg';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
 
-export function ReportsHeader() {
+export function ReportsStickyBar({ scrollY }: { scrollY: Animated.Value }) {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  
+  const headerBgOpacity = scrollY.interpolate({
+    inputRange: [0, 80, 120],
+    outputRange: [0, 0.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <View style={styles.stickyBar}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
+      <View style={[styles.stickyBarContent, { paddingTop: insets.top + 20 }]}>
+        <View style={{ flex: 1, marginRight: 64 }}>
+          <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>{t('reports.myReports')}</Text>
+          <Text style={styles.subtitle}>{t('reports.trackSubmitted')}</Text>
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.fab, { position: 'absolute', right: 24, top: insets.top + 20 }]} 
+          activeOpacity={0.8}
+          onPress={() => router.push('/(user)/report/create')}
+        >
+          <Ionicons name="add" size={28} color={Colors.white} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+export function ReportsHeader({ scrollY }: { scrollY: Animated.Value }) {
   const insets = useSafeAreaInsets();
   const headerHeight = 220 + insets.top; // Adjust based on needs
 
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [-100, 0, 200],
+    outputRange: [-50, 0, 100],
+    extrapolate: 'clamp',
+  });
+
   return (
     <View style={[styles.container, { height: headerHeight }]}>
-      <Svg
+      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ translateY: headerTranslateY }] }]}>
+        <Svg
         width="100%"
         height="100%"
         viewBox={`0 0 402 ${180 + insets.top}`}
@@ -37,24 +76,12 @@ export function ReportsHeader() {
           `}
           fill="url(#reportsHeaderGradient)"
         />
-        <Circle cx="350" cy="50" r="100" fill={Colors.white} fillOpacity={0.035} />
-      </Svg>
+          <Circle cx="350" cy="50" r="100" fill={Colors.white} fillOpacity={0.035} />
+        </Svg>
+      </Animated.View>
 
-      <View style={[styles.content, { paddingTop: insets.top + 20 }]}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.title}>My reports</Text>
-            <Text style={styles.subtitle}>Track your submitted incident reports</Text>
-          </View>
-
-          <TouchableOpacity 
-            style={styles.fab} 
-            activeOpacity={0.8}
-            onPress={() => router.push('/(user)/report/create')}
-          >
-            <Ionicons name="add" size={28} color={Colors.white} />
-          </TouchableOpacity>
-        </View>
+      <View style={[styles.content, { paddingTop: insets.top + 20 + 80 }]}>
+        {/* Content goes here if needed */}
       </View>
     </View>
   );
@@ -66,6 +93,21 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
+  stickyBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  stickyBarContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    position: 'relative',
+  },
   content: {
     paddingHorizontal: 24,
     position: 'absolute',
@@ -74,11 +116,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
+
   title: {
     color: Colors.white,
     fontSize: 28,

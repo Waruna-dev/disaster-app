@@ -1,27 +1,29 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
 
-export function StatsCard() {
+export function StatsCard({ total, pending, approved }: { total: number; pending: number; approved: number }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.card}>
       <View style={styles.column}>
-        <Text style={styles.valueTotal}>3</Text>
-        <Text style={styles.label}>Total</Text>
+        <Text style={styles.valueTotal}>{total}</Text>
+        <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit>{t('reports.total')}</Text>
       </View>
       
       <View style={styles.divider} />
       
       <View style={styles.column}>
-        <Text style={styles.valuePending}>1</Text>
-        <Text style={styles.label}>Pending</Text>
+        <Text style={styles.valuePending}>{pending}</Text>
+        <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit>{t('reports.pending')}</Text>
       </View>
       
       <View style={styles.divider} />
       
       <View style={styles.column}>
-        <Text style={styles.valueApproved}>1</Text>
-        <Text style={styles.label}>Approved</Text>
+        <Text style={styles.valueApproved}>{approved}</Text>
+        <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit>{t('reports.approved')}</Text>
       </View>
     </View>
   );
@@ -73,5 +75,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     color: Colors.textMuted,
+    textAlign: 'center',
   }
 });

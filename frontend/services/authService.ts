@@ -3,7 +3,9 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
-  sendPasswordResetEmail 
+  sendPasswordResetEmail,
+  updatePassword,
+  deleteUser
 } from 'firebase/auth';
 import { saveUserProfile } from './userService';
 
@@ -29,4 +31,14 @@ export const logoutUser = async () => {
 
 export const resetPassword = async (email: string) => {
   return await sendPasswordResetEmail(auth, email);
+};
+
+export const updateUserPassword = async (newPassword: string) => {
+  if (!auth.currentUser) throw new Error("No authenticated user");
+  return await updatePassword(auth.currentUser, newPassword);
+};
+
+export const deleteUserAccount = async () => {
+  if (!auth.currentUser) throw new Error("No authenticated user");
+  return await deleteUser(auth.currentUser);
 };

@@ -1,31 +1,33 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../constants/colors';
 
 interface PhotoUploadCardProps {
-  photoUri?: string;
+  photoUris?: string[];
   onPhotoSelect: (uri: string) => void;
-  onPhotoRemove: () => void;
+  onPhotoRemove: (index: number) => void;
 }
 
-export function PhotoUploadCard({ photoUri, onPhotoSelect, onPhotoRemove }: PhotoUploadCardProps) {
+export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }: PhotoUploadCardProps) {
+  const { t } = useTranslation();
   const handlePress = async () => {
     Alert.alert(
-      'Upload Photo',
-      'Choose an option',
+      t('reportCreate.uploadPhoto'),
+      t('reportCreate.chooseOption'),
       [
         {
-          text: 'Take Photo',
+          text: t('reportCreate.takePhoto'),
           onPress: async () => {
             const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
             if (permissionResult.granted === false) {
-              Alert.alert('Permission needed', 'You need to grant camera permissions to take a photo.');
+              Alert.alert(t('reportCreate.permissionNeeded'), t('reportCreate.cameraPermission'));
               return;
             }
             const result = await ImagePicker.launchCameraAsync({
-              allowsEditing: true,
+              allowsEditing: false,
               aspect: [4, 3],
               quality: 0.8,
             });
@@ -35,16 +37,16 @@ export function PhotoUploadCard({ photoUri, onPhotoSelect, onPhotoRemove }: Phot
           }
         },
         {
-          text: 'Choose from Gallery',
+          text: t('reportCreate.chooseGallery'),
           onPress: async () => {
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (permissionResult.granted === false) {
-              Alert.alert('Permission needed', 'You need to grant gallery permissions to pick a photo.');
+              Alert.alert(t('reportCreate.permissionNeeded'), t('reportCreate.galleryPermission'));
               return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ['images'],
-              allowsEditing: true,
+              allowsEditing: false,
               aspect: [4, 3],
               quality: 0.8,
             });
@@ -54,7 +56,7 @@ export function PhotoUploadCard({ photoUri, onPhotoSelect, onPhotoRemove }: Phot
           }
         },
         {
-          text: 'Cancel',
+          text: t('reportCreate.cancel'),
           style: 'cancel'
         }
       ]
@@ -63,32 +65,52 @@ export function PhotoUploadCard({ photoUri, onPhotoSelect, onPhotoRemove }: Phot
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Add a photo <Text style={styles.optional}>(optional)</Text></Text>
+      <View style={styles.header}>
+        <Text style={styles.label}>{t('reportCreate.addPhotoEvidence')} <Text style={styles.optional}>({photoUris.length}/3)</Text></Text>
+      </View>
       
-      {photoUri ? (
-        <View style={styles.previewContainer}>
-          <Image source={{ uri: photoUri }} style={styles.previewImage} />
-          <TouchableOpacity style={styles.removeButton} onPress={onPhotoRemove} activeOpacity={0.8}>
-            <Ionicons name="close-circle" size={28} color={Colors.white} />
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {photoUris.length < 3 && (
+          <TouchableOpacity 
+            style={photoUris.length > 0 ? styles.cardSmall : styles.card} 
+            activeOpacity={0.7} 
+            onPress={handlePress}
+          >
+            <Ionicons name="camera-outline" size={28} color={Colors.primary} style={photoUris.length === 0 ? styles.icon : undefined} />
+            {photoUris.length === 0 && (
+              <View>
+                <Text style={styles.title}>{t('reportCreate.choosePhoto')}</Text>
+                <Text style={styles.subtitle}>{t('reportCreate.photoMax')}</Text>
+              </View>
+            )}
           </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={handlePress}>
-          <Ionicons name="camera-outline" size={28} color={Colors.primary} style={styles.icon} />
-          <View>
-            <Text style={styles.title}>Choose photo</Text>
-            <Text style={styles.subtitle}>JPG or PNG, maximum 5 MB</Text>
-          </View>
-        </TouchableOpacity>
-      )}
+        )}
+
+        {photoUris.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
+            {photoUris.map((uri, index) => (
+              <View key={index} style={styles.previewContainer}>
+                <Image source={{ uri }} style={styles.previewImage} />
+                <TouchableOpacity style={styles.removeButton} onPress={() => onPhotoRemove(index)} activeOpacity={0.8}>
+                  <Ionicons name="close-circle" size={24} color={Colors.white} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 24,
+    /* no padding */
     marginBottom: 32,
+  },
+  optional: {
+    color: Colors.textMuted,
+    fontWeight: '400',
   },
   label: {
     fontSize: 14,
@@ -100,7 +122,11 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontWeight: '400',
   },
-  card: {
+  scrollContainer: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  cardLarge: {
     borderWidth: 1.5,
     borderColor: '#C3E0D8',
     borderStyle: 'dashed',
@@ -109,9 +135,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FAFCFC',
+    marginRight: 12,
+    width: '100%',
+  },
+  textContent: {
+    flex: 1,
+  },
+  cardSmall: {
+    borderWidth: 1.5,
+    borderColor: '#C3E0D8',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAFCFC',
+    marginRight: 12,
   },
   icon: {
-    marginRight: 16,
+    marginRight: 12,
   },
   title: {
     fontSize: 14,
@@ -124,11 +167,12 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   previewContainer: {
-    width: '100%',
-    height: 180,
+    width: 140,
+    height: 100,
     borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
+    marginRight: 12,
   },
   previewImage: {
     width: '100%',
@@ -137,9 +181,9 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 14,
+    borderRadius: 12,
   }
 });
