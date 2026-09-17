@@ -54,6 +54,7 @@ export function buildReportsMapHtml(pins: PinnedReport[]): string {
     .popup-meta { font-size: 11px; color: ${Colors.textMuted}; margin-bottom: 4px; }
     .popup-link { font-size: 11px; font-weight: 700; color: ${Colors.primary}; background: none; border: none; padding: 0; cursor: pointer; }
     .leaflet-popup-content-wrapper { border-radius: 10px; }
+    .pin { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.35); }
   </style>
 </head>
 <body>
@@ -70,13 +71,13 @@ export function buildReportsMapHtml(pins: PinnedReport[]): string {
 
     var markers = [];
     points.forEach(function (p) {
-      var marker = L.circleMarker([p.lat, p.lng], {
-        radius: 10,
-        color: '#FFFFFF',
-        weight: 2,
-        fillColor: p.color,
-        fillOpacity: 1
-      }).addTo(map);
+      var icon = L.divIcon({
+        html: '<div class="pin" style="background:' + p.color + '">' + p.symbol + '</div>',
+        className: '',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+      var marker = L.marker([p.lat, p.lng], { icon: icon }).addTo(map);
 
       var popupHtml =
         '<div class="popup">' +

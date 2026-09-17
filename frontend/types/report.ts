@@ -18,8 +18,11 @@ export interface Report {
   disasterType: DisasterType;
   affectedArea: string;
   location?: ReportLocation | null;
+  latitude?: number;
+  longitude?: number;
   description: string;
   photoUrl?: string | null;
+  photoUrls?: string[] | null;
   status: ReportStatus;
   referenceNumber: string;
   createdAt: Timestamp | null;

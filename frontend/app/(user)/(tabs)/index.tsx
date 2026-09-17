@@ -70,7 +70,7 @@ export default function DashboardScreen() {
                 subtitle={t('dashboard.floodOrLandslide')} 
                 icon="add" 
                 variant="solid" 
-                onPress={() => router.push('/(user)/report/create')} 
+                onPress={() => router.push('/(user)/(tabs)/map')} 
               />
             </View>
             <View style={styles.actionColumn}>

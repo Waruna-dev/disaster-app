@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, NativeSyntheticEvent, TextLayoutEventData } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } from 'react-native-svg';
@@ -18,7 +18,16 @@ interface DMCHeaderProps {
 // just shorter and with DMC-admin-specific content, so both apps share one visual language.
 export function DMCHeader({ eyebrow, title, onBack, onMenuPress, onRightPress, badgeCount }: DMCHeaderProps) {
   const insets = useSafeAreaInsets();
-  const headerHeight = 190 + insets.top;
+  // Long titles (e.g. a full street address) wrap to a second line, which can push
+  // past the fixed-height curve into its lighter, low-contrast lower edge. Growing
+  // the header for that case stretches the SVG curve down with it (preserveAspectRatio
+  // "none"), keeping the text over solid gradient.
+  const [titleLines, setTitleLines] = useState(1);
+  const headerHeight = (titleLines > 1 ? 222 : 190) + insets.top;
+
+  const handleTitleLayout = (event: NativeSyntheticEvent<TextLayoutEventData>) => {
+    setTitleLines(event.nativeEvent.lines.length);
+  };
 
   return (
     <View style={[styles.container, { height: headerHeight }]}>
@@ -72,7 +81,7 @@ export function DMCHeader({ eyebrow, title, onBack, onMenuPress, onRightPress, b
         </View>
 
         <Text style={styles.eyebrow}>{eyebrow}</Text>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title} onTextLayout={handleTitleLayout}>{title}</Text>
       </View>
     </View>
   );
@@ -130,10 +139,17 @@ const styles = StyleSheet.create({
     color: Colors.headerSubtitle,
     letterSpacing: 1,
     marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
     color: Colors.white,
+    lineHeight: 30,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
