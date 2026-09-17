@@ -6,6 +6,7 @@ interface ReportData {
   userId: string;
   disasterType: 'flood' | 'landslide';
   affectedArea: string;
+  location?: { latitude: number; longitude: number };
   description: string;
   photoUrl?: string;
   status?: 'Pending' | 'Verified' | 'Rejected';
@@ -54,6 +55,9 @@ export const createReport = async (reportData: ReportData): Promise<string> => {
   const cleanData: any = { ...reportData };
   if (cleanData.photoUrl === undefined) {
     cleanData.photoUrl = null;
+  }
+  if (cleanData.location === undefined) {
+    cleanData.location = null;
   }
 
   await addDoc(collection(db, 'reports'), {

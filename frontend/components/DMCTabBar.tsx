@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
 
-type DMCTab = 'home' | 'incidents' | 'map' | 'analytics' | 'notifications';
+type DMCTab = 'home' | 'incidents' | 'map' | 'analytics' | 'reports';
 
 interface TabConfig {
   key: DMCTab;
@@ -15,16 +15,14 @@ interface TabConfig {
   route?: string;
 }
 
-// Map/Analytics have no screens yet (out of scope here) — tapping them says so
-// instead of navigating to a dead or fake route. Alerts has no dedicated screen
-// either, but the Dashboard's "Recent Activity" card already lists approved/
-// rejected reports, so it doubles as the notifications view for now.
+// Analytics has no screen yet (out of scope here) — tapping it says so instead of
+// navigating to a dead or fake route.
 const TABS: TabConfig[] = [
   { key: 'home', label: 'Home', icon: 'home-outline', activeIcon: 'home', route: '/(DMC)/dashboard' },
   { key: 'incidents', label: 'Incidents', icon: 'document-text-outline', activeIcon: 'document-text', route: '/(DMC)/incidents' },
-  { key: 'map', label: 'Map', icon: 'location-outline', activeIcon: 'location' },
+  { key: 'map', label: 'Map', icon: 'location-outline', activeIcon: 'location', route: '/(DMC)/map' },
   { key: 'analytics', label: 'Analytics', icon: 'bar-chart-outline', activeIcon: 'bar-chart' },
-  { key: 'notifications', label: 'Alerts', icon: 'notifications-outline', activeIcon: 'notifications', route: '/(DMC)/dashboard' },
+  { key: 'reports', label: 'All Reports', icon: 'albums-outline', activeIcon: 'albums', route: '/(DMC)/reports' },
 ];
 
 // Same raised-center-button look as the resident tab bar (app/(user)/(tabs)/_layout.tsx's

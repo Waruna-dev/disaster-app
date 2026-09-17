@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 
@@ -9,46 +9,65 @@ interface StatTileProps {
   label: string;
   tint: string;
   tintBg: string;
+  onPress?: () => void;
 }
 
-export function StatTile({ icon, value, label, tint, tintBg }: StatTileProps) {
+export function StatTile({ icon, value, label, tint, tintBg, onPress }: StatTileProps) {
   return (
-    <View style={styles.tile}>
-      <View style={[styles.iconWrapper, { backgroundColor: tintBg }]}>
-        <Ionicons name={icon} size={18} color={tint} />
+    <TouchableOpacity
+      style={[styles.tile, { backgroundColor: tintBg }]}
+      activeOpacity={onPress ? 0.75 : 1}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      <Ionicons name={icon} size={76} color={tint} style={styles.bgIcon} />
+
+      <View style={[styles.iconWrapper, { shadowColor: tint }]}>
+        <Ionicons name={icon} size={20} color={tint} />
       </View>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={[styles.value, { color: tint }]}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#F0F5F4',
+    borderRadius: 20,
+    padding: 16,
     minWidth: '45%',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  bgIcon: {
+    position: 'absolute',
+    right: -16,
+    bottom: -18,
+    opacity: 0.16,
+    transform: [{ rotate: '-12deg' }],
   },
   iconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+    backgroundColor: Colors.white,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 2,
   },
   value: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.textDark,
+    fontSize: 24,
+    fontWeight: '800',
     marginBottom: 2,
   },
   label: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '600',
     color: Colors.textMuted,
   },
 });

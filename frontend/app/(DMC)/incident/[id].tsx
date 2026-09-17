@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Timestamp } from 'firebase/firestore';
@@ -9,6 +10,7 @@ import { ApproveConfirmDialog } from '../../../components/ApproveConfirmDialog';
 import { RejectReasonDialog } from '../../../components/RejectReasonDialog';
 import { useReport } from '../../../hooks/useReport';
 import { useResidentNames } from '../../../hooks/useResidentNames';
+import { ReportLocation, ReportStatus } from '../../../types/report';
 
 function formatDateTime(timestamp: Timestamp | null | undefined) {
   if (!timestamp) return '';
@@ -21,6 +23,49 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   Rejected: { bg: '#FDEDEC', text: Colors.danger },
 };
 
+const STATUS_PIN: Record<ReportStatus, string> = {
+  Pending: Colors.warning,
+  Verified: Colors.primary,
+  Rejected: Colors.danger,
+};
+
+// Single-pin OpenStreetMap (Leaflet) preview so a DMC officer can immediately see
+// where the report was filed, at a glance, without leaving the review screen. Uses
+// a WebView instead of react-native-maps for the same reason as app/(DMC)/map.tsx:
+// react-native-maps' native Google Maps view renders solid black on Android under
+// React Native's New Architecture (react-native-maps/react-native-maps#5462).
+function buildLocationHtml(location: ReportLocation, color: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map', { zoomControl: false, dragging: true, scrollWheelZoom: false }).setView([${location.latitude}, ${location.longitude}], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    L.circleMarker([${location.latitude}, ${location.longitude}], {
+      radius: 10,
+      color: '#FFFFFF',
+      weight: 2,
+      fillColor: '${color}',
+      fillOpacity: 1
+    }).addTo(map);
+  </script>
+</body>
+</html>`;
+}
+
 export default function AdminReportDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { report, loading } = useReport(id);
@@ -28,6 +73,11 @@ export default function AdminReportDetailsScreen() {
 
   const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
+
+  const locationHtml = useMemo(() => {
+    if (!report?.location) return null;
+    return buildLocationHtml(report.location, STATUS_PIN[report.status]);
+  }, [report?.location, report?.status]);
 
   if (loading) {
     return (
@@ -87,6 +137,20 @@ export default function AdminReportDetailsScreen() {
 
           <Text style={styles.sectionTitle}>DESCRIPTION</Text>
           <Text style={styles.description}>{report.description}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>LOCATION</Text>
+          {locationHtml ? (
+            <View style={styles.mapPreview}>
+              <WebView style={StyleSheet.absoluteFill} originWhitelist={['*']} source={{ html: locationHtml }} />
+            </View>
+          ) : (
+            <View style={styles.mapMissing}>
+              <Ionicons name="location-outline" size={20} color={Colors.textMuted} />
+              <Text style={styles.mapMissingText}>No location data for this report</Text>
+            </View>
+          )}
         </View>
 
         {report.photoUrl && (
@@ -236,6 +300,23 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 14,
     backgroundColor: '#E3EFEC',
+  },
+  mapPreview: {
+    width: '100%',
+    height: 160,
+    borderRadius: 14,
+    backgroundColor: '#E3EFEC',
+    overflow: 'hidden',
+  },
+  mapMissing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+  },
+  mapMissingText: {
+    fontSize: 13,
+    color: Colors.textMuted,
   },
   actionsBar: {
     flexDirection: 'row',

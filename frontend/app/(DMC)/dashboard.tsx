@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Timestamp } from 'firebase/firestore';
@@ -10,6 +10,7 @@ import { StatTile } from '../../components/StatTile';
 import { useReportStats } from '../../hooks/useReportStats';
 import { useWeeklyTrend } from '../../hooks/useWeeklyTrend';
 import { useRecentActivity } from '../../hooks/useRecentActivity';
+import { useReports } from '../../hooks/useReports';
 
 function formatRelative(timestamp: Timestamp | null | undefined) {
   if (!timestamp) return '';
@@ -23,10 +24,20 @@ function formatRelative(timestamp: Timestamp | null | undefined) {
   return `${days} d ago`;
 }
 
+const MENU_LINKS: { label: string; icon: keyof typeof Ionicons.glyphMap; route: string }[] = [
+  { label: 'Home', icon: 'home-outline', route: '/(DMC)/dashboard' },
+  { label: 'Incidents', icon: 'document-text-outline', route: '/(DMC)/incidents' },
+  { label: 'Map', icon: 'location-outline', route: '/(DMC)/map' },
+  { label: 'All Reports', icon: 'albums-outline', route: '/(DMC)/reports' },
+];
+
 export default function DmcDashboardScreen() {
   const { stats, loading: statsLoading } = useReportStats();
   const { days } = useWeeklyTrend();
   const { reports: recentActivity, loading: activityLoading } = useRecentActivity();
+  const { reports: pendingReports } = useReports('Pending');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const reviewed = stats.verified + stats.rejected;
   // "—" (not "0%") before anyone has reviewed anything — a real 0% would otherwise
@@ -36,17 +47,133 @@ export default function DmcDashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <DMCHeader eyebrow="DMC · DASHBOARD" title="Dashboard" />
+      <DMCHeader
+        eyebrow="DMC · DASHBOARD"
+        title="Dashboard"
+        badgeCount={stats.pending}
+        onMenuPress={() => setShowMenu(true)}
+        onRightPress={() => setShowNotifications(true)}
+      />
+
+      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
+        <Pressable style={styles.notifOverlay} onPress={() => setShowMenu(false)}>
+          <Pressable style={styles.menuPanel} onPress={() => {}}>
+            {MENU_LINKS.map((item) => (
+              <TouchableOpacity
+                key={item.route}
+                style={styles.menuRow}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setShowMenu(false);
+                  router.push(item.route as any);
+                }}
+              >
+                <Ionicons name={item.icon} size={18} color={Colors.primary} />
+                <Text style={styles.menuRowText}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity
+              style={styles.menuRow}
+              activeOpacity={0.7}
+              onPress={() => {
+                setShowMenu(false);
+                router.push('/(user)/(tabs)' as any);
+              }}
+            >
+              <Ionicons name="swap-horizontal-outline" size={18} color={Colors.textDark} />
+              <Text style={styles.menuRowText}>Back to Resident App</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showNotifications} transparent animationType="fade" onRequestClose={() => setShowNotifications(false)}>
+        <Pressable style={styles.notifOverlay} onPress={() => setShowNotifications(false)}>
+          <Pressable style={styles.notifPanel} onPress={() => {}}>
+            <View style={styles.notifHeader}>
+              <Text style={styles.notifTitle}>Pending Reports</Text>
+              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                <Text style={styles.notifClear}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+
+            {pendingReports.length === 0 ? (
+              <Text style={styles.notifEmpty}>No pending reports</Text>
+            ) : (
+              pendingReports.slice(0, 4).map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.notifRow}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setShowNotifications(false);
+                    router.push(`/(DMC)/incident/${item.id}` as any);
+                  }}
+                >
+                  <View style={styles.notifDot} />
+                  <Text style={styles.notifText} numberOfLines={1}>
+                    {item.disasterType === 'flood' ? 'Flood' : 'Landslide'} in {item.affectedArea}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+
+            {pendingReports.length > 0 && (
+              <TouchableOpacity
+                style={styles.notifViewAll}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setShowNotifications(false);
+                  router.push('/(DMC)/incidents' as any);
+                }}
+              >
+                <Text style={styles.notifViewAllText}>View all pending reports</Text>
+              </TouchableOpacity>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ScrollView contentContainerStyle={styles.content}>
         {statsLoading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: -20, marginBottom: 16 }} />
         ) : (
           <View style={styles.statsGrid}>
-            <StatTile icon="time-outline" value={String(stats.pending)} label="Pending" tint="#D68910" tintBg="#FEF5E7" />
-            <StatTile icon="checkmark-circle-outline" value={String(stats.verified)} label="Verified" tint={Colors.primary} tintBg="#E8F5F2" />
-            <StatTile icon="close-circle-outline" value={String(stats.rejected)} label="Rejected" tint={Colors.danger} tintBg="#FDEDEC" />
-            <StatTile icon="albums-outline" value={String(stats.total)} label="Total reports" tint={Colors.textDark} tintBg="#EFF4F3" />
+            <StatTile
+              icon="time-outline"
+              value={String(stats.pending)}
+              label="Pending"
+              tint="#D68910"
+              tintBg="#FEF5E7"
+              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Pending' } } as any)}
+            />
+            <StatTile
+              icon="checkmark-circle-outline"
+              value={String(stats.verified)}
+              label="Verified"
+              tint={Colors.primary}
+              tintBg="#E8F5F2"
+              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Verified' } } as any)}
+            />
+            <StatTile
+              icon="close-circle-outline"
+              value={String(stats.rejected)}
+              label="Rejected"
+              tint={Colors.danger}
+              tintBg="#FDEDEC"
+              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Rejected' } } as any)}
+            />
+            <StatTile
+              icon="albums-outline"
+              value={String(stats.total)}
+              label="Total reports"
+              tint={Colors.textDark}
+              tintBg="#EFF4F3"
+              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'all' } } as any)}
+            />
           </View>
         )}
 
@@ -121,7 +248,7 @@ export default function DmcDashboardScreen() {
           <TouchableOpacity
             style={styles.quickNavTile}
             activeOpacity={0.8}
-            onPress={() => Alert.alert('Coming soon', "Map isn't built yet.")}
+            onPress={() => router.push('/(DMC)/map' as any)}
           >
             <Ionicons name="location-outline" size={22} color={Colors.primary} />
             <Text style={styles.quickNavLabel}>Map</Text>
@@ -135,11 +262,6 @@ export default function DmcDashboardScreen() {
             <Text style={styles.quickNavLabel}>Analytics</Text>
           </TouchableOpacity>
         </View>
-
-        {/* TEMP dev shortcut — remove once admin/resident sign-in flows are separated */}
-        <TouchableOpacity style={styles.devButton} activeOpacity={0.7} onPress={() => router.push('/(user)/(tabs)' as any)}>
-          <Text style={styles.devButtonText}>Dev: Back to Resident App</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <DMCTabBar active="home" />
@@ -151,6 +273,106 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  notifOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(10,30,28,0.25)',
+  },
+  menuPanel: {
+    position: 'absolute',
+    top: 58,
+    left: 16,
+    width: 220,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 8,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+  },
+  menuRowText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textDark,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#F0F5F4',
+    marginVertical: 6,
+  },
+  notifPanel: {
+    position: 'absolute',
+    top: 58,
+    right: 16,
+    width: 260,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  notifHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  notifTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  notifClear: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  notifEmpty: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    paddingVertical: 8,
+  },
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  notifDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#D68910',
+  },
+  notifText: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.textDark,
+  },
+  notifViewAll: {
+    marginTop: 6,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F5F4',
+  },
+  notifViewAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+    textAlign: 'center',
   },
   centerFill: {
     flex: 1,
@@ -267,20 +489,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textDark,
     textAlign: 'center',
-  },
-  devButton: {
-    borderWidth: 1.5,
-    borderColor: '#C3E0D8',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    backgroundColor: '#FAFCFC',
-    marginTop: 16,
-  },
-  devButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.primary,
   },
 });

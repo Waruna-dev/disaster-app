@@ -21,6 +21,7 @@ export default function CreateReportScreen() {
   const [affectedArea, setAffectedArea] = useState('');
   const [description, setDescription] = useState('');
   const [photoUri, setPhotoUri] = useState<string | undefined>();
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(true);
 
@@ -40,6 +41,7 @@ export default function CreateReportScreen() {
 
       try {
         let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setCoords({ latitude: location.coords.latitude, longitude: location.coords.longitude });
         const geocode = await Location.reverseGeocodeAsync({
           latitude: location.coords.latitude,
           longitude: location.coords.longitude
@@ -88,6 +90,7 @@ export default function CreateReportScreen() {
         userId: user.uid,
         disasterType,
         affectedArea: affectedArea.trim(),
+        location: coords,
         description: description.trim(),
         photoUrl
       });

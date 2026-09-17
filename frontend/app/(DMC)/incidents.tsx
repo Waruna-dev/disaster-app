@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import { DMCHeader } from '../../components/DMCHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
@@ -44,7 +45,7 @@ export default function AdminReportApprovalScreen() {
       <DMCHeader
         eyebrow="DMC · APPROVAL SCREEN"
         title="Pending Reports"
-        onRightPress={() => router.push('/(DMC)/dashboard' as any)}
+        onBack={() => router.push('/(DMC)/dashboard' as any)}
       />
 
       <FlatList
@@ -53,20 +54,46 @@ export default function AdminReportApprovalScreen() {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <>
-            <View style={styles.summaryBanner}>
+            <LinearGradient
+              colors={[Colors.gradientStart, Colors.gradientEnd]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.summaryBanner}
+            >
+              <View style={styles.summaryPattern} pointerEvents="none">
+                <View style={[styles.patternDot, { width: 44, height: 44, top: -16, right: 26 }]} />
+                <View style={[styles.patternDot, { width: 20, height: 20, top: 30, right: 4, opacity: 0.16 }]} />
+                <View style={[styles.patternDot, { width: 12, height: 12, top: -4, right: 72, opacity: 0.14 }]} />
+              </View>
+
               <View style={styles.summaryColumn}>
+                <View style={styles.summaryIconWrap}>
+                  <Ionicons name="time" size={16} color={Colors.white} />
+                </View>
                 <Text style={styles.summaryValue}>{pendingCount}</Text>
                 <Text style={styles.summaryLabel}>PENDING</Text>
               </View>
+
+              <View style={styles.summaryDivider} />
+
               <View style={styles.summaryColumn}>
+                <View style={styles.summaryIconWrap}>
+                  <Ionicons name="water" size={16} color={Colors.white} />
+                </View>
                 <Text style={styles.summaryValue}>{floodCount}</Text>
                 <Text style={styles.summaryLabel}>FLOOD</Text>
               </View>
+
+              <View style={styles.summaryDivider} />
+
               <View style={styles.summaryColumn}>
+                <View style={styles.summaryIconWrap}>
+                  <Ionicons name="triangle" size={16} color={Colors.white} />
+                </View>
                 <Text style={styles.summaryValue}>{landslideCount}</Text>
                 <Text style={styles.summaryLabel}>LANDSLIDE</Text>
               </View>
-            </View>
+            </LinearGradient>
 
             <View style={styles.filterRow}>
               {TYPE_FILTERS.map((filter) => {
@@ -140,26 +167,52 @@ const styles = StyleSheet.create({
   },
   summaryBanner: {
     flexDirection: 'row',
-    backgroundColor: Colors.primary,
     borderRadius: 20,
     marginTop: 16, // the wavy header curve dips unevenly, so a negative overlap here clips the numbers
-    marginHorizontal: -20, // cancel listContent's paddingHorizontal so this spans edge-to-edge
-    paddingVertical: 20,
+    paddingVertical: 16,
     justifyContent: 'space-evenly',
+    overflow: 'hidden',
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.18,
     shadowRadius: 16,
     elevation: 5,
     marginBottom: 16,
+  },
+  summaryPattern: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  patternDot: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: Colors.white,
+    opacity: 0.12,
   },
   summaryColumn: {
     alignItems: 'center',
     flex: 1,
   },
+  summaryIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginVertical: 4,
+  },
   summaryValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.white,
     marginBottom: 4,
   },

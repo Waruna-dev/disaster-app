@@ -7,11 +7,17 @@ export type ReportStatus = 'Pending' | 'Verified' | 'Rejected';
 // createReport): userId, disasterType, affectedArea, description, photoUrl, status,
 // referenceNumber, createdAt. reviewedBy/reviewedAt/rejectionReason are new fields
 // the admin review flow adds on top — Firestore has no schema to migrate.
+export interface ReportLocation {
+  latitude: number;
+  longitude: number;
+}
+
 export interface Report {
   id: string;
   userId: string;
   disasterType: DisasterType;
   affectedArea: string;
+  location?: ReportLocation | null;
   description: string;
   photoUrl?: string | null;
   status: ReportStatus;

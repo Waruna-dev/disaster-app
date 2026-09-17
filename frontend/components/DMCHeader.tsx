@@ -9,12 +9,14 @@ interface DMCHeaderProps {
   eyebrow: string;
   title: string;
   onBack?: () => void;
+  onMenuPress?: () => void;
   onRightPress?: () => void;
+  badgeCount?: number;
 }
 
 // Same curved-gradient background as the resident DashboardHeader (components/DashboardHeader.tsx),
 // just shorter and with DMC-admin-specific content, so both apps share one visual language.
-export function DMCHeader({ eyebrow, title, onBack, onRightPress }: DMCHeaderProps) {
+export function DMCHeader({ eyebrow, title, onBack, onMenuPress, onRightPress, badgeCount }: DMCHeaderProps) {
   const insets = useSafeAreaInsets();
   const headerHeight = 190 + insets.top;
 
@@ -51,11 +53,21 @@ export function DMCHeader({ eyebrow, title, onBack, onRightPress }: DMCHeaderPro
 
       <View style={[styles.content, { paddingTop: insets.top + 16 }]}>
         <View style={styles.topRow}>
-          <TouchableOpacity style={styles.iconButton} activeOpacity={0.7} onPress={onBack} disabled={!onBack}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            activeOpacity={0.7}
+            onPress={onBack ?? onMenuPress}
+            disabled={!onBack && !onMenuPress}
+          >
             <Ionicons name={onBack ? 'chevron-back' : 'menu'} size={20} color={Colors.white} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} activeOpacity={0.7} onPress={onRightPress}>
             <Ionicons name={onBack ? 'ellipsis-vertical' : 'notifications-outline'} size={18} color={Colors.white} />
+            {!onBack && !!badgeCount && badgeCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -92,6 +104,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: Colors.danger,
+    borderWidth: 1.5,
+    borderColor: Colors.gradientEnd,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: Colors.white,
   },
   eyebrow: {
     fontSize: 11,

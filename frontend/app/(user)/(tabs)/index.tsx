@@ -54,8 +54,8 @@ export default function DashboardScreen() {
 
         {/* TEMP dev shortcut — remove once admin sign-in/redirect is wired up */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.devButton} activeOpacity={0.7} onPress={() => router.push('/(DMC)/incidents' as any)}>
-            <Text style={styles.devButtonText}>Dev: View Submitted Reports (Admin)</Text>
+          <TouchableOpacity style={styles.devButton} activeOpacity={0.7} onPress={() => router.push('/(DMC)/dashboard' as any)}>
+            <Text style={styles.devButtonText}>Dev: View Submitted Reports (DMC Officer)</Text>
           </TouchableOpacity>
         </View>
 
