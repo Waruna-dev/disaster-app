@@ -70,7 +70,7 @@ export default function DashboardScreen() {
                 subtitle={t('dashboard.floodOrLandslide')} 
                 icon="add" 
                 variant="solid" 
-                onPress={() => router.push('/(user)/report/create')} 
+                onPress={() => router.push('/(user)/(tabs)/map')} 
               />
             </View>
             <View style={styles.actionColumn}>
@@ -83,6 +83,13 @@ export default function DashboardScreen() {
               />
             </View>
           </View>
+        </View>
+
+        {/* TEMP dev shortcut — remove once admin sign-in/redirect is wired up */}
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.devButton} activeOpacity={0.7} onPress={() => router.push('/(DMC)/dashboard' as any)}>
+            <Text style={styles.devButtonText}>Dev: View Submitted Reports (DMC Officer)</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -160,5 +167,19 @@ const styles = StyleSheet.create({
   },
   actionColumn: {
     flex: 1,
+  },
+  devButton: {
+    borderWidth: 1.5,
+    borderColor: '#C3E0D8',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#FAFCFC',
+  },
+  devButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primary,
   },
 });

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Platform, Text, Alert, ActivityIndicator, Animated } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, Text, Alert, ActivityIndicator, Animated, TouchableOpacity } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
 import { Colors } from '../../../constants/colors';
+import { Ionicons } from '@expo/vector-icons';
 import { CreateReportHeader, CreateReportStickyBar } from '../../../components/CreateReportHeader';
 import { SafetyBanner } from '../../../components/SafetyBanner';
 import { DisasterSelector } from '../../../components/DisasterSelector';
@@ -11,8 +12,8 @@ import { FormInput } from '../../../components/FormInput';
 import { TextAreaInput } from '../../../components/TextAreaInput';
 import { PhotoUploadCard } from '../../../components/PhotoUploadCard';
 import { PrimaryButton } from '../../../components/PrimaryButton';
-import { useFocusEffect, router } from 'expo-router';
-import * as Location from 'expo-location';
+import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
+
 import { useAuth } from '../../../context/AuthContext';
 import { createReport, uploadReportPhoto } from '../../../services/reportService';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,9 @@ export default function CreateReportScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(true);
 
+  const { lat, lng, address } = useLocalSearchParams<{ lat?: string, lng?: string, address?: string }>();
+  const [reportCoords, setReportCoords] = useState<{ latitude: number, longitude: number } | null>(null);
+
   useFocusEffect(
     React.useCallback(() => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -37,35 +41,17 @@ export default function CreateReportScreen() {
   );
 
   useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setIsFetchingLocation(false);
-        return;
-      }
-
-      try {
-        let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        const geocode = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude
-        });
-
-        if (geocode && geocode.length > 0) {
-          const place = geocode[0];
-          // Try to get a meaningful area name
-          const areaName = [place.name, place.street, place.district || place.city || place.subregion, place.postalCode].filter(Boolean).join(', ');
-          if (areaName) {
-            setAffectedArea(areaName);
-          }
-        }
-      } catch (error) {
-        console.log("Location error: ", error);
-      } finally {
-        setIsFetchingLocation(false);
-      }
-    })();
-  }, []);
+    if (lat && lng) {
+      setReportCoords({
+        latitude: Number(lat),
+        longitude: Number(lng),
+      });
+    }
+    if (address) {
+      setAffectedArea(address);
+    }
+    setIsFetchingLocation(false);
+  }, [lat, lng, address]);
 
   const handleSubmit = async () => {
     if (!affectedArea.trim()) {
@@ -91,18 +77,20 @@ export default function CreateReportScreen() {
         uploadedUrls = await Promise.all(uploadPromises);
       }
 
-      const referenceNumber = await createReport({
+      const reportId = await createReport({
         userId: user.uid,
         disasterType,
         affectedArea: affectedArea.trim(),
         description: description.trim(),
-        photoUrls: uploadedUrls
+        photoUrls: uploadedUrls,
+        latitude: reportCoords?.latitude,
+        longitude: reportCoords?.longitude,
       });
 
       // Navigate to success screen with params
       router.replace({
         pathname: '/(user)/report/success',
-        params: { referenceNumber, disasterType, affectedArea: affectedArea.trim() }
+        params: { referenceNumber: reportId, disasterType, affectedArea: affectedArea.trim() }
       });
 
     } catch (error: any) {
@@ -112,9 +100,13 @@ export default function CreateReportScreen() {
     }
   };
 
-  const handlePhotoSelect = (uri: string) => {
-    if (photoUris.length < 3) {
-      setPhotoUris([...photoUris, uri]);
+  const handlePhotoSelect = (uri: string | string[]) => {
+    if (Array.isArray(uri)) {
+      setPhotoUris(prev => [...prev, ...uri].slice(0, 3));
+    } else {
+      if (photoUris.length < 3) {
+        setPhotoUris(prev => [...prev, uri]);
+      }
     }
   };
 
@@ -151,6 +143,16 @@ export default function CreateReportScreen() {
               <View style={styles.loadingArea}>
                 <ActivityIndicator size="small" color={Colors.primary} />
                 <Text style={styles.loadingText}>{t('reportCreate.detectingLocation')}</Text>
+              </View>
+            ) : lat && lng ? (
+              <View style={styles.readOnlyLocationBox}>
+                <View style={styles.readOnlyLocationContent}>
+                  <Ionicons name="location" size={20} color={Colors.primary} />
+                  <Text style={styles.readOnlyLocationText}>{affectedArea}</Text>
+                </View>
+                <TouchableOpacity onPress={() => router.back()}>
+                  <Text style={styles.changeLocationText}>Change</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <FormInput 
@@ -211,8 +213,33 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '700',
+    color: Colors.textMuted,
+    marginLeft: 8,
+  },
+  readOnlyLocationBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F3F4F6',
+    padding: 16,
+    borderRadius: 12,
+  },
+  readOnlyLocationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  readOnlyLocationText: {
+    marginLeft: 12,
+    fontSize: 14,
     color: Colors.textDark,
-    marginBottom: 8,
+    fontWeight: '500',
+    flex: 1,
+  },
+  changeLocationText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   asterisk: {
     color: Colors.danger,
