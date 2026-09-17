@@ -37,7 +37,11 @@ export function DashboardStickyBar({ scrollY, initial }: { scrollY: Animated.Val
             <View style={styles.notificationDot} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.avatarButton} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.avatarButton} 
+            activeOpacity={0.7}
+            onPress={() => router.push('/(user)/(tabs)/profile')}
+          >
             <Text style={styles.avatarText}>{initial}</Text>
           </TouchableOpacity>
         </View>
