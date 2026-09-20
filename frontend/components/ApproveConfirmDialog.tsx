@@ -7,32 +7,35 @@ import { useAuth } from '../context/AuthContext';
 
 interface ApproveConfirmDialogProps {
   visible: boolean;
-  report: Report | null;
+  reports: Report[];
   onClose: () => void;
   onApproved: () => void;
 }
 
-// Shared by the Approval screen's inline card action and the Details screen's Approve
-// button, so both entry points show identical confirmation copy.
-export function ApproveConfirmDialog({ visible, report, onClose, onApproved }: ApproveConfirmDialogProps) {
+// Shared by the Approval screen's inline card action, the Details screen's Approve
+// button, and the grouped-review screen's "Approve All" action, so every entry point
+// shows identical confirmation copy. `reports` is a batch of 1+ — approving a group
+// marks every report in it Verified in one go.
+export function ApproveConfirmDialog({ visible, reports, onClose, onApproved }: ApproveConfirmDialogProps) {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
-  if (!report) return null;
+  if (reports.length === 0) return null;
 
+  const [report] = reports;
   const disasterLabel = report.disasterType === 'flood' ? 'flood' : 'landslide';
 
   const handleConfirm = async () => {
     if (!user) return;
     setSubmitting(true);
     try {
-      await approveReport(report.id, user.uid);
+      await Promise.all(reports.map((r) => approveReport(r.id, user.uid)));
       onApproved();
     } catch (error) {
       const message =
         error instanceof ReportReviewError
           ? error.message
-          : 'Something went wrong while approving this report. Please try again.';
+          : 'Something went wrong while approving. Please try again.';
       Alert.alert('Approval failed', message);
     } finally {
       setSubmitting(false);
@@ -43,10 +46,19 @@ export function ApproveConfirmDialog({ visible, report, onClose, onApproved }: A
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>Approve this report?</Text>
+          <Text style={styles.title}>{reports.length > 1 ? `Approve ${reports.length} reports?` : 'Approve this report?'}</Text>
           <Text style={styles.body}>
-            This will mark the {disasterLabel} report in {report.affectedArea} ({report.referenceNumber}) as{' '}
-            <Text style={styles.bold}>Verified</Text>.
+            {reports.length > 1 ? (
+              <>
+                This will mark all <Text style={styles.bold}>{reports.length}</Text> grouped {disasterLabel} reports as{' '}
+                <Text style={styles.bold}>Verified</Text>.
+              </>
+            ) : (
+              <>
+                This will mark the {disasterLabel} report in {report.affectedArea} ({report.referenceNumber}) as{' '}
+                <Text style={styles.bold}>Verified</Text>.
+              </>
+            )}
           </Text>
 
           <View style={styles.actions}>

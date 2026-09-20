@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, BackHandler } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
-import { DMCHeader } from '../../components/DMCHeader';
+import { DMCNavHeader } from '../../components/DMCNavHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
 import { useReports } from '../../hooks/useReports';
 import { ReportStatus } from '../../types/report';
@@ -58,6 +60,18 @@ const SAMPLE_PINS: PinnedReport[] = [
 
 export default function MapScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [fullMap, setFullMap] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  // Hardware back should leave full-map mode first, not the whole screen.
+  useEffect(() => {
+    if (!fullMap) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setFullMap(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [fullMap]);
   const { reports, loading } = useReports(statusFilter);
 
   const pins = useMemo(() => {
@@ -80,9 +94,12 @@ export default function MapScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <DMCHeader eyebrow="DMC · MAP" title="Incident Map" onBack={() => router.push('/(DMC)/dashboard' as any)} />
+    <View style={[styles.container, fullMap && { paddingTop: insets.top }]}>
+      {!fullMap && (
+        <DMCNavHeader eyebrow="DMC · MAP" title="Incident Map" onBack={() => router.push('/(DMC)/dashboard' as any)} />
+      )}
 
+      {!fullMap && (
       <View style={styles.filterRow}>
         {STATUS_FILTERS.map((filter) => {
           const isActive = filter.key === statusFilter;
@@ -98,6 +115,7 @@ export default function MapScreen() {
           );
         })}
       </View>
+      )}
 
       <View style={styles.mapWrap}>
         {loading ? (
@@ -121,9 +139,18 @@ export default function MapScreen() {
             </View>
           ))}
         </View>
+
+        <TouchableOpacity
+          style={[styles.fullMapButton, fullMap && { bottom: insets.bottom + 16 }]}
+          activeOpacity={0.8}
+          onPress={() => setFullMap((v) => !v)}
+        >
+          <Ionicons name={fullMap ? 'contract-outline' : 'expand-outline'} size={16} color={Colors.primary} />
+          <Text style={styles.fullMapLabel}>{fullMap ? 'Exit full map' : 'Full map'}</Text>
+        </TouchableOpacity>
       </View>
 
-      <DMCTabBar active="map" />
+      {!fullMap && <DMCTabBar active="map" />}
     </View>
   );
 }
@@ -166,6 +193,28 @@ const styles = StyleSheet.create({
   },
   mapWrap: {
     flex: 1,
+  },
+  fullMapButton: {
+    position: 'absolute',
+    bottom: 16,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  fullMapLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   legend: {
     position: 'absolute',

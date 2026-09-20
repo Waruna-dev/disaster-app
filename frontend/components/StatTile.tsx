@@ -10,12 +10,16 @@ interface StatTileProps {
   tint: string;
   tintBg: string;
   onPress?: () => void;
+  /** Spans the whole row instead of sharing it two-per-row. */
+  fullWidth?: boolean;
+  /** Drops the two-per-row minimum width so three or more tiles can share one row. */
+  compact?: boolean;
 }
 
-export function StatTile({ icon, value, label, tint, tintBg, onPress }: StatTileProps) {
+export function StatTile({ icon, value, label, tint, tintBg, onPress, fullWidth, compact }: StatTileProps) {
   return (
     <TouchableOpacity
-      style={[styles.tile, { backgroundColor: tintBg }]}
+      style={[styles.tile, fullWidth && styles.tileFull, compact && styles.tileCompact, { backgroundColor: tintBg }]}
       activeOpacity={onPress ? 0.75 : 1}
       onPress={onPress}
       disabled={!onPress}
@@ -39,6 +43,13 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     overflow: 'hidden',
     position: 'relative',
+  },
+  tileCompact: {
+    minWidth: 0,
+    padding: 14,
+  },
+  tileFull: {
+    flexBasis: '100%',
   },
   bgIcon: {
     position: 'absolute',
