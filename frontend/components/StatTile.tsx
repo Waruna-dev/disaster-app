@@ -1,14 +1,19 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 
 interface StatTileProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  /** Ionicons glyph — omit and use `materialIcon` instead for a Material Community icon. */
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Material Community Icons glyph, for icons Ionicons doesn't have (e.g. a flood pictogram). */
+  materialIcon?: keyof typeof MaterialCommunityIcons.glyphMap;
   value: string;
   label: string;
   tint: string;
   tintBg: string;
+  /** Overrides the icon's color independently of `tint` (which still colors the value text). */
+  iconColor?: string;
   onPress?: () => void;
   /** Spans the whole row instead of sharing it two-per-row. */
   fullWidth?: boolean;
@@ -16,7 +21,19 @@ interface StatTileProps {
   compact?: boolean;
 }
 
-export function StatTile({ icon, value, label, tint, tintBg, onPress, fullWidth, compact }: StatTileProps) {
+export function StatTile({ icon, materialIcon, value, label, tint, tintBg, iconColor, onPress, fullWidth, compact }: StatTileProps) {
+  const resolvedIconColor = iconColor ?? tint;
+  const IconGlyph = materialIcon ? (
+    <MaterialCommunityIcons name={materialIcon} size={76} color={resolvedIconColor} style={styles.bgIcon} />
+  ) : (
+    <Ionicons name={icon!} size={76} color={resolvedIconColor} style={styles.bgIcon} />
+  );
+  const IconSmall = materialIcon ? (
+    <MaterialCommunityIcons name={materialIcon} size={20} color={resolvedIconColor} />
+  ) : (
+    <Ionicons name={icon!} size={20} color={resolvedIconColor} />
+  );
+
   return (
     <TouchableOpacity
       style={[styles.tile, fullWidth && styles.tileFull, compact && styles.tileCompact, { backgroundColor: tintBg }]}
@@ -24,11 +41,9 @@ export function StatTile({ icon, value, label, tint, tintBg, onPress, fullWidth,
       onPress={onPress}
       disabled={!onPress}
     >
-      <Ionicons name={icon} size={76} color={tint} style={styles.bgIcon} />
+      {IconGlyph}
 
-      <View style={[styles.iconWrapper, { shadowColor: tint }]}>
-        <Ionicons name={icon} size={20} color={tint} />
-      </View>
+      <View style={[styles.iconWrapper, { shadowColor: resolvedIconColor }]}>{IconSmall}</View>
       <Text style={[styles.value, { color: tint }]}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
     </TouchableOpacity>

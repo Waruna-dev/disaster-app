@@ -206,6 +206,14 @@ export default function DmcDashboardScreen() {
             <Ionicons name="bar-chart-outline" size={22} color={Colors.primary} />
             <Text style={styles.quickNavLabel}>Analytics</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickNavTile}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(DMC)/flood-warning' as any)}
+          >
+            <Ionicons name="water-outline" size={22} color={Colors.primary} />
+            <Text style={styles.quickNavLabel}>Flood Warning</Text>
+          </TouchableOpacity>
         </View>
       </Animated.ScrollView>
 
