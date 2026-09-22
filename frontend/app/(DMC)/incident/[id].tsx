@@ -243,7 +243,7 @@ export default function AdminReportDetailsScreen() {
 
       <ApproveConfirmDialog
         visible={showApprove}
-        report={report}
+        reports={[report]}
         onClose={() => setShowApprove(false)}
         onApproved={() => {
           setShowApprove(false);
@@ -252,7 +252,7 @@ export default function AdminReportDetailsScreen() {
       />
       <RejectReasonDialog
         visible={showReject}
-        report={report}
+        reports={[report]}
         onClose={() => setShowReject(false)}
         onRejected={() => {
           setShowReject(false);

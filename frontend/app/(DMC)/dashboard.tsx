@@ -1,16 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, Pressable } from 'react-native';
+import React, { useMemo } from 'react';
+import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Timestamp } from 'firebase/firestore';
 import { Colors } from '../../constants/colors';
-import { DMCHeader } from '../../components/DMCHeader';
+import { DMCNavHeader, useDMCScrollHeader } from '../../components/DMCNavHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
 import { StatTile } from '../../components/StatTile';
+import { TrendLineChart } from '../../components/TrendLineChart';
 import { useReportStats } from '../../hooks/useReportStats';
 import { useWeeklyTrend } from '../../hooks/useWeeklyTrend';
 import { useRecentActivity } from '../../hooks/useRecentActivity';
 import { useReports } from '../../hooks/useReports';
+import { groupPendingReports } from '../../utils/reportGrouping';
+
+const TREND_SUBMITTED_COLOR = '#2E75D6';
+const TREND_VERIFIED_COLOR = Colors.primary;
+
+// Parse the YYYY-MM-DD key as a *local* date — new Date('YYYY-MM-DD') is UTC midnight,
+// which is the previous day anywhere west of UTC.
+function weekdayInitial(dateKey: string) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'narrow' });
+}
 
 function formatRelative(timestamp: Timestamp | null | undefined) {
   if (!timestamp) return '';
@@ -24,124 +36,45 @@ function formatRelative(timestamp: Timestamp | null | undefined) {
   return `${days} d ago`;
 }
 
-const MENU_LINKS: { label: string; icon: keyof typeof Ionicons.glyphMap; route: string }[] = [
-  { label: 'Home', icon: 'home-outline', route: '/(DMC)/dashboard' },
-  { label: 'Incidents', icon: 'document-text-outline', route: '/(DMC)/incidents' },
-  { label: 'Map', icon: 'location-outline', route: '/(DMC)/map' },
-  { label: 'All Reports', icon: 'albums-outline', route: '/(DMC)/reports' },
-];
-
 export default function DmcDashboardScreen() {
   const { stats, loading: statsLoading } = useReportStats();
   const { days } = useWeeklyTrend();
   const { reports: recentActivity, loading: activityLoading } = useRecentActivity();
   const { reports: pendingReports } = useReports('Pending');
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
+  // Same clustering the Report Groups screen shows, so the tile and that screen agree.
+  const groupCount = useMemo(() => groupPendingReports(pendingReports).length, [pendingReports]);
+
+  const { scrollY, onScroll, headerHeight } = useDMCScrollHeader();
 
   const reviewed = stats.verified + stats.rejected;
   // "—" (not "0%") before anyone has reviewed anything — a real 0% would otherwise
   // look indistinguishable from "everything got rejected".
   const approvalRate = reviewed === 0 ? null : Math.round((stats.verified / reviewed) * 100);
-  const maxDayCount = Math.max(1, ...days.map((d) => d.count));
+  const submittedTotal = days.reduce((sum, d) => sum + d.submitted, 0);
+  const verifiedTotal = days.reduce((sum, d) => sum + d.verified, 0);
 
   return (
     <View style={styles.container}>
-      <DMCHeader
-        eyebrow="DMC · DASHBOARD"
-        title="Dashboard"
-        badgeCount={stats.pending}
-        onMenuPress={() => setShowMenu(true)}
-        onRightPress={() => setShowNotifications(true)}
-      />
+      <DMCNavHeader eyebrow="DMC · DASHBOARD" title="Dashboard" scrollY={scrollY} />
 
-      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
-        <Pressable style={styles.notifOverlay} onPress={() => setShowMenu(false)}>
-          <Pressable style={styles.menuPanel} onPress={() => {}}>
-            {MENU_LINKS.map((item) => (
-              <TouchableOpacity
-                key={item.route}
-                style={styles.menuRow}
-                activeOpacity={0.7}
-                onPress={() => {
-                  setShowMenu(false);
-                  router.push(item.route as any);
-                }}
-              >
-                <Ionicons name={item.icon} size={18} color={Colors.primary} />
-                <Text style={styles.menuRowText}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
-
-            <View style={styles.menuDivider} />
-
-            <TouchableOpacity
-              style={styles.menuRow}
-              activeOpacity={0.7}
-              onPress={() => {
-                setShowMenu(false);
-                router.push('/(user)/(tabs)' as any);
-              }}
-            >
-              <Ionicons name="swap-horizontal-outline" size={18} color={Colors.textDark} />
-              <Text style={styles.menuRowText}>Back to Resident App</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={showNotifications} transparent animationType="fade" onRequestClose={() => setShowNotifications(false)}>
-        <Pressable style={styles.notifOverlay} onPress={() => setShowNotifications(false)}>
-          <Pressable style={styles.notifPanel} onPress={() => {}}>
-            <View style={styles.notifHeader}>
-              <Text style={styles.notifTitle}>Pending Reports</Text>
-              <TouchableOpacity onPress={() => setShowNotifications(false)}>
-                <Text style={styles.notifClear}>Clear</Text>
-              </TouchableOpacity>
-            </View>
-
-            {pendingReports.length === 0 ? (
-              <Text style={styles.notifEmpty}>No pending reports</Text>
-            ) : (
-              pendingReports.slice(0, 4).map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.notifRow}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setShowNotifications(false);
-                    router.push(`/(DMC)/incident/${item.id}` as any);
-                  }}
-                >
-                  <View style={styles.notifDot} />
-                  <Text style={styles.notifText} numberOfLines={1}>
-                    {item.disasterType === 'flood' ? 'Flood' : 'Landslide'} in {item.affectedArea}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            )}
-
-            {pendingReports.length > 0 && (
-              <TouchableOpacity
-                style={styles.notifViewAll}
-                activeOpacity={0.7}
-                onPress={() => {
-                  setShowNotifications(false);
-                  router.push('/(DMC)/incidents' as any);
-                }}
-              >
-                <Text style={styles.notifViewAllText}>View all pending reports</Text>
-              </TouchableOpacity>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <ScrollView contentContainerStyle={styles.content}>
+      <Animated.ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: headerHeight + 4 }]}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
         {statsLoading ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginTop: -20, marginBottom: 16 }} />
+          <ActivityIndicator color={Colors.primary} style={{ marginBottom: 16 }} />
         ) : (
           <View style={styles.statsGrid}>
+            <StatTile
+              icon="git-network-outline"
+              value={String(groupCount)}
+              label="Grouped incidents"
+              fullWidth
+              tint="#2E75D6"
+              tintBg="#E8F1FB"
+              onPress={() => router.push('/(DMC)/report-groups' as any)}
+            />
             <StatTile
               icon="time-outline"
               value={String(stats.pending)}
@@ -189,14 +122,26 @@ export default function DmcDashboardScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>WEEKLY TREND</Text>
-          <View style={styles.chartRow}>
-            {days.map((day) => (
-              <View key={day.date} style={styles.chartColumn}>
-                <View style={[styles.chartBar, { height: 6 + (day.count / maxDayCount) * 74 }]} />
-                <Text style={styles.chartLabel}>{new Date(day.date).toLocaleDateString([], { weekday: 'narrow' })}</Text>
-              </View>
-            ))}
+          <Text style={styles.trendSubtext}>Reports received and verified per day, last 7 days</Text>
+
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: TREND_SUBMITTED_COLOR }]} />
+              <Text style={styles.legendText}>Received {submittedTotal}</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: TREND_VERIFIED_COLOR }]} />
+              <Text style={styles.legendText}>Verified {verifiedTotal}</Text>
+            </View>
           </View>
+
+          <TrendLineChart
+            labels={days.map((d) => weekdayInitial(d.date))}
+            series={[
+              { key: 'submitted', label: 'Received', color: TREND_SUBMITTED_COLOR, values: days.map((d) => d.submitted) },
+              { key: 'verified', label: 'Verified', color: TREND_VERIFIED_COLOR, values: days.map((d) => d.verified) },
+            ]}
+          />
         </View>
 
         <View style={styles.card}>
@@ -261,8 +206,16 @@ export default function DmcDashboardScreen() {
             <Ionicons name="bar-chart-outline" size={22} color={Colors.primary} />
             <Text style={styles.quickNavLabel}>Analytics</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickNavTile}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(DMC)/flood-warning' as any)}
+          >
+            <Ionicons name="water-outline" size={22} color={Colors.primary} />
+            <Text style={styles.quickNavLabel}>Flood Warning</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <DMCTabBar active="home" />
     </View>
@@ -274,106 +227,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  notifOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(10,30,28,0.25)',
-  },
-  menuPanel: {
-    position: 'absolute',
-    top: 58,
-    left: 16,
-    width: 220,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 8,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-  },
-  menuRowText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textDark,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#F0F5F4',
-    marginVertical: 6,
-  },
-  notifPanel: {
-    position: 'absolute',
-    top: 58,
-    right: 16,
-    width: 260,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  notifHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  notifTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textDark,
-  },
-  notifClear: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  notifEmpty: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    paddingVertical: 8,
-  },
-  notifRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-  },
-  notifDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#D68910',
-  },
-  notifText: {
-    flex: 1,
-    fontSize: 12,
-    color: Colors.textDark,
-  },
-  notifViewAll: {
-    marginTop: 6,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F5F4',
-  },
-  notifViewAllText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primary,
-    textAlign: 'center',
-  },
   centerFill: {
     flex: 1,
     justifyContent: 'center',
@@ -381,7 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 20,
     paddingBottom: 32,
   },
   statsGrid: {
@@ -419,25 +272,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textLight,
   },
-  chartRow: {
+  trendSubtext: {
+    fontSize: 12,
+    color: Colors.textLight,
+    marginTop: 4,
+  },
+  legendRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: 100,
-    marginTop: 14,
+    gap: 16,
+    marginTop: 12,
+    marginBottom: 6,
   },
-  chartColumn: {
+  legendItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
-  chartBar: {
-    width: 18,
-    borderRadius: 6,
-    backgroundColor: Colors.primary,
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  chartLabel: {
-    fontSize: 10,
-    color: Colors.textMuted,
+  legendText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textDark,
   },
   emptyText: {
     fontSize: 13,

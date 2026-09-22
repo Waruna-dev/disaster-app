@@ -19,7 +19,7 @@ interface TabConfig {
 // navigating to a dead or fake route.
 const TABS: TabConfig[] = [
   { key: 'home', label: 'Home', icon: 'home-outline', activeIcon: 'home', route: '/(DMC)/dashboard' },
-  { key: 'incidents', label: 'Incidents', icon: 'document-text-outline', activeIcon: 'document-text', route: '/(DMC)/incidents' },
+  { key: 'incidents', label: 'Incidents', icon: 'document-text-outline', activeIcon: 'document-text', route: '/(DMC)/report-groups' },
   { key: 'map', label: 'Map', icon: 'location-outline', activeIcon: 'location', route: '/(DMC)/map' },
   { key: 'analytics', label: 'Analytics', icon: 'bar-chart-outline', activeIcon: 'bar-chart' },
   { key: 'reports', label: 'All Reports', icon: 'albums-outline', activeIcon: 'albums', route: '/(DMC)/reports' },
