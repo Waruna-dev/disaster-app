@@ -16,6 +16,7 @@ import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
 
 import { useAuth } from '../../../context/AuthContext';
 import { createReport, uploadReportPhoto } from '../../../services/reportService';
+import { getUserProfile } from '../../../services/userService';
 import { useTranslation } from 'react-i18next';
 
 export default function CreateReportScreen() {
@@ -27,6 +28,9 @@ export default function CreateReportScreen() {
   const [disasterType, setDisasterType] = useState<'flood' | 'landslide'>('flood');
   const [affectedArea, setAffectedArea] = useState('');
   const [description, setDescription] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [affectedItems, setAffectedItems] = useState<string[]>([]);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(true);
@@ -53,9 +57,39 @@ export default function CreateReportScreen() {
     setIsFetchingLocation(false);
   }, [lat, lng, address]);
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user) {
+        try {
+          const profile = await getUserProfile(user.uid);
+          if (profile?.contactNumber) {
+            setContactNumber(profile.contactNumber);
+          }
+        } catch (e) {}
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
+  const toggleAffectedItem = (item: string) => {
+    setAffectedItems(prev => 
+      prev.includes(item) 
+        ? prev.filter(i => i !== item)
+        : [...prev, item]
+    );
+  };
+
   const handleSubmit = async () => {
     if (!affectedArea.trim()) {
       Alert.alert(t('reportCreate.requiredField'), t('reportCreate.provideArea'));
+      return;
+    }
+    if (!contactNumber.trim()) {
+      Alert.alert(t('reportCreate.requiredField'), 'Please provide a contact number.');
+      return;
+    }
+    if (affectedItems.length === 0) {
+      Alert.alert(t('reportCreate.requiredField'), 'Please select at least one affected item.');
       return;
     }
     if (!description.trim()) {
@@ -82,6 +116,8 @@ export default function CreateReportScreen() {
         disasterType,
         affectedArea: affectedArea.trim(),
         description: description.trim(),
+        contactNumber: contactNumber.trim(),
+        affectedItems,
         photoUrls: uploadedUrls,
         latitude: reportCoords?.latitude,
         longitude: reportCoords?.longitude,
@@ -138,7 +174,7 @@ export default function CreateReportScreen() {
           />
 
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>{t('reportCreate.affectedAreaLabel')} <Text style={styles.asterisk}>*</Text></Text>
+            <Text style={styles.inputLabel}>Selected location <Text style={styles.asterisk}>*</Text></Text>
             {isFetchingLocation ? (
               <View style={styles.loadingArea}>
                 <ActivityIndicator size="small" color={Colors.primary} />
@@ -172,6 +208,48 @@ export default function CreateReportScreen() {
               value={description}
               onChangeText={setDescription}
             />
+          </View>
+
+          <View style={[styles.inputWrapper, { marginBottom: 20 }]}>
+            <Text style={styles.inputLabel}>Contact number <Text style={styles.asterisk}>*</Text></Text>
+            {!isEditingContact && contactNumber.trim() ? (
+              <View style={styles.readOnlyLocationBox}>
+                <View style={styles.readOnlyLocationContent}>
+                  <Ionicons name="call" size={20} color={Colors.primary} />
+                  <Text style={styles.readOnlyLocationText}>{contactNumber}</Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsEditingContact(true)}>
+                  <Text style={styles.changeLocationText}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <FormInput 
+                iconName="call-outline"
+                value={contactNumber}
+                onChangeText={setContactNumber}
+                placeholder="0712345678"
+                keyboardType="phone-pad"
+              />
+            )}
+          </View>
+
+          <View style={[styles.inputWrapper, { marginBottom: 20 }]}>
+            <Text style={styles.inputLabel}>What is affected? <Text style={styles.asterisk}>*</Text></Text>
+            <View style={styles.chipsContainer}>
+              {['Road', 'Home', 'Business', 'People', 'Other'].map((item) => {
+                const isSelected = affectedItems.includes(item);
+                return (
+                  <TouchableOpacity 
+                    key={item}
+                    style={[styles.chip, isSelected && styles.chipSelected]}
+                    onPress={() => toggleAffectedItem(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{item}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           <View style={styles.inputWrapper}>
@@ -267,5 +345,34 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     color: Colors.textMedium,
     fontSize: 14,
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    marginHorizontal: -4,
+  },
+  chip: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginHorizontal: 4,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  chipSelected: {
+    backgroundColor: '#E6F4F1',
+    borderColor: Colors.primary,
+  },
+  chipText: {
+    color: Colors.textMedium,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  chipTextSelected: {
+    color: Colors.primary,
+    fontWeight: '600',
   }
 });

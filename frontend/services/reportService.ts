@@ -7,6 +7,8 @@ interface ReportData {
   disasterType: 'flood' | 'landslide';
   affectedArea: string;
   description: string;
+  contactNumber?: string;
+  affectedItems?: string[];
   latitude?: number;
   longitude?: number;
   photoUrl?: string;

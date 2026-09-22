@@ -21,18 +21,10 @@ export function ReportsStickyBar({ scrollY }: { scrollY: Animated.Value }) {
     <View style={styles.stickyBar}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
       <View style={[styles.stickyBarContent, { paddingTop: insets.top + 20 }]}>
-        <View style={{ flex: 1, marginRight: 64 }}>
+        <View style={{ flex: 1 }}>
           <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>{t('reports.myReports')}</Text>
           <Text style={styles.subtitle}>{t('reports.trackSubmitted')}</Text>
         </View>
-
-        <TouchableOpacity 
-          style={[styles.fab, { position: 'absolute', right: 24, top: insets.top + 20 }]} 
-          activeOpacity={0.8}
-          onPress={() => router.push('/(user)/report/create')}
-        >
-          <Ionicons name="add" size={28} color={Colors.white} />
-        </TouchableOpacity>
       </View>
     </View>
   );
