@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, PanResponder, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, PanResponder, Image, ScrollView, Alert } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -163,8 +163,9 @@ export default function MapScreen() {
         fetchAddress(coords);
       }
     } catch (error) {
-      console.error("Location error:", error);
-      if (userLocation) {
+        console.log("Location error:", error);
+        Alert.alert("Location Error", "Unable to retrieve your location. Please ensure location services are enabled on your device.");
+        if (userLocation) {
         setSelectedLocation(userLocation);
         if (webViewRef.current) {
           webViewRef.current.injectJavaScript(`window.centerOnUser(${userLocation.latitude}, ${userLocation.longitude}); true;`);

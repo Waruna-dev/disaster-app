@@ -9,12 +9,13 @@ import {
 } from 'firebase/auth';
 import { saveUserProfile } from './userService';
 
-export const registerUser = async (email: string, password: string, fullName: string) => {
+export const registerUser = async (email: string, password: string, fullName: string, contactNumber: string) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   // Save extra profile data
   await saveUserProfile(userCredential.user.uid, {
     fullName,
     email,
+    contactNumber,
     role: 'admin', // TEMP: defaulted to 'admin' for testing the admin screens — flip back to 'user' before shipping. Available roles: 'user', 'admin'
     createdAt: new Date().toISOString()
   });
