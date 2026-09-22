@@ -1,13 +1,16 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, BackHandler } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
-import { DMCHeader } from '../../components/DMCHeader';
+import { DMCNavHeader } from '../../components/DMCNavHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
 import { useReports } from '../../hooks/useReports';
+import { useFloodIncidents } from '../../hooks/useFloodIncidents';
 import { ReportStatus } from '../../types/report';
-import { PinnedReport, STATUS_PIN, buildReportsMapHtml } from '../../utils/reportMap';
+import { IncidentZone, PinnedReport, STATUS_PIN, buildReportsMapHtml } from '../../utils/reportMap';
 
 type StatusFilter = 'all' | ReportStatus;
 
@@ -58,7 +61,22 @@ const SAMPLE_PINS: PinnedReport[] = [
 
 export default function MapScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [fullMap, setFullMap] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  // Hardware back should leave full-map mode first, not the whole screen.
+  useEffect(() => {
+    if (!fullMap) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setFullMap(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [fullMap]);
   const { reports, loading } = useReports(statusFilter);
+  // Rejected auto-generated areas are dead ends (an officer already dismissed the
+  // grouping) — not worth cluttering the main map with, unlike Pending/Approved.
+  const { incidents: floodIncidents } = useFloodIncidents();
 
   const pins = useMemo(() => {
     const realPins = reports.filter((r): r is PinnedReport => !!r.location);
@@ -66,13 +84,32 @@ export default function MapScreen() {
     return [...realPins, ...samplePins];
   }, [reports, statusFilter]);
 
-  const mapHtml = useMemo(() => buildReportsMapHtml(pins), [pins]);
+  const zones = useMemo<IncidentZone[]>(
+    () =>
+      floodIncidents
+        .filter((i) => i.reviewStatus !== 'Rejected')
+        .map((i) => ({
+          id: i.id,
+          affectedArea: i.affectedArea,
+          reportCount: i.reports.length,
+          riskLevel: i.riskLevel,
+          reviewStatus: i.reviewStatus,
+          centroid: i.centroid,
+          polygon: i.polygon,
+          radiusMeters: i.radiusMeters,
+        })),
+    [floodIncidents]
+  );
+
+  const mapHtml = useMemo(() => buildReportsMapHtml(pins, zones, 'osm'), [pins, zones]);
 
   const handleMessage = (event: WebViewMessageEvent) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'viewDetails' && data.id) {
         router.push(`/(DMC)/incident/${data.id}` as any);
+      } else if (data.type === 'viewFloodIncident' && data.id) {
+        router.push(`/(DMC)/flood-incident/${data.id}` as any);
       }
     } catch {
       // ignore malformed messages from the map page
@@ -80,9 +117,12 @@ export default function MapScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <DMCHeader eyebrow="DMC · MAP" title="Incident Map" onBack={() => router.push('/(DMC)/dashboard' as any)} />
+    <View style={[styles.container, fullMap && { paddingTop: insets.top }]}>
+      {!fullMap && (
+        <DMCNavHeader eyebrow="DMC · MAP" title="Incident Map" onBack={() => router.push('/(DMC)/dashboard' as any)} />
+      )}
 
+      {!fullMap && (
       <View style={styles.filterRow}>
         {STATUS_FILTERS.map((filter) => {
           const isActive = filter.key === statusFilter;
@@ -98,6 +138,7 @@ export default function MapScreen() {
           );
         })}
       </View>
+      )}
 
       <View style={styles.mapWrap}>
         {loading ? (
@@ -120,10 +161,25 @@ export default function MapScreen() {
               <Text style={styles.legendLabel}>{status}</Text>
             </View>
           ))}
+          {zones.length > 0 && (
+            <View style={styles.legendItem}>
+              <View style={[styles.legendSwatch, { backgroundColor: Colors.danger }]} />
+              <Text style={styles.legendLabel}>Affected area</Text>
+            </View>
+          )}
         </View>
+
+        <TouchableOpacity
+          style={[styles.fullMapButton, fullMap && { bottom: insets.bottom + 16 }]}
+          activeOpacity={0.8}
+          onPress={() => setFullMap((v) => !v)}
+        >
+          <Ionicons name={fullMap ? 'contract-outline' : 'expand-outline'} size={16} color={Colors.primary} />
+          <Text style={styles.fullMapLabel}>{fullMap ? 'Exit full map' : 'Full map'}</Text>
+        </TouchableOpacity>
       </View>
 
-      <DMCTabBar active="map" />
+      {!fullMap && <DMCTabBar active="map" />}
     </View>
   );
 }
@@ -167,6 +223,28 @@ const styles = StyleSheet.create({
   mapWrap: {
     flex: 1,
   },
+  fullMapButton: {
+    position: 'absolute',
+    bottom: 16,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  fullMapLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
   legend: {
     position: 'absolute',
     top: 12,
@@ -191,6 +269,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  legendSwatch: {
+    width: 10,
+    height: 10,
+    borderRadius: 3,
+    opacity: 0.6,
   },
   legendLabel: {
     fontSize: 11,

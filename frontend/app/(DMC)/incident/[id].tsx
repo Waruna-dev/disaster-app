@@ -1,16 +1,19 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Modal, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Timestamp } from 'firebase/firestore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/colors';
 import { DMCHeader } from '../../../components/DMCHeader';
 import { ApproveConfirmDialog } from '../../../components/ApproveConfirmDialog';
 import { RejectReasonDialog } from '../../../components/RejectReasonDialog';
 import { useReport } from '../../../hooks/useReport';
 import { useResidentNames } from '../../../hooks/useResidentNames';
-import { ReportLocation, ReportStatus } from '../../../types/report';
+import { geocodeAddress } from '../../../services/geocodeService';
+import { DisasterType, ReportLocation, ReportStatus } from '../../../types/report';
+import { DISASTER_SYMBOL } from '../../../utils/reportMap';
 
 function formatDateTime(timestamp: Timestamp | null | undefined) {
   if (!timestamp) return '';
@@ -29,12 +32,15 @@ const STATUS_PIN: Record<ReportStatus, string> = {
   Rejected: Colors.danger,
 };
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 // Single-pin OpenStreetMap (Leaflet) preview so a DMC officer can immediately see
 // where the report was filed, at a glance, without leaving the review screen. Uses
 // a WebView instead of react-native-maps for the same reason as app/(DMC)/map.tsx:
 // react-native-maps' native Google Maps view renders solid black on Android under
 // React Native's New Architecture (react-native-maps/react-native-maps#5462).
-function buildLocationHtml(location: ReportLocation, color: string): string {
+function buildLocationHtml(location: ReportLocation, color: string, disasterType: DisasterType): string {
+  const symbol = DISASTER_SYMBOL[disasterType];
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -43,6 +49,7 @@ function buildLocationHtml(location: ReportLocation, color: string): string {
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body, #map { height: 100%; margin: 0; padding: 0; }
+    .pin { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #FFFFFF; background: ${color}; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.35); }
   </style>
 </head>
 <body>
@@ -54,13 +61,13 @@ function buildLocationHtml(location: ReportLocation, color: string): string {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-    L.circleMarker([${location.latitude}, ${location.longitude}], {
-      radius: 10,
-      color: '#FFFFFF',
-      weight: 2,
-      fillColor: '${color}',
-      fillOpacity: 1
-    }).addTo(map);
+    var icon = L.divIcon({
+      html: '<div class="pin">${symbol}</div>',
+      className: '',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+    L.marker([${location.latitude}, ${location.longitude}], { icon: icon }).addTo(map);
   </script>
 </body>
 </html>`;
@@ -70,14 +77,49 @@ export default function AdminReportDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { report, loading } = useReport(id);
   const names = useResidentNames(report ? [report.userId] : []);
+  const insets = useSafeAreaInsets();
 
   const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
+  const [fullScreenIndex, setFullScreenIndex] = useState<number | null>(null);
+
+  // Older/permission-denied submissions have no saved GPS coordinates. Fall back to
+  // geocoding the typed affected-area address so the map still has a pin to show.
+  const [geocodedLocation, setGeocodedLocation] = useState<ReportLocation | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
+
+  useEffect(() => {
+    if (report?.location || !report?.affectedArea) {
+      setGeocodedLocation(null);
+      return;
+    }
+    let cancelled = false;
+    setGeocoding(true);
+    geocodeAddress(report.affectedArea).then((result) => {
+      if (!cancelled) {
+        setGeocodedLocation(result);
+        setGeocoding(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [report?.location, report?.affectedArea]);
+
+  const effectiveLocation = report?.location ?? geocodedLocation;
+  const isApproximateLocation = !report?.location && !!geocodedLocation;
 
   const locationHtml = useMemo(() => {
-    if (!report?.location) return null;
-    return buildLocationHtml(report.location, STATUS_PIN[report.status]);
-  }, [report?.location, report?.status]);
+    if (!effectiveLocation || !report) return null;
+    return buildLocationHtml(effectiveLocation, STATUS_PIN[report.status], report.disasterType);
+  }, [effectiveLocation, report?.status, report?.disasterType]);
+
+  const photos = useMemo(() => {
+    if (!report) return [];
+    if (report.photoUrls && report.photoUrls.length > 0) return report.photoUrls;
+    if (report.photoUrl) return [report.photoUrl];
+    return [];
+  }, [report]);
 
   if (loading) {
     return (
@@ -150,8 +192,18 @@ export default function AdminReportDetailsScreen() {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>LOCATION</Text>
           {locationHtml ? (
-            <View style={styles.mapPreview}>
-              <WebView style={StyleSheet.absoluteFill} originWhitelist={['*']} source={{ html: locationHtml }} />
+            <>
+              <View style={styles.mapPreview}>
+                <WebView style={StyleSheet.absoluteFill} originWhitelist={['*']} source={{ html: locationHtml }} />
+              </View>
+              {isApproximateLocation && (
+                <Text style={styles.approximateText}>Approximate location, estimated from the affected area address</Text>
+              )}
+            </>
+          ) : geocoding ? (
+            <View style={styles.mapMissing}>
+              <ActivityIndicator size="small" color={Colors.primary} />
+              <Text style={styles.mapMissingText}>Locating affected area…</Text>
             </View>
           ) : (
             <View style={styles.mapMissing}>
@@ -161,10 +213,16 @@ export default function AdminReportDetailsScreen() {
           )}
         </View>
 
-        {report.photoUrl && (
+        {photos.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>EVIDENCE</Text>
-            <Image source={{ uri: report.photoUrl }} style={styles.photo} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+              {photos.map((uri, index) => (
+                <TouchableOpacity key={`${uri}-${index}`} activeOpacity={0.85} onPress={() => setFullScreenIndex(index)}>
+                  <Image source={{ uri }} style={styles.photo} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         )}
 
@@ -181,7 +239,7 @@ export default function AdminReportDetailsScreen() {
       </ScrollView>
 
       {report.status === 'Pending' && (
-        <View style={styles.actionsBar}>
+        <View style={[styles.actionsBar, { paddingBottom: 16 + insets.bottom }]}>
           <TouchableOpacity style={styles.rejectButton} activeOpacity={0.8} onPress={() => setShowReject(true)}>
             <Text style={styles.rejectButtonText}>Reject</Text>
           </TouchableOpacity>
@@ -193,7 +251,7 @@ export default function AdminReportDetailsScreen() {
 
       <ApproveConfirmDialog
         visible={showApprove}
-        report={report}
+        reports={[report]}
         onClose={() => setShowApprove(false)}
         onApproved={() => {
           setShowApprove(false);
@@ -202,13 +260,46 @@ export default function AdminReportDetailsScreen() {
       />
       <RejectReasonDialog
         visible={showReject}
-        report={report}
+        reports={[report]}
         onClose={() => setShowReject(false)}
         onRejected={() => {
           setShowReject(false);
           router.back();
         }}
       />
+
+      <Modal visible={fullScreenIndex !== null} transparent animationType="fade" onRequestClose={() => setFullScreenIndex(null)}>
+        <View style={styles.imageModalContainer}>
+          <TouchableOpacity style={styles.imageModalClose} activeOpacity={0.8} onPress={() => setFullScreenIndex(null)}>
+            <Ionicons name="close" size={30} color={Colors.white} />
+          </TouchableOpacity>
+          {fullScreenIndex !== null && (
+            <>
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                contentOffset={{ x: fullScreenIndex * SCREEN_WIDTH, y: 0 }}
+                onMomentumScrollEnd={(e) => {
+                  const newIndex = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                  setFullScreenIndex(newIndex);
+                }}
+              >
+                {photos.map((uri, index) => (
+                  <View key={`${uri}-${index}`} style={styles.imageModalPage}>
+                    <Image source={{ uri }} style={styles.fullScreenImage} resizeMode="contain" />
+                  </View>
+                ))}
+              </ScrollView>
+              {photos.length > 1 && (
+                <View style={styles.imageModalCounter}>
+                  <Text style={styles.imageModalCounterText}>{fullScreenIndex + 1} / {photos.length}</Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -303,8 +394,11 @@ const styles = StyleSheet.create({
     color: Colors.textDark,
     lineHeight: 20,
   },
+  photoRow: {
+    gap: 12,
+  },
   photo: {
-    width: '100%',
+    width: 220,
     height: 200,
     borderRadius: 14,
     backgroundColor: '#E3EFEC',
@@ -325,6 +419,12 @@ const styles = StyleSheet.create({
   mapMissingText: {
     fontSize: 13,
     color: Colors.textMuted,
+  },
+  approximateText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   actionsBar: {
     flexDirection: 'row',
@@ -356,6 +456,48 @@ const styles = StyleSheet.create({
   },
   approveButtonText: {
     color: Colors.white,
+    fontWeight: '700',
+  },
+  imageModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalClose: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalPage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT * 0.8,
+  },
+  imageModalCounter: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  imageModalCounterText: {
+    color: Colors.white,
+    fontSize: 13,
     fontWeight: '700',
   },
 });

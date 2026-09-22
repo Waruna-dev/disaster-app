@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, orderBy, query, where, QueryConstraint } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Report, ReportStatus } from '../types/report';
+import { normalizeReport } from '../utils/normalizeReport';
 
 /** Live subscription over `reports`, optionally filtered by status. */
 export function useReports(status: ReportStatus | 'all') {
@@ -18,7 +19,7 @@ export function useReports(status: ReportStatus | 'all') {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        setReports(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Report));
+        setReports(snapshot.docs.map((d) => normalizeReport(d.id, d.data())));
         setLoading(false);
       },
       (err) => {

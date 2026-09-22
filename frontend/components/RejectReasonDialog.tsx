@@ -7,20 +7,22 @@ import { useAuth } from '../context/AuthContext';
 
 interface RejectReasonDialogProps {
   visible: boolean;
-  report: Report | null;
+  reports: Report[];
   onClose: () => void;
   onRejected: () => void;
 }
 
-// Shared by the Approval screen's inline card action and the Details screen's Reject
-// button, so a quick reject from the list can't skip the reason requirement.
-export function RejectReasonDialog({ visible, report, onClose, onRejected }: RejectReasonDialogProps) {
+// Shared by the Approval screen's inline card action, the Details screen's Reject
+// button, and the grouped-review screen's "Reject All" action, so a quick reject
+// can't skip the reason requirement. `reports` is a batch of 1+ — rejecting a group
+// applies the same reason to every report in it.
+export function RejectReasonDialog({ visible, reports, onClose, onRejected }: RejectReasonDialogProps) {
   const { user } = useAuth();
   const [reason, setReason] = useState<RejectionReason | null>(null);
   const [customReason, setCustomReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!report) return null;
+  if (reports.length === 0) return null;
 
   const canConfirm = reason !== null && (reason !== 'Other' || customReason.trim().length > 0);
 
@@ -38,14 +40,14 @@ export function RejectReasonDialog({ visible, report, onClose, onRejected }: Rej
     if (!user || !reason || !canConfirm) return;
     setSubmitting(true);
     try {
-      await rejectReport(report.id, user.uid, reason, customReason.trim());
+      await Promise.all(reports.map((r) => rejectReport(r.id, user.uid, reason, customReason.trim())));
       reset();
       onRejected();
     } catch (error) {
       const message =
         error instanceof ReportReviewError
           ? error.message
-          : 'Something went wrong while rejecting this report. Please try again.';
+          : 'Something went wrong while rejecting. Please try again.';
       Alert.alert('Rejection failed', message);
     } finally {
       setSubmitting(false);
@@ -56,7 +58,7 @@ export function RejectReasonDialog({ visible, report, onClose, onRejected }: Rej
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>Reject this report</Text>
+          <Text style={styles.title}>{reports.length > 1 ? `Reject ${reports.length} reports` : 'Reject this report'}</Text>
           <Text style={styles.body}>Select a reason. This won't be undone.</Text>
 
           <ScrollView style={styles.reasonList}>
