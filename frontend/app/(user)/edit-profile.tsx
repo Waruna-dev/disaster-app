@@ -129,12 +129,12 @@ export default function EditProfileScreen() {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      t('editProfile.deleteTitle'),
-      t('editProfile.deleteMessage'),
+      t('editProfile.deleteTitle') || 'Delete Account',
+      t('editProfile.deleteMessage') || 'Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.',
       [
-        { text: t('editProfile.cancel'), style: 'cancel' },
+        { text: t('editProfile.cancel') || 'Cancel', style: 'cancel' },
         { 
-          text: t('editProfile.delete'), 
+          text: t('editProfile.delete') || 'Delete', 
           style: 'destructive', 
           onPress: async () => {
             if (!user) return;
@@ -144,8 +144,8 @@ export default function EditProfileScreen() {
               await deleteUserData(user.uid);
               // 2. Delete auth user
               await deleteUserAccount();
-              Alert.alert(t('editProfile.success'), t('editProfile.accountDeleted'));
-              // Will trigger onAuthStateChanged to unauthenticated automatically
+              Alert.alert(t('editProfile.success'), t('editProfile.accountDeleted') || 'Account deleted successfully');
+              router.replace('/(auth)/register' as any);
             } catch (error: any) {
               console.log('Error deleting account:', error);
               if (error.code === 'auth/requires-recent-login') {
@@ -323,19 +323,21 @@ export default function EditProfileScreen() {
               isPassword
               placeholder={t('editProfile.newPasswordPlaceholder')}
             />
-            
+          </View>
+
+          <View style={{ marginTop: 10, marginBottom: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' }}>
             <TouchableOpacity 
               style={styles.deleteButton}
               activeOpacity={0.7}
               onPress={handleDeleteAccount}
             >
               <Ionicons name="trash-outline" size={20} color={Colors.danger} />
-              <Text style={styles.deleteButtonText}>{t('editProfile.deleteAccount')}</Text>
+              <Text style={styles.deleteButtonText}>{t('editProfile.deleteAccount') || 'Delete Account'}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Spacer before footer */}
-          <View style={{ height: 40 }} />
+          <View style={{ height: 180 }} />
         </AnimatedKeyboardAwareScrollView>
       </View>
 

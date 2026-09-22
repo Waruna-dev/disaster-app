@@ -16,7 +16,7 @@ export const registerUser = async (email: string, password: string, fullName: st
     fullName,
     email,
     contactNumber,
-    role: 'admin', // TEMP: defaulted to 'admin' for testing the admin screens — flip back to 'user' before shipping. Available roles: 'user', 'admin'
+    role: 'user', 
     createdAt: new Date().toISOString()
   });
   return userCredential;
