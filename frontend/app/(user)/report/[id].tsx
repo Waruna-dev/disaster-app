@@ -237,6 +237,22 @@ export default function ReportDetailsScreen() {
           </View>
           <View style={styles.divider} />
           <View style={styles.infoRow}>
+            <Ionicons name="call-outline" size={24} color={Colors.primary} style={styles.infoIcon} />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>CONTACT NUMBER</Text>
+              <Text style={styles.infoValue}>{report.contactNumber || 'Not provided'}</Text>
+            </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.infoRow}>
+            <Ionicons name="list-outline" size={24} color={Colors.primary} style={styles.infoIcon} />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>WHAT IS AFFECTED?</Text>
+              <Text style={styles.infoValue}>{report.affectedItems?.length > 0 ? report.affectedItems.join(', ') : 'None specified'}</Text>
+            </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={24} color={Colors.primary} style={styles.infoIcon} />
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>{t('reportDetails.timeReported') || 'SUBMITTED'}</Text>
@@ -266,7 +282,7 @@ export default function ReportDetailsScreen() {
           <Text style={styles.descriptionText}>
             {report.description || t('reportDetails.noDescription') || 'No description provided.'}
           </Text>
-          <Text style={styles.reporterText}>{t('reportDetails.reportedBy') || 'Reported by'} {report.userId === 'anonymous' ? (t('reportDetails.anonymous') || 'Anonymous') : (t('reportDetails.user') || 'User')}</Text>
+          <Text style={styles.reporterText}>{report.userId === 'anonymous' ? 'Submitted anonymously' : 'Submitted by you.'}</Text>
         </View>
 
         {/* Photo Evidence */}

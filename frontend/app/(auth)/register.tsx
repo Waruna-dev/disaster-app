@@ -37,12 +37,14 @@ export default function RegisterScreen() {
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const sriLankaPhoneRegex = /^(?:0|94|\+94)?(?:7\d{8}|[1-9]\d{8})$/;
 
   const validatePassword = (pwd: string) => {
     if (pwd.length < 8) return t('register.passwordTooShort') || "Password must be at least 8 characters.";
@@ -54,13 +56,18 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!fullName || !email || !password || !confirmPassword) {
+    if (!fullName || !email || !contactNumber || !password || !confirmPassword) {
       Alert.alert(t('register.error'), t('register.fillFields'));
       return;
     }
-    
+
     if (!emailRegex.test(email.trim())) {
       Alert.alert(t('register.error'), t('register.invalidEmail') || "Invalid email address format.");
+      return;
+    }
+
+    if (!sriLankaPhoneRegex.test(contactNumber.trim())) {
+      Alert.alert(t('register.error'), t('register.invalidPhone') || "Please enter a valid Sri Lankan phone number (e.g., 0712345678 or +94712345678).");
       return;
     }
 
@@ -81,7 +88,7 @@ export default function RegisterScreen() {
 
     try {
       setLoading(true);
-      await registerUser(email.trim(), password, fullName);
+      await registerUser(email.trim(), password, fullName.trim(), contactNumber.trim());
       // Fallback routing, index.tsx splash will also catch it if mounted
       router.replace("/(user)/(tabs)" as any);
     } catch (error: any) {
@@ -224,6 +231,15 @@ export default function RegisterScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+            />
+
+            <FormInput
+              label="Contact Number"
+              placeholder={t('0712345678') || '0712345678'}
+              iconName="call-outline"
+              value={contactNumber}
+              onChangeText={setContactNumber}
+              keyboardType="phone-pad"
             />
 
             <FormInput
