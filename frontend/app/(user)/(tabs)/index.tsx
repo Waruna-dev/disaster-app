@@ -75,11 +75,11 @@ export default function DashboardScreen() {
             </View>
             <View style={styles.actionColumn}>
               <QuickActionCard 
-                title={t('dashboard.myReports')} 
-                subtitle={t('dashboard.trackReportStatus')} 
-                icon="document-text-outline" 
+                title="Emergency Contacts" 
+                subtitle="Call or share location"
+                icon="call-outline" 
                 variant="outline" 
-                onPress={() => router.push('/(user)/(tabs)/reports')} 
+                onPress={() => router.push('/(user)/emergency' as any)} 
               />
             </View>
           </View>

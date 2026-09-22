@@ -171,6 +171,14 @@ export default function AdminReportDetailsScreen() {
             <Text style={styles.rowText}>Submitted by {residentName}</Text>
           </View>
           <View style={styles.row}>
+            <Ionicons name="call-outline" size={16} color={Colors.textMuted} />
+            <Text style={styles.rowText}>{report.contactNumber || 'No contact provided'}</Text>
+          </View>
+          <View style={styles.row}>
+            <Ionicons name="list-outline" size={16} color={Colors.textMuted} />
+            <Text style={styles.rowText}>{report.affectedItems?.length > 0 ? report.affectedItems.join(', ') : 'None specified'}</Text>
+          </View>
+          <View style={styles.row}>
             <Ionicons name="time-outline" size={16} color={Colors.textMuted} />
             <Text style={styles.rowText}>{formatDateTime(report.createdAt)}</Text>
           </View>

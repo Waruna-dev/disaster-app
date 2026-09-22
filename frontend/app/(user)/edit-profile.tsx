@@ -33,6 +33,7 @@ export default function EditProfileScreen() {
   // Form state
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
   const [age, setAge] = useState('');
   const [occupation, setOccupation] = useState('');
   const [homeArea, setHomeArea] = useState('');
@@ -70,6 +71,7 @@ export default function EditProfileScreen() {
         if (profile) {
           setFullName(profile.fullName || '');
           setEmail(profile.email || user.email || '');
+          setContactNumber(profile.contactNumber || '');
           setAge(profile.age || '');
           setOccupation(profile.occupation || '');
           setHomeArea(profile.homeArea || '');
@@ -86,11 +88,19 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!user) return;
+    
+    const sriLankaPhoneRegex = /^(?:0|94|\+94)?(?:7\d{8}|[1-9]\d{8})$/;
+    if (contactNumber.trim() && !sriLankaPhoneRegex.test(contactNumber.trim())) {
+      Alert.alert(t('editProfile.error') || 'Error', t('editProfile.invalidPhone') || "Please enter a valid Sri Lankan phone number.");
+      return;
+    }
+
     try {
       setSaving(true);
       // Update profile info
       await saveUserProfile(user.uid, {
         fullName,
+        contactNumber,
         age,
         occupation,
         homeArea,
@@ -119,12 +129,12 @@ export default function EditProfileScreen() {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      t('editProfile.deleteTitle'),
-      t('editProfile.deleteMessage'),
+      t('editProfile.deleteTitle') || 'Delete Account',
+      t('editProfile.deleteMessage') || 'Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.',
       [
-        { text: t('editProfile.cancel'), style: 'cancel' },
+        { text: t('editProfile.cancel') || 'Cancel', style: 'cancel' },
         { 
-          text: t('editProfile.delete'), 
+          text: t('editProfile.delete') || 'Delete', 
           style: 'destructive', 
           onPress: async () => {
             if (!user) return;
@@ -134,8 +144,8 @@ export default function EditProfileScreen() {
               await deleteUserData(user.uid);
               // 2. Delete auth user
               await deleteUserAccount();
-              Alert.alert(t('editProfile.success'), t('editProfile.accountDeleted'));
-              // Will trigger onAuthStateChanged to unauthenticated automatically
+              Alert.alert(t('editProfile.success'), t('editProfile.accountDeleted') || 'Account deleted successfully');
+              router.replace('/(auth)/register' as any);
             } catch (error: any) {
               console.log('Error deleting account:', error);
               if (error.code === 'auth/requires-recent-login') {
@@ -218,7 +228,15 @@ export default function EditProfileScreen() {
               iconName="person-outline"
               value={fullName}
               onChangeText={setFullName}
-              placeholder={t('register.fullNamePlaceholder')}
+            />
+            
+            <FormInput
+              label="Contact Number"
+              iconName="call-outline"
+              value={contactNumber}
+              onChangeText={setContactNumber}
+              keyboardType="phone-pad"
+              placeholder="0712345678"
             />
             
             <View style={styles.row}>
@@ -305,19 +323,21 @@ export default function EditProfileScreen() {
               isPassword
               placeholder={t('editProfile.newPasswordPlaceholder')}
             />
-            
+          </View>
+
+          <View style={{ marginTop: 10, marginBottom: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' }}>
             <TouchableOpacity 
               style={styles.deleteButton}
               activeOpacity={0.7}
               onPress={handleDeleteAccount}
             >
               <Ionicons name="trash-outline" size={20} color={Colors.danger} />
-              <Text style={styles.deleteButtonText}>{t('editProfile.deleteAccount')}</Text>
+              <Text style={styles.deleteButtonText}>{t('editProfile.deleteAccount') || 'Delete Account'}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Spacer before footer */}
-          <View style={{ height: 40 }} />
+          <View style={{ height: 180 }} />
         </AnimatedKeyboardAwareScrollView>
       </View>
 
