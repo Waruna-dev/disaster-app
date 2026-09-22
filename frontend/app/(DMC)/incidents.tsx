@@ -72,6 +72,16 @@ export default function AdminReportApprovalScreen() {
               <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={[styles.groupedLink, styles.floodZonesLink]}
+              activeOpacity={0.7}
+              onPress={() => router.push('/(DMC)/flood-incidents' as any)}
+            >
+              <Ionicons name="water-outline" size={16} color="#2E75D6" />
+              <Text style={[styles.groupedLinkText, styles.floodZonesLinkText]}>View flood affected areas</Text>
+              <Ionicons name="chevron-forward" size={16} color="#2E75D6" />
+            </TouchableOpacity>
+
             <View style={styles.filterRow}>
               <View style={styles.filterTabs}>
                 {TYPE_FILTERS.map((filter) => {
@@ -185,6 +195,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: Colors.primary,
+  },
+  floodZonesLink: {
+    backgroundColor: '#E8F1FB',
+  },
+  floodZonesLinkText: {
+    color: '#2E75D6',
   },
   filterRow: {
     flexDirection: 'row',

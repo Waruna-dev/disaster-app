@@ -8,8 +8,9 @@ import { Colors } from '../../constants/colors';
 import { DMCNavHeader } from '../../components/DMCNavHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
 import { useReports } from '../../hooks/useReports';
+import { useFloodIncidents } from '../../hooks/useFloodIncidents';
 import { ReportStatus } from '../../types/report';
-import { PinnedReport, STATUS_PIN, buildReportsMapHtml } from '../../utils/reportMap';
+import { IncidentZone, PinnedReport, STATUS_PIN, buildReportsMapHtml } from '../../utils/reportMap';
 
 type StatusFilter = 'all' | ReportStatus;
 
@@ -73,6 +74,9 @@ export default function MapScreen() {
     return () => sub.remove();
   }, [fullMap]);
   const { reports, loading } = useReports(statusFilter);
+  // Rejected auto-generated areas are dead ends (an officer already dismissed the
+  // grouping) — not worth cluttering the main map with, unlike Pending/Approved.
+  const { incidents: floodIncidents } = useFloodIncidents();
 
   const pins = useMemo(() => {
     const realPins = reports.filter((r): r is PinnedReport => !!r.location);
@@ -80,13 +84,32 @@ export default function MapScreen() {
     return [...realPins, ...samplePins];
   }, [reports, statusFilter]);
 
-  const mapHtml = useMemo(() => buildReportsMapHtml(pins), [pins]);
+  const zones = useMemo<IncidentZone[]>(
+    () =>
+      floodIncidents
+        .filter((i) => i.reviewStatus !== 'Rejected')
+        .map((i) => ({
+          id: i.id,
+          affectedArea: i.affectedArea,
+          reportCount: i.reports.length,
+          riskLevel: i.riskLevel,
+          reviewStatus: i.reviewStatus,
+          centroid: i.centroid,
+          polygon: i.polygon,
+          radiusMeters: i.radiusMeters,
+        })),
+    [floodIncidents]
+  );
+
+  const mapHtml = useMemo(() => buildReportsMapHtml(pins, zones, 'osm'), [pins, zones]);
 
   const handleMessage = (event: WebViewMessageEvent) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'viewDetails' && data.id) {
         router.push(`/(DMC)/incident/${data.id}` as any);
+      } else if (data.type === 'viewFloodIncident' && data.id) {
+        router.push(`/(DMC)/flood-incident/${data.id}` as any);
       }
     } catch {
       // ignore malformed messages from the map page
@@ -138,6 +161,12 @@ export default function MapScreen() {
               <Text style={styles.legendLabel}>{status}</Text>
             </View>
           ))}
+          {zones.length > 0 && (
+            <View style={styles.legendItem}>
+              <View style={[styles.legendSwatch, { backgroundColor: Colors.danger }]} />
+              <Text style={styles.legendLabel}>Affected area</Text>
+            </View>
+          )}
         </View>
 
         <TouchableOpacity
@@ -240,6 +269,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  legendSwatch: {
+    width: 10,
+    height: 10,
+    borderRadius: 3,
+    opacity: 0.6,
   },
   legendLabel: {
     fontSize: 11,

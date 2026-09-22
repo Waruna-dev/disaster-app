@@ -13,6 +13,7 @@ const MENU_LINKS: { label: string; icon: keyof typeof Ionicons.glyphMap; route: 
   { label: 'Incidents', icon: 'document-text-outline', route: '/(DMC)/incidents' },
   { label: 'Map', icon: 'location-outline', route: '/(DMC)/map' },
   { label: 'All Reports', icon: 'albums-outline', route: '/(DMC)/reports' },
+  { label: 'Public Warnings', icon: 'megaphone-outline', route: '/(DMC)/alerts' },
 ];
 
 interface ModalProps {
