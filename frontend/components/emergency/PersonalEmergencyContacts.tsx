@@ -5,9 +5,11 @@ import { Colors } from '../../constants/colors';
 import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 import { useLocationHelper } from '../../hooks/useLocationHelper';
 import { AddEmergencyContactModal } from './AddEmergencyContactModal';
+import { useAuth } from '../../context/AuthContext';
 
 export const PersonalEmergencyContacts = () => {
   const { contacts, isLoadingContacts, addContact, deleteContact } = useEmergencyContacts();
+  const { user } = useAuth();
   const { getCurrentLocationMapLink } = useLocationHelper();
   const [isAddModalVisible, setAddModalVisible] = useState(false);
   const [isSendingLocationId, setIsSendingLocationId] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export const PersonalEmergencyContacts = () => {
     Linking.openURL(`tel:${number}`);
   };
 
-  const handleSendLocation = async (id: string, phone: string) => {
+  const handleSendLocation = async (id: string, phone: string, contactName: string) => {
     if (isSendingLocationId) return;
     
     try {
@@ -39,19 +41,33 @@ export const PersonalEmergencyContacts = () => {
       const mapLink = await getCurrentLocationMapLink(true);
       
       if (mapLink) {
-        const message = `This is my current location: ${mapLink}`;
+        const senderName = user?.displayName;
+        const greeting = senderName
+          ? `Hi ${contactName}, this is ${senderName}.`
+          : `Hi ${contactName}.`;
+
+        const message = [
+          `${greeting} I may need your help, so I’m sharing my current location to help you find me.`,
+          "",
+          "My current location:",
+          mapLink,
+          "",
+          "Please check the location and call me when you receive this message."
+        ].join('\n');
+
         const separator = Platform.OS === 'ios' ? '&' : '?';
         const smsUrl = `sms:${phone}${separator}body=${encodeURIComponent(message)}`;
         
-        const canOpen = await Linking.canOpenURL(smsUrl);
-        if (canOpen) {
-          await Linking.openURL(smsUrl);
-        } else {
-          Alert.alert('Error', 'Your device cannot open the SMS app. Sharing via standard menu instead.');
-          import('react-native').then(({ Share }) => {
-            Share.share({ message: message, url: mapLink });
-          });
+        const supported = await Linking.canOpenURL(smsUrl);
+        if (!supported) {
+          Alert.alert(
+            "Messaging unavailable",
+            "Your device could not open the messaging application."
+          );
+          return;
         }
+        
+        await Linking.openURL(smsUrl);
       }
     } finally {
       setIsSendingLocationId(null);
@@ -119,7 +135,7 @@ export const PersonalEmergencyContacts = () => {
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.circleButton} 
-                  onPress={() => handleSendLocation(contact.id, contact.phone)}
+                  onPress={() => handleSendLocation(contact.id, contact.phone, contact.name)}
                   disabled={isSendingLocationId === contact.id}
                 >
                   {isSendingLocationId === contact.id ? (
