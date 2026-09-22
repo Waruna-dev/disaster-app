@@ -214,7 +214,32 @@ export default function DmcDashboardScreen() {
             <Ionicons name="water-outline" size={22} color={Colors.primary} />
             <Text style={styles.quickNavLabel}>Flood Warning</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickNavTile}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(DMC)/flood-incidents' as any)}
+          >
+            <Ionicons name="map-outline" size={22} color={Colors.primary} />
+            <Text style={styles.quickNavLabel}>Flood Zones</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickNavTile}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(DMC)/alerts' as any)}
+          >
+            <Ionicons name="megaphone-outline" size={22} color={Colors.primary} />
+            <Text style={styles.quickNavLabel}>Public Warnings</Text>
+          </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={styles.createWarningButton}
+          activeOpacity={0.85}
+          onPress={() => router.push('/(DMC)/create-alert' as any)}
+        >
+          <Ionicons name="add-circle" size={20} color={Colors.white} />
+          <Text style={styles.createWarningText}>Create Public Warning</Text>
+        </TouchableOpacity>
       </Animated.ScrollView>
 
       <DMCTabBar active="home" />
@@ -348,5 +373,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textDark,
     textAlign: 'center',
+  },
+  createWarningButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.danger,
+    borderRadius: 14,
+    paddingVertical: 15,
+    marginTop: 16,
+  },
+  createWarningText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.white,
   },
 });
