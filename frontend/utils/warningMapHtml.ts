@@ -14,6 +14,20 @@ const RISK_COLOR: Record<string, string> = {
   CRITICAL: Colors.danger,
 };
 
+/** An already-published warning's zone, shown as a read-only reference shape so
+ * an officer positioning a new (or edited) zone can see what's already covered.
+ * Colored by its own riskLevel (dashed + lighter, vs. the solid-filled zone being
+ * actively placed) so risk is still legible at a glance, not flattened to grey. */
+export type ExistingWarningZone = {
+  id: string;
+  label: string;
+  riskLevel: keyof typeof RISK_COLOR | string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  polygon: { latitude: number; longitude: number }[] | null;
+};
+
 // Same WebView + Leaflet approach as utils/reportMap.ts and utils/userMapHtml.ts
 // (react-native-maps renders solid black on Android under the New Architecture —
 // see reportMap.ts for the upstream issue). Draws a draggable warning-zone marker
@@ -22,14 +36,22 @@ const RISK_COLOR: Record<string, string> = {
 // the map or dragging the marker posts {type:'locationChange', lat, lng} back to
 // the host WebView; window.setRadius/window.setLocation let React Native push
 // updates the other way (radius slider, "use my location", "pick incident").
+// When a `polygon` (>= 3 points) is passed instead, the circle/marker are skipped
+// entirely and this renders a read-only preview of that boundary — actually
+// drawing/editing one happens in the full-screen Polygon Creator
+// (utils/polygonDrawMapHtml.ts + components/PolygonCreatorModal.tsx).
 export function buildWarningMapHtml(
   latitude: number,
   longitude: number,
   radius: number,
   riskLevel: string,
-  incidents: IncidentPin[] = []
+  incidents: IncidentPin[] = [],
+  polygon: { latitude: number; longitude: number }[] | null = null,
+  existingWarnings: ExistingWarningZone[] = [],
+  fitToExisting: boolean = false
 ): string {
   const zoneColor = RISK_COLOR[riskLevel] ?? Colors.warning;
+  const hasPolygon = !!polygon && polygon.length >= 3;
 
   return `<!DOCTYPE html>
 <html>
@@ -57,6 +79,17 @@ export function buildWarningMapHtml(
       border: 2px solid #FFFFFF;
       box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
+    .existing-zone-label {
+      background: rgba(255,255,255,0.9);
+      border: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+      font-family: -apple-system, Roboto, sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: ${Colors.textMedium};
+      padding: 2px 6px;
+    }
+    .existing-zone-label::before { display: none; }
   </style>
 </head>
 <body>
@@ -75,46 +108,105 @@ export function buildWarningMapHtml(
       L.marker([p.lat, p.lng], { icon: icon }).bindTooltip(p.label).addTo(map);
     });
 
-    var zoneIcon = L.divIcon({ className: '', html: '<div class="zone-marker"></div>', iconSize: [26, 26], iconAnchor: [13, 24] });
-    var marker = L.marker([${latitude}, ${longitude}], { icon: zoneIcon, draggable: true }).addTo(map);
-    var circle = L.circle([${latitude}, ${longitude}], {
-      radius: ${radius},
-      color: '${zoneColor}',
-      fillColor: '${zoneColor}',
-      fillOpacity: 0.18,
-      weight: 2,
-    }).addTo(map);
+    // Already-published warnings, drawn as read-only reference shapes so an
+    // officer can see what's already covered before placing a new or edited
+    // zone on top — never interactive, unlike the zone below. Colored by each
+    // one's own risk level (dashed border, lighter fill) so the *pattern* reads
+    // as "already published" at a glance while still showing its risk color,
+    // as opposed to the zone being actively placed (solid border, filled 0.3).
+    var RISK_COLOR = ${JSON.stringify(RISK_COLOR)};
+    var existingWarnings = ${JSON.stringify(existingWarnings)};
+    existingWarnings.forEach(function (w) {
+      var riskColor = RISK_COLOR[w.riskLevel] || '${Colors.textMuted}';
+      var existingStyle = {
+        color: riskColor,
+        weight: 2,
+        fillColor: riskColor,
+        fillOpacity: 0.16,
+        dashArray: '6,5',
+        interactive: false,
+      };
+      var layer;
+      if (w.polygon && w.polygon.length >= 3) {
+        layer = L.polygon(w.polygon.map(function (p) { return [p.latitude, p.longitude]; }), existingStyle).addTo(map);
+      } else {
+        layer = L.circle([w.latitude, w.longitude], Object.assign({ radius: w.radius }, existingStyle)).addTo(map);
+      }
+      layer.bindTooltip(w.label, { permanent: true, direction: 'center', className: 'existing-zone-label' });
+    });
 
-    function report(lat, lng) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'locationChange', lat: lat, lng: lng }));
+    var hasPolygon = ${hasPolygon};
+
+    if (hasPolygon) {
+      // Read-only preview of an officer-drawn boundary (see utils/polygonDrawMapHtml.ts
+      // for where it's actually created/edited, in the full-screen Polygon Creator).
+      // No drag/click handling here — "Edit boundary" re-opens that full-screen map.
+      var ring = ${JSON.stringify((polygon ?? []).map((p) => [p.latitude, p.longitude]))};
+      L.polygon(ring, {
+        color: '${zoneColor}',
+        weight: 2,
+        fillColor: '${zoneColor}',
+        fillOpacity: 0.3,
+      }).addTo(map);
+      map.fitBounds(ring, { padding: [24, 24] });
+    } else {
+      var zoneIcon = L.divIcon({ className: '', html: '<div class="zone-marker"></div>', iconSize: [26, 26], iconAnchor: [13, 24] });
+      var marker = L.marker([${latitude}, ${longitude}], { icon: zoneIcon, draggable: true }).addTo(map);
+      var circle = L.circle([${latitude}, ${longitude}], {
+        radius: ${radius},
+        color: '${zoneColor}',
+        fillColor: '${zoneColor}',
+        fillOpacity: 0.18,
+        weight: 2,
+      }).addTo(map);
+
+      var report = function (lat, lng) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'locationChange', lat: lat, lng: lng }));
+      };
+
+      marker.on('drag', function (e) {
+        circle.setLatLng(e.target.getLatLng());
+      });
+      marker.on('dragend', function (e) {
+        var pos = e.target.getLatLng();
+        report(pos.lat, pos.lng);
+      });
+
+      map.on('click', function (e) {
+        marker.setLatLng(e.latlng);
+        circle.setLatLng(e.latlng);
+        report(e.latlng.lat, e.latlng.lng);
+      });
+
+      // Called from React Native when the radius slider/preset changes.
+      window.setRadius = function (meters) {
+        circle.setRadius(meters);
+      };
+
+      // Called from React Native ("use my location" or picking a verified incident).
+      window.setLocation = function (lat, lng) {
+        var pos = [lat, lng];
+        marker.setLatLng(pos);
+        circle.setLatLng(pos);
+        map.setView(pos, 14);
+      };
+
+      // Full-screen circle editor only (fitToExisting): widen the opening view to
+      // cover every already-published zone too, so the officer sees how the new
+      // zone relates to what's already covered instead of having to pan to find
+      // it. The small inline card keeps its tight zoom on just the current pin.
+      if (${fitToExisting} && existingWarnings.length) {
+        var fitPoints = [[${latitude}, ${longitude}]];
+        existingWarnings.forEach(function (w) {
+          if (w.polygon && w.polygon.length >= 3) {
+            w.polygon.forEach(function (p) { fitPoints.push([p.latitude, p.longitude]); });
+          } else {
+            fitPoints.push([w.latitude, w.longitude]);
+          }
+        });
+        map.fitBounds(fitPoints, { padding: [40, 40] });
+      }
     }
-
-    marker.on('drag', function (e) {
-      circle.setLatLng(e.target.getLatLng());
-    });
-    marker.on('dragend', function (e) {
-      var pos = e.target.getLatLng();
-      report(pos.lat, pos.lng);
-    });
-
-    map.on('click', function (e) {
-      marker.setLatLng(e.latlng);
-      circle.setLatLng(e.latlng);
-      report(e.latlng.lat, e.latlng.lng);
-    });
-
-    // Called from React Native when the radius slider/preset changes.
-    window.setRadius = function (meters) {
-      circle.setRadius(meters);
-    };
-
-    // Called from React Native ("use my location" or picking a verified incident).
-    window.setLocation = function (lat, lng) {
-      var pos = [lat, lng];
-      marker.setLatLng(pos);
-      circle.setLatLng(pos);
-      map.setView(pos, 14);
-    };
   </script>
 </body>
 </html>`;

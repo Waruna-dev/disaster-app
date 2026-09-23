@@ -11,26 +11,34 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { LocationPickerMap } from '../../components/LocationPickerMap';
 import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../hooks/useReports';
-import { createWarning } from '../../services/alertService';
+import { useWarnings } from '../../hooks/useWarnings';
+import { createWarning, updateWarning } from '../../services/alertService';
 import { linkFloodIncidentWarning } from '../../services/floodIncidentReviewService';
 import { DisasterType } from '../../types/report';
-import { RiskLevel, RISK_LEVELS } from '../../types/alert';
+import { RiskLevel, RISK_LEVELS, WarningLocation } from '../../types/alert';
 import { DEFAULT_REGION } from '../../utils/reportMap';
-import { IncidentPin } from '../../utils/warningMapHtml';
+import { ExistingWarningZone, IncidentPin } from '../../utils/warningMapHtml';
+import { getWarningStatus } from '../../utils/warningStatus';
 
 // Optional prefill, e.g. from an approved flood incident's "Publish Public Warning"
-// (app/(DMC)/flood-incident/[id].tsx) — every field falls back to the screen's usual
-// defaults when reached normally (from the dashboard's "Create Public Warning").
-// A type literal (not `interface`) so it structurally satisfies useLocalSearchParams'
-// UnknownOutputParams (Record<string, string | string[]>) constraint.
+// (app/(DMC)/flood-incident/[id].tsx) or from editing an existing warning (the
+// alerts list's "Edit" button, which sets `warningId` plus every field) — every
+// field falls back to the screen's usual defaults when reached normally (from the
+// dashboard's "Create Public Warning"). A type literal (not `interface`) so it
+// structurally satisfies useLocalSearchParams' UnknownOutputParams
+// (Record<string, string | string[]>) constraint.
 type WarningPrefillParams = {
+  warningId?: string;
   title?: string;
   hazardType?: string;
   riskLevel?: string;
   affectedArea?: string;
+  message?: string;
   lat?: string;
   lng?: string;
   radius?: string;
+  polygon?: string;
+  originalCreatedAt?: string;
   sourceReportId?: string;
   incidentId?: string;
 };
@@ -61,26 +69,40 @@ function formatDateTime(date: Date) {
 export default function CreateWarningScreen() {
   const { user } = useAuth();
   const { reports: verifiedReports } = useReports('Verified');
+  const { warnings: allWarnings } = useWarnings();
   const params = useLocalSearchParams<WarningPrefillParams>();
+  const isEditMode = !!params.warningId;
 
   const [title, setTitle] = useState(params.title ?? '');
   const [hazardType, setHazardType] = useState<DisasterType>(params.hazardType === 'landslide' ? 'landslide' : 'flood');
   const [riskLevel, setRiskLevel] = useState<RiskLevel>((RISK_LEVELS as string[]).includes(params.riskLevel ?? '') ? (params.riskLevel as RiskLevel) : 'HIGH');
   const [affectedArea, setAffectedArea] = useState(params.affectedArea ?? '');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(params.message ?? '');
   const [durationHours, setDurationHours] = useState(6);
   const [coords, setCoords] = useState({
     latitude: params.lat ? Number(params.lat) : DEFAULT_REGION.latitude,
     longitude: params.lng ? Number(params.lng) : DEFAULT_REGION.longitude,
   });
   const [radius, setRadius] = useState<number>(params.radius ? Number(params.radius) : 300);
+  const [polygon, setPolygon] = useState<WarningLocation[] | null>(() => {
+    if (!params.polygon) return null;
+    try {
+      return JSON.parse(params.polygon);
+    } catch {
+      return null;
+    }
+  });
   const [sourceReportId, setSourceReportId] = useState<string | null>(params.sourceReportId ?? null);
   const sourceIncidentId = params.incidentId ?? null;
   const [incidentPickerVisible, setIncidentPickerVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createdAt = useMemo(() => new Date(), []);
-  const expiresAt = useMemo(() => new Date(createdAt.getTime() + durationHours * 60 * 60 * 1000), [createdAt, durationHours]);
+  // In edit mode this is the warning's real, original createdAt (passed in as a
+  // param) — never overwritten by the save. "Expires" always reflects whatever
+  // duration is picked below, computed from now, so re-saving with a fresh
+  // duration is how an officer extends (or effectively reactivates) a warning.
+  const createdAt = useMemo(() => (params.originalCreatedAt ? new Date(params.originalCreatedAt) : new Date()), [params.originalCreatedAt]);
+  const expiresAt = useMemo(() => new Date(Date.now() + durationHours * 60 * 60 * 1000), [durationHours]);
 
   // Verified incidents with saved coordinates show up as reference pins on the
   // map (the "multiple incidents" case) and can be tapped in the picker below
@@ -91,6 +113,26 @@ export default function CreateWarningScreen() {
         .filter((r) => typeof r.latitude === 'number' && typeof r.longitude === 'number')
         .map((r) => ({ id: r.id, lat: r.latitude!, lng: r.longitude!, label: `${r.disasterType === 'flood' ? 'Flood' : 'Landslide'} · ${r.affectedArea}` })),
     [verifiedReports]
+  );
+
+  // Already-published warnings show up as read-only reference shapes on the
+  // Warning Zone map so the officer can see what's already covered before
+  // placing a new (or edited) zone — excludes the warning being edited itself
+  // and anything no longer Active (Expired/Cancelled zones aren't "published").
+  const existingWarningZones: ExistingWarningZone[] = useMemo(
+    () =>
+      allWarnings
+        .filter((w) => w.id !== params.warningId && getWarningStatus(w) === 'Active')
+        .map((w) => ({
+          id: w.id,
+          label: `${w.hazardType === 'flood' ? 'Flood' : 'Landslide'} · ${w.affectedArea}`,
+          riskLevel: w.riskLevel,
+          latitude: w.latitude,
+          longitude: w.longitude,
+          radius: w.radius,
+          polygon: w.polygon ?? null,
+        })),
+    [allWarnings, params.warningId]
   );
 
   const handlePickIncident = (report: (typeof verifiedReports)[number]) => {
@@ -125,6 +167,27 @@ export default function CreateWarningScreen() {
 
     try {
       setIsSubmitting(true);
+
+      if (isEditMode) {
+        await updateWarning(params.warningId!, {
+          title: title.trim(),
+          hazardType,
+          riskLevel,
+          affectedArea: affectedArea.trim(),
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          radius,
+          polygon,
+          message: message.trim(),
+          expiresAt,
+        });
+
+        Alert.alert('Warning updated', 'Your changes have been saved.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+        return;
+      }
+
       const warningId = await createWarning({
         title: title.trim(),
         hazardType,
@@ -133,6 +196,7 @@ export default function CreateWarningScreen() {
         latitude: coords.latitude,
         longitude: coords.longitude,
         radius,
+        polygon,
         message: message.trim(),
         expiresAt,
         createdBy: user.uid,
@@ -148,7 +212,7 @@ export default function CreateWarningScreen() {
         { text: 'OK', onPress: () => router.replace('/(DMC)/alerts' as any) },
       ]);
     } catch (error: any) {
-      Alert.alert('Failed to create warning', error.message || 'An error occurred while saving.');
+      Alert.alert(isEditMode ? 'Failed to save changes' : 'Failed to create warning', error.message || 'An error occurred while saving.');
     } finally {
       setIsSubmitting(false);
     }
@@ -156,7 +220,11 @@ export default function CreateWarningScreen() {
 
   return (
     <View style={styles.container}>
-      <DMCNavHeader eyebrow="DMC · PUBLIC WARNING" title="Create Public Warning" onBack={() => router.back()} />
+      <DMCNavHeader
+        eyebrow="DMC · PUBLIC WARNING"
+        title={isEditMode ? 'Edit Public Warning' : 'Create Public Warning'}
+        onBack={() => router.back()}
+      />
 
       <KeyboardAwareScrollView
         contentContainerStyle={styles.content}
@@ -230,8 +298,11 @@ export default function CreateWarningScreen() {
           radius={radius}
           riskLevel={riskLevel}
           incidents={incidentPins}
+          polygon={polygon}
+          existingWarnings={existingWarningZones}
           onChangeLocation={setCoords}
           onChangeRadius={setRadius}
+          onChangePolygon={setPolygon}
         />
 
         <TextAreaInput
@@ -271,7 +342,7 @@ export default function CreateWarningScreen() {
         </View>
 
         <PrimaryButton
-          title={isSubmitting ? 'Creating...' : 'Create Warning'}
+          title={isSubmitting ? (isEditMode ? 'Saving...' : 'Creating...') : isEditMode ? 'Save Changes' : 'Create Warning'}
           onPress={handleSubmit}
           disabled={isSubmitting}
           loading={isSubmitting}
