@@ -9,7 +9,17 @@ import { DMCHeader } from '../../components/DMCHeader';
 import { ApproveConfirmDialog } from '../../components/ApproveConfirmDialog';
 import { RejectReasonDialog } from '../../components/RejectReasonDialog';
 import { useReports } from '../../hooks/useReports';
-import { PinnedReport, buildReportsMapHtml } from '../../utils/reportMap';
+import { useWarnings } from '../../hooks/useWarnings';
+import { RiskLevel } from '../../types/alert';
+import { PinnedReport, WarningZone, buildReportsMapHtml } from '../../utils/reportMap';
+import { getWarningStatus } from '../../utils/warningStatus';
+
+const WARNING_RISK_COLOR: Record<RiskLevel, string> = {
+  LOW: '#2E75D6',
+  MEDIUM: '#EAB308',
+  HIGH: Colors.warning,
+  CRITICAL: Colors.danger,
+};
 
 const DISASTER_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; label: string; bg: string; tint: string }> = {
   flood: { icon: 'water', label: 'Flood', bg: '#E8F1FB', tint: '#2E75D6' },
@@ -35,6 +45,7 @@ export default function GroupDetailsScreen() {
 
   const { reports: pendingReports, loading } = useReports('Pending');
   const groupReports = useMemo(() => pendingReports.filter((r) => wantedIds.has(r.id)), [pendingReports, wantedIds]);
+  const { warnings } = useWarnings();
 
   const insets = useSafeAreaInsets();
   const [showApprove, setShowApprove] = useState(false);
@@ -42,13 +53,51 @@ export default function GroupDetailsScreen() {
   const [showFullMap, setShowFullMap] = useState(false);
 
   const pins = useMemo(() => groupReports.filter((r): r is PinnedReport => !!r.location), [groupReports]);
-  const mapHtml = useMemo(() => buildReportsMapHtml(pins), [pins]);
+  // Same "everything on one map" treatment as the DMC Main Map (app/(DMC)/map.tsx) —
+  // an officer reviewing a group should see any active public warning nearby
+  // without leaving this screen. Active only, same reasoning as the main map.
+  const warningZones = useMemo<WarningZone[]>(
+    () =>
+      warnings
+        .filter((w) => getWarningStatus(w) === 'Active')
+        .map((w) => ({
+          id: w.id,
+          title: w.title,
+          affectedArea: w.affectedArea,
+          riskLevel: w.riskLevel,
+          status: getWarningStatus(w),
+          centroid: { latitude: w.latitude, longitude: w.longitude },
+          polygon: w.polygon ?? null,
+          radiusMeters: w.radius,
+        })),
+    [warnings]
+  );
+  const mapHtml = useMemo(() => buildReportsMapHtml(pins, [], warningZones), [pins, warningZones]);
 
   const handleMapMessage = (event: WebViewMessageEvent) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'viewDetails' && data.id) {
         router.push(`/(DMC)/incident/${data.id}` as any);
+      } else if (data.type === 'editWarning' && data.id) {
+        const warning = warnings.find((w) => w.id === data.id);
+        if (!warning) return;
+        router.push({
+          pathname: '/(DMC)/create-alert',
+          params: {
+            warningId: warning.id,
+            title: warning.title,
+            hazardType: warning.hazardType,
+            riskLevel: warning.riskLevel,
+            affectedArea: warning.affectedArea,
+            message: warning.message,
+            lat: String(warning.latitude),
+            lng: String(warning.longitude),
+            radius: String(warning.radius),
+            polygon: warning.polygon && warning.polygon.length >= 3 ? JSON.stringify(warning.polygon) : undefined,
+            originalCreatedAt: warning.createdAt ? warning.createdAt.toDate().toISOString() : undefined,
+          },
+        } as any);
       }
     } catch {
       // ignore malformed messages from the map page
@@ -94,6 +143,18 @@ export default function GroupDetailsScreen() {
             <Ionicons name="expand" size={18} color={Colors.textDark} />
           </TouchableOpacity>
         </View>
+
+        {warningZones.length > 0 && (
+          <View style={styles.legend} pointerEvents="none">
+            <Text style={styles.legendGroupLabel}>WARNINGS</Text>
+            {(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as RiskLevel[]).map((level) => (
+              <View key={level} style={styles.legendItem}>
+                <View style={[styles.legendSwatch, { backgroundColor: WARNING_RISK_COLOR[level] }]} />
+                <Text style={styles.legendLabel}>{level}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -228,6 +289,44 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 3,
+  },
+  legend: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    gap: 4,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  legendGroupLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: Colors.textMuted,
+    marginBottom: 2,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendSwatch: {
+    width: 8,
+    height: 8,
+    borderRadius: 2,
+    opacity: 0.7,
+  },
+  legendLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.textMedium,
   },
   fullMapContainer: {
     flex: 1,

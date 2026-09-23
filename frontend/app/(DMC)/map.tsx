@@ -9,8 +9,18 @@ import { DMCNavHeader } from '../../components/DMCNavHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
 import { useReports } from '../../hooks/useReports';
 import { useFloodIncidents } from '../../hooks/useFloodIncidents';
+import { useWarnings } from '../../hooks/useWarnings';
 import { ReportStatus } from '../../types/report';
-import { IncidentZone, PinnedReport, STATUS_PIN, buildReportsMapHtml } from '../../utils/reportMap';
+import { RiskLevel } from '../../types/alert';
+import { IncidentZone, PinnedReport, STATUS_PIN, WarningZone, buildReportsMapHtml } from '../../utils/reportMap';
+import { getWarningStatus } from '../../utils/warningStatus';
+
+const WARNING_RISK_COLOR: Record<RiskLevel, string> = {
+  LOW: '#2E75D6',
+  MEDIUM: '#EAB308',
+  HIGH: Colors.warning,
+  CRITICAL: Colors.danger,
+};
 
 type StatusFilter = 'all' | ReportStatus;
 
@@ -62,6 +72,10 @@ const SAMPLE_PINS: PinnedReport[] = [
 export default function MapScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [fullMap, setFullMap] = useState(false);
+  // Collapsed by default — the combined incidents + warnings legend got tall
+  // enough to cover a chunk of the map, so it starts as a small pill and an
+  // officer taps it open only when they need to check what a color means.
+  const [legendExpanded, setLegendExpanded] = useState(false);
   const insets = useSafeAreaInsets();
 
   // Hardware back should leave full-map mode first, not the whole screen.
@@ -77,6 +91,7 @@ export default function MapScreen() {
   // Rejected auto-generated areas are dead ends (an officer already dismissed the
   // grouping) — not worth cluttering the main map with, unlike Pending/Approved.
   const { incidents: floodIncidents } = useFloodIncidents();
+  const { warnings } = useWarnings();
 
   const pins = useMemo(() => {
     const realPins = reports.filter((r): r is PinnedReport => !!r.location);
@@ -101,7 +116,26 @@ export default function MapScreen() {
     [floodIncidents]
   );
 
-  const mapHtml = useMemo(() => buildReportsMapHtml(pins, zones, 'osm'), [pins, zones]);
+  // Only Active warnings — Expired/Cancelled ones aren't part of the current
+  // operational picture and would just clutter the main map.
+  const warningZones = useMemo<WarningZone[]>(
+    () =>
+      warnings
+        .filter((w) => getWarningStatus(w) === 'Active')
+        .map((w) => ({
+          id: w.id,
+          title: w.title,
+          affectedArea: w.affectedArea,
+          riskLevel: w.riskLevel,
+          status: getWarningStatus(w),
+          centroid: { latitude: w.latitude, longitude: w.longitude },
+          polygon: w.polygon ?? null,
+          radiusMeters: w.radius,
+        })),
+    [warnings]
+  );
+
+  const mapHtml = useMemo(() => buildReportsMapHtml(pins, zones, warningZones), [pins, zones, warningZones]);
 
   const handleMessage = (event: WebViewMessageEvent) => {
     try {
@@ -110,6 +144,25 @@ export default function MapScreen() {
         router.push(`/(DMC)/incident/${data.id}` as any);
       } else if (data.type === 'viewFloodIncident' && data.id) {
         router.push(`/(DMC)/flood-incident/${data.id}` as any);
+      } else if (data.type === 'editWarning' && data.id) {
+        const warning = warnings.find((w) => w.id === data.id);
+        if (!warning) return;
+        router.push({
+          pathname: '/(DMC)/create-alert',
+          params: {
+            warningId: warning.id,
+            title: warning.title,
+            hazardType: warning.hazardType,
+            riskLevel: warning.riskLevel,
+            affectedArea: warning.affectedArea,
+            message: warning.message,
+            lat: String(warning.latitude),
+            lng: String(warning.longitude),
+            radius: String(warning.radius),
+            polygon: warning.polygon && warning.polygon.length >= 3 ? JSON.stringify(warning.polygon) : undefined,
+            originalCreatedAt: warning.createdAt ? warning.createdAt.toDate().toISOString() : undefined,
+          },
+        } as any);
       }
     } catch {
       // ignore malformed messages from the map page
@@ -155,16 +208,42 @@ export default function MapScreen() {
         )}
 
         <View style={styles.legend}>
-          {(['Pending', 'Verified', 'Rejected'] as ReportStatus[]).map((status) => (
-            <View key={status} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: STATUS_PIN[status] }]} />
-              <Text style={styles.legendLabel}>{status}</Text>
-            </View>
-          ))}
-          {zones.length > 0 && (
-            <View style={styles.legendItem}>
-              <View style={[styles.legendSwatch, { backgroundColor: Colors.danger }]} />
-              <Text style={styles.legendLabel}>Affected area</Text>
+          <TouchableOpacity
+            style={[styles.legendHeader, legendExpanded && styles.legendHeaderExpanded]}
+            activeOpacity={0.7}
+            onPress={() => setLegendExpanded((v) => !v)}
+          >
+            <Ionicons name="color-palette-outline" size={14} color={Colors.textMedium} />
+            <Text style={styles.legendHeaderLabel}>Legend</Text>
+            <Ionicons name={legendExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
+          </TouchableOpacity>
+
+          {legendExpanded && (
+            <View style={styles.legendBody}>
+              {(['Pending', 'Verified', 'Rejected'] as ReportStatus[]).map((status) => (
+                <View key={status} style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: STATUS_PIN[status] }]} />
+                  <Text style={styles.legendLabel}>{status}</Text>
+                </View>
+              ))}
+              {zones.length > 0 && (
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendSwatch, { backgroundColor: Colors.danger }]} />
+                  <Text style={styles.legendLabel}>Affected area</Text>
+                </View>
+              )}
+              {warningZones.length > 0 && (
+                <>
+                  <View style={styles.legendDivider} />
+                  <Text style={styles.legendGroupLabel}>PUBLIC WARNINGS</Text>
+                  {(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as RiskLevel[]).map((level) => (
+                    <View key={level} style={styles.legendItem}>
+                      <View style={[styles.legendSwatch, { backgroundColor: WARNING_RISK_COLOR[level] }]} />
+                      <Text style={styles.legendLabel}>{level}</Text>
+                    </View>
+                  ))}
+                </>
+              )}
             </View>
           )}
         </View>
@@ -251,14 +330,33 @@ const styles = StyleSheet.create({
     right: 12,
     backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    gap: 6,
+    overflow: 'hidden',
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 3,
+  },
+  legendHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+  },
+  legendHeaderExpanded: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF3F2',
+  },
+  legendHeaderLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textMedium,
+  },
+  legendBody: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 6,
   },
   legendItem: {
     flexDirection: 'row',
@@ -280,5 +378,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: Colors.textMedium,
+  },
+  legendDivider: {
+    height: 1,
+    backgroundColor: '#EEF3F2',
+    marginVertical: 2,
+  },
+  legendGroupLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: Colors.textMuted,
   },
 });
