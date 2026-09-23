@@ -1,12 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
 import { DMCNavHeader, useDMCScrollHeader } from '../../components/DMCNavHeader';
+import { DMCTabBar } from '../../components/DMCTabBar';
+import { WarningsMapModal } from '../../components/WarningsMapModal';
 import { useWarnings } from '../../hooks/useWarnings';
 import { cancelWarning } from '../../services/alertService';
 import { Warning, RiskLevel } from '../../types/alert';
+import { WarningMapItem } from '../../utils/warningsMapHtml';
+import { getWarningStatus } from '../../utils/warningStatus';
 
 type FilterKey = 'active' | 'all';
 
@@ -22,24 +27,64 @@ function formatDateTime(timestamp: Warning['createdAt']) {
   return timestamp.toDate().toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-// A stored status of "Active" only means nobody's cancelled it yet — the expiry
-// clock is independent, so a warning past its own expiresAt reads as Expired
-// here even though the Firestore doc still says Active.
-function displayStatus(warning: Warning): 'Active' | 'Expired' | 'Cancelled' {
-  if (warning.status === 'Cancelled') return 'Cancelled';
-  if (warning.expiresAt && warning.expiresAt.toDate().getTime() < Date.now()) return 'Expired';
-  return 'Active';
-}
-
 export default function AlertsScreen() {
+  // Dashboard's "Warnings Map" tile links straight here with ?openMap=1 so it lands
+  // on the full map showing every zone, not the active-only list.
+  const { openMap } = useLocalSearchParams<{ openMap?: string }>();
   const { warnings, loading } = useWarnings();
-  const [filter, setFilter] = useState<FilterKey>('active');
+  const [filter, setFilter] = useState<FilterKey>(openMap ? 'all' : 'active');
+  const [showMap, setShowMap] = useState(!!openMap);
   const { scrollY, onScroll, headerHeight } = useDMCScrollHeader();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 58 + Math.max(insets.bottom, 10);
 
   const visible = useMemo(
-    () => (filter === 'active' ? warnings.filter((w) => displayStatus(w) === 'Active') : warnings),
+    () => (filter === 'active' ? warnings.filter((w) => getWarningStatus(w) === 'Active') : warnings),
     [warnings, filter]
   );
+
+  const mapItems: WarningMapItem[] = useMemo(
+    () =>
+      visible.map((w) => ({
+        id: w.id,
+        title: w.title,
+        affectedArea: w.affectedArea,
+        hazardType: w.hazardType,
+        riskLevel: w.riskLevel,
+        status: getWarningStatus(w),
+        latitude: w.latitude,
+        longitude: w.longitude,
+        radius: w.radius,
+        polygon: w.polygon ?? null,
+      })),
+    [visible]
+  );
+
+  const handleEdit = (warning: Warning) => {
+    router.push({
+      pathname: '/(DMC)/create-alert',
+      params: {
+        warningId: warning.id,
+        title: warning.title,
+        hazardType: warning.hazardType,
+        riskLevel: warning.riskLevel,
+        affectedArea: warning.affectedArea,
+        message: warning.message,
+        lat: String(warning.latitude),
+        lng: String(warning.longitude),
+        radius: String(warning.radius),
+        polygon: warning.polygon && warning.polygon.length >= 3 ? JSON.stringify(warning.polygon) : undefined,
+        originalCreatedAt: warning.createdAt ? warning.createdAt.toDate().toISOString() : undefined,
+      },
+    } as any);
+  };
+
+  const handleEditById = (id: string) => {
+    const warning = warnings.find((w) => w.id === id);
+    if (!warning) return;
+    setShowMap(false);
+    handleEdit(warning);
+  };
 
   const handleCancel = (warning: Warning) => {
     Alert.alert('Cancel warning', `Cancel "${warning.title}"? Residents will no longer see it as active.`, [
@@ -76,6 +121,11 @@ export default function AlertsScreen() {
               </TouchableOpacity>
             );
           })}
+
+          <TouchableOpacity style={styles.mapViewButton} activeOpacity={0.7} onPress={() => setShowMap(true)}>
+            <Ionicons name="map-outline" size={14} color={Colors.primary} />
+            <Text style={styles.mapViewButtonText}>Map</Text>
+          </TouchableOpacity>
         </View>
 
         {loading && warnings.length === 0 ? (
@@ -88,7 +138,7 @@ export default function AlertsScreen() {
           </View>
         ) : (
           visible.map((warning) => {
-            const status = displayStatus(warning);
+            const status = getWarningStatus(warning);
             const risk = RISK_CONFIG[warning.riskLevel] ?? RISK_CONFIG.HIGH;
             return (
               <View key={warning.id} style={styles.card}>
@@ -121,10 +171,18 @@ export default function AlertsScreen() {
                   </Text>
                 </View>
 
-                {status === 'Active' && (
-                  <TouchableOpacity style={styles.cancelButton} activeOpacity={0.7} onPress={() => handleCancel(warning)}>
-                    <Text style={styles.cancelButtonText}>Cancel warning</Text>
-                  </TouchableOpacity>
+                {status !== 'Cancelled' && (
+                  <View style={styles.cardActionsRow}>
+                    <TouchableOpacity style={styles.editButton} activeOpacity={0.7} onPress={() => handleEdit(warning)}>
+                      <Ionicons name="create-outline" size={14} color={Colors.primary} />
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    {status === 'Active' && (
+                      <TouchableOpacity style={styles.cancelButton} activeOpacity={0.7} onPress={() => handleCancel(warning)}>
+                        <Text style={styles.cancelButtonText}>Cancel warning</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
               </View>
             );
@@ -132,9 +190,18 @@ export default function AlertsScreen() {
         )}
       </Animated.ScrollView>
 
-      <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => router.push('/(DMC)/create-alert' as any)}>
+      <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + 16 }]} activeOpacity={0.85} onPress={() => router.push('/(DMC)/create-alert' as any)}>
         <Ionicons name="add" size={28} color={Colors.white} />
       </TouchableOpacity>
+
+      <WarningsMapModal
+        visible={showMap}
+        warnings={mapItems}
+        onClose={() => setShowMap(false)}
+        onEditWarning={handleEditById}
+      />
+
+      <DMCTabBar />
     </View>
   );
 }
@@ -150,8 +217,26 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginBottom: 16,
+  },
+  mapViewButton: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: '#E3F0EC',
+  },
+  mapViewButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   filterChip: {
     paddingHorizontal: 16,
@@ -253,11 +338,28 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'right',
   },
-  cancelButton: {
+  cardActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F0F5F4',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 4,
+    paddingRight: 14,
+  },
+  editButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  cancelButton: {
+    flex: 1,
     alignItems: 'center',
   },
   cancelButtonText: {

@@ -4,17 +4,25 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
-import { RADIUS_PRESETS, RiskLevel } from '../types/alert';
-import { buildWarningMapHtml, IncidentPin } from '../utils/warningMapHtml';
+import { RADIUS_PRESETS, RiskLevel, WarningLocation } from '../types/alert';
+import { DisasterType } from '../types/report';
+import { buildWarningMapHtml, ExistingWarningZone, IncidentPin } from '../utils/warningMapHtml';
+import { computeCentroid } from '../utils/geo';
+import { PolygonCreatorModal } from './PolygonCreatorModal';
+import { CircleZoneFullScreenModal } from './CircleZoneFullScreenModal';
 
 interface LocationPickerMapProps {
   latitude: number;
   longitude: number;
   radius: number;
   riskLevel: RiskLevel;
+  hazardType: DisasterType;
   incidents?: IncidentPin[];
+  polygon?: WarningLocation[] | null;
+  existingWarnings?: ExistingWarningZone[];
   onChangeLocation: (coords: { latitude: number; longitude: number }) => void;
   onChangeRadius: (radius: number) => void;
+  onChangePolygon?: (polygon: WarningLocation[] | null) => void;
 }
 
 function formatRadius(meters: number) {
@@ -30,30 +38,45 @@ export function LocationPickerMap({
   longitude,
   radius,
   riskLevel,
+  hazardType,
   incidents = [],
+  polygon = null,
+  existingWarnings = [],
   onChangeLocation,
   onChangeRadius,
+  onChangePolygon,
 }: LocationPickerMapProps) {
   const webViewRef = useRef<WebView>(null);
   const [locating, setLocating] = useState(false);
+  const [creatorVisible, setCreatorVisible] = useState(false);
+  const [circleFullScreenVisible, setCircleFullScreenVisible] = useState(false);
+  const hasPolygon = !!polygon && polygon.length >= 3;
 
-  // Rebuilt only when the risk level (zone color) or incident set changes — a
-  // rebuild reloads the WebView and resets pan/zoom, so lat/lng/radius updates
-  // instead go through injectJavaScript below to keep the map steady.
+  // The expand icon opens whichever full-screen editor matches the current mode:
+  // the Polygon Creator when a boundary is already drawn, otherwise the same
+  // circle picker at full device size.
+  const handleExpand = () => (hasPolygon ? setCreatorVisible(true) : setCircleFullScreenVisible(true));
+
+  // Rebuilt when the risk level (zone color), incident set, or the drawn polygon
+  // itself changes — a rebuild reloads the WebView and resets pan/zoom, so plain
+  // lat/lng/radius updates in circle mode instead go through injectJavaScript
+  // below to keep the map steady.
   const mapHtml = useMemo(
-    () => buildWarningMapHtml(latitude, longitude, radius, riskLevel, incidents),
+    () => buildWarningMapHtml(latitude, longitude, radius, riskLevel, hazardType, incidents, polygon, existingWarnings),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [riskLevel, incidents]
+    [riskLevel, hazardType, incidents, polygon, existingWarnings]
   );
 
   useEffect(() => {
+    if (hasPolygon) return;
     webViewRef.current?.injectJavaScript(`window.setRadius && window.setRadius(${radius}); true;`);
-  }, [radius]);
+  }, [radius, hasPolygon]);
 
   useEffect(() => {
+    if (hasPolygon) return;
     webViewRef.current?.injectJavaScript(`window.setLocation && window.setLocation(${latitude}, ${longitude}); true;`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [latitude, longitude]);
+  }, [latitude, longitude, hasPolygon]);
 
   const handleMessage = (event: WebViewMessageEvent) => {
     try {
@@ -80,6 +103,15 @@ export function LocationPickerMap({
     }
   };
 
+  const handlePolygonDone = (points: WarningLocation[]) => {
+    setCreatorVisible(false);
+    if (points.length < 3) return;
+    onChangeLocation(computeCentroid(points));
+    onChangePolygon?.(points);
+  };
+
+  const handleClearPolygon = () => onChangePolygon?.(null);
+
   return (
     <View style={styles.container}>
       <View style={styles.mapWrap}>
@@ -91,32 +123,108 @@ export function LocationPickerMap({
           onMessage={handleMessage}
         />
 
-        <TouchableOpacity style={styles.locateButton} activeOpacity={0.8} onPress={handleLocateMe} disabled={locating}>
-          {locating ? <ActivityIndicator size="small" color={Colors.primary} /> : <Ionicons name="locate" size={18} color={Colors.primary} />}
+        {!hasPolygon && (
+          <TouchableOpacity style={styles.locateButton} activeOpacity={0.8} onPress={handleLocateMe} disabled={locating}>
+            {locating ? <ActivityIndicator size="small" color={Colors.primary} /> : <Ionicons name="locate" size={18} color={Colors.primary} />}
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[styles.expandButton, !hasPolygon && styles.expandButtonBelowLocate]}
+          activeOpacity={0.8}
+          onPress={handleExpand}
+        >
+          <Ionicons name="expand" size={16} color={Colors.primary} />
         </TouchableOpacity>
-
-        <View style={styles.radiusBadge}>
-          <Ionicons name="radio-button-on" size={10} color={Colors.white} />
-          <Text style={styles.radiusBadgeText}>{formatRadius(radius)} radius</Text>
-        </View>
       </View>
 
-      <View style={styles.presetRow}>
-        {RADIUS_PRESETS.map((preset) => {
-          const active = preset === radius;
-          return (
-            <TouchableOpacity
-              key={preset}
-              style={[styles.presetChip, active && styles.presetChipActive]}
-              activeOpacity={0.7}
-              onPress={() => onChangeRadius(preset)}
-            >
-              <Text style={[styles.presetLabel, active && styles.presetLabelActive]}>{formatRadius(preset)}</Text>
+      <View style={styles.zoneInfoCard}>
+        {hasPolygon ? (
+          <>
+            <Ionicons name="shapes-outline" size={14} color={Colors.primary} />
+            <Text style={styles.zoneInfoText}>Custom boundary · {polygon!.length} points</Text>
+          </>
+        ) : (
+          <>
+            <Ionicons name="radio-button-on" size={12} color={Colors.primary} />
+            <Text style={styles.zoneInfoText}>{formatRadius(radius)} radius</Text>
+          </>
+        )}
+      </View>
+
+      {onChangePolygon && (
+        <View style={styles.polygonActionRow}>
+          {hasPolygon ? (
+            <>
+              <TouchableOpacity style={styles.polygonButton} activeOpacity={0.7} onPress={() => setCreatorVisible(true)}>
+                <Ionicons name="create-outline" size={15} color={Colors.primary} />
+                <Text style={styles.polygonButtonText}>Edit boundary</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.polygonButton} activeOpacity={0.7} onPress={handleClearPolygon}>
+                <Ionicons name="close-circle-outline" size={15} color={Colors.danger} />
+                <Text style={[styles.polygonButtonText, { color: Colors.danger }]}>Use circle instead</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={styles.polygonButton} activeOpacity={0.7} onPress={() => setCreatorVisible(true)}>
+              <Ionicons name="shapes-outline" size={15} color={Colors.primary} />
+              <Text style={styles.polygonButtonText}>Draw custom disaster area (full screen)</Text>
             </TouchableOpacity>
-          );
-        })}
-      </View>
-      <Text style={styles.hint}>Tap the map or drag the pin to move the warning zone.</Text>
+          )}
+        </View>
+      )}
+
+      {!hasPolygon && (
+        <View style={styles.presetRow}>
+          {RADIUS_PRESETS.map((preset) => {
+            const active = preset === radius;
+            return (
+              <TouchableOpacity
+                key={preset}
+                style={[styles.presetChip, active && styles.presetChipActive]}
+                activeOpacity={0.7}
+                onPress={() => onChangeRadius(preset)}
+              >
+                <Text style={[styles.presetLabel, active && styles.presetLabelActive]}>{formatRadius(preset)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+      <Text style={styles.hint}>
+        {hasPolygon ? 'Custom boundary drawn by the officer — edit it in full screen or switch back to a circle.' : 'Tap the map or drag the pin to move the warning zone.'}
+        {existingWarnings.length > 0 ? ' Grey dashed areas are already-published warnings.' : ''}
+      </Text>
+
+      {onChangePolygon && (
+        <PolygonCreatorModal
+          visible={creatorVisible}
+          centerLatitude={latitude}
+          centerLongitude={longitude}
+          riskLevel={riskLevel}
+          hazardType={hazardType}
+          initialPolygon={polygon}
+          incidents={incidents}
+          existingWarnings={existingWarnings}
+          onCancel={() => setCreatorVisible(false)}
+          onDone={handlePolygonDone}
+        />
+      )}
+
+      <CircleZoneFullScreenModal
+        visible={circleFullScreenVisible}
+        latitude={latitude}
+        longitude={longitude}
+        radius={radius}
+        riskLevel={riskLevel}
+        hazardType={hazardType}
+        incidents={incidents}
+        existingWarnings={existingWarnings}
+        onChangeLocation={onChangeLocation}
+        onChangeRadius={onChangeRadius}
+        onClose={() => setCircleFullScreenVisible(false)}
+      />
     </View>
   );
 }
@@ -125,12 +233,12 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
   },
+  // Bleeds edge-to-edge past the screen's usual 20px content padding (see
+  // app/(DMC)/create-alert.tsx's `content` style) so the map reads as a full-width
+  // hero section instead of an inset card — the -20 here is that padding, negated.
   mapWrap: {
-    height: 220,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E3F0EC',
+    height: 240,
+    marginHorizontal: -20,
   },
   locateButton: {
     position: 'absolute',
@@ -148,22 +256,64 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  radiusBadge: {
+  expandButton: {
     position: 'absolute',
     top: 10,
-    left: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  expandButtonBelowLocate: {
+    top: 52,
+  },
+  polygonActionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
+  polygonButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(20,61,57,0.75)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: '#E3F0EC',
   },
-  radiusBadgeText: {
-    fontSize: 11,
+  polygonButtonText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: Colors.white,
+    color: Colors.primary,
+  },
+  zoneInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E3F0EC',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  zoneInfoText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textDark,
   },
   presetRow: {
     flexDirection: 'row',
