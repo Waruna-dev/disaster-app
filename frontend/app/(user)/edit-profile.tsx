@@ -188,8 +188,8 @@ export default function EditProfileScreen() {
             <Ionicons name="chevron-back" size={24} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('editProfile.title')}</Text>
-          {/* Placeholder for balance */}
-          <View style={styles.iconButton} />
+          {/* Spacer to keep title centered */}
+          <View style={{ width: 44, height: 44 }} />
         </View>
       </View>
 
