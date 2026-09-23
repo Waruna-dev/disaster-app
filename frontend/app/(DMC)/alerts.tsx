@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
 import { DMCNavHeader, useDMCScrollHeader } from '../../components/DMCNavHeader';
+import { DMCTabBar } from '../../components/DMCTabBar';
 import { WarningsMapModal } from '../../components/WarningsMapModal';
 import { useWarnings } from '../../hooks/useWarnings';
 import { cancelWarning } from '../../services/alertService';
@@ -26,10 +28,15 @@ function formatDateTime(timestamp: Warning['createdAt']) {
 }
 
 export default function AlertsScreen() {
+  // Dashboard's "Warnings Map" tile links straight here with ?openMap=1 so it lands
+  // on the full map showing every zone, not the active-only list.
+  const { openMap } = useLocalSearchParams<{ openMap?: string }>();
   const { warnings, loading } = useWarnings();
-  const [filter, setFilter] = useState<FilterKey>('active');
-  const [showMap, setShowMap] = useState(false);
+  const [filter, setFilter] = useState<FilterKey>(openMap ? 'all' : 'active');
+  const [showMap, setShowMap] = useState(!!openMap);
   const { scrollY, onScroll, headerHeight } = useDMCScrollHeader();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 58 + Math.max(insets.bottom, 10);
 
   const visible = useMemo(
     () => (filter === 'active' ? warnings.filter((w) => getWarningStatus(w) === 'Active') : warnings),
@@ -183,7 +190,7 @@ export default function AlertsScreen() {
         )}
       </Animated.ScrollView>
 
-      <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => router.push('/(DMC)/create-alert' as any)}>
+      <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + 16 }]} activeOpacity={0.85} onPress={() => router.push('/(DMC)/create-alert' as any)}>
         <Ionicons name="add" size={28} color={Colors.white} />
       </TouchableOpacity>
 
@@ -193,6 +200,8 @@ export default function AlertsScreen() {
         onClose={() => setShowMap(false)}
         onEditWarning={handleEditById}
       />
+
+      <DMCTabBar />
     </View>
   );
 }

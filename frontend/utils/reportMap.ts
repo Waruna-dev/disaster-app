@@ -1,6 +1,6 @@
 import { Colors } from '../constants/colors';
 import { Report, ReportLocation, ReportStatus } from '../types/report';
-import { RiskLevel } from '../types/alert';
+import { RiskLevel, WarningStatus } from '../types/alert';
 import { IncidentReviewStatus } from '../types/floodIncident';
 import { BOUNDARY_DOTS_SCRIPT } from './leafletBoundaryScript';
 
@@ -25,6 +25,25 @@ export interface IncidentZone {
   reportCount: number;
   riskLevel: RiskLevel;
   reviewStatus: IncidentReviewStatus;
+  centroid: ReportLocation;
+  polygon: ReportLocation[] | null;
+  radiusMeters: number;
+}
+
+/**
+ * A published public warning's zone (see types/alert.ts's Warning), for overlaying
+ * on the DMC main map alongside report pins and flood-incident zones so an officer
+ * sees the full picture — incidents and active warnings — on one map. Kept as a
+ * plain subset (not importing the alerts feature's WarningMapItem from
+ * utils/warningsMapHtml.ts) to avoid a circular import, since that file already
+ * imports DEFAULT_REGION from here.
+ */
+export interface WarningZone {
+  id: string;
+  title: string;
+  affectedArea: string;
+  riskLevel: RiskLevel;
+  status: WarningStatus;
   centroid: ReportLocation;
   polygon: ReportLocation[] | null;
   radiusMeters: number;
@@ -61,7 +80,11 @@ export const DEFAULT_REGION = {
 // boundary as the flood-incident detail map (utils/floodIncidentMapHtml.ts, via
 // the shared BOUNDARY_DOTS_SCRIPT) — an auto-generated area an officer hasn't
 // approved yet renders lighter/dashed so it reads as unconfirmed at a glance.
-export function buildReportsMapHtml(pins: PinnedReport[], zones: IncidentZone[] = []): string {
+// Published public warnings render as a third layer, dashed on top of everything
+// else, so the DMC main map shows incidents and active warnings together on one
+// map instead of the officer having to flip between separate screens. Tapping one
+// posts {type:'editWarning', id} back to the host WebView (mirrors utils/warningsMapHtml.ts).
+export function buildReportsMapHtml(pins: PinnedReport[], zones: IncidentZone[] = [], warnings: WarningZone[] = []): string {
   const points = pins.map((p) => ({
     id: p.id,
     lat: p.location.latitude,
@@ -82,6 +105,17 @@ export function buildReportsMapHtml(pins: PinnedReport[], zones: IncidentZone[] 
     approved: z.reviewStatus === 'Approved',
     label: z.affectedArea,
     meta: `${z.reportCount} report${z.reportCount === 1 ? '' : 's'} · ${z.riskLevel} risk · ${z.reviewStatus}`,
+  }));
+
+  const warningPayload = warnings.map((w) => ({
+    id: w.id,
+    centroid: w.centroid,
+    polygon: w.polygon,
+    radiusMeters: w.radiusMeters,
+    color: ZONE_RISK_COLOR[w.riskLevel],
+    active: w.status === 'Active',
+    label: w.title,
+    meta: `${w.affectedArea} · ${w.riskLevel} risk · ${w.status}`,
   }));
 
   const tileLayerScript = `L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -112,6 +146,7 @@ export function buildReportsMapHtml(pins: PinnedReport[], zones: IncidentZone[] 
   <script>
     var points = ${JSON.stringify(points)};
     var zones = ${JSON.stringify(zonePayload)};
+    var warningZones = ${JSON.stringify(warningPayload)};
     var ZONE_DOT_SPACING_M = 45;
     ${BOUNDARY_DOTS_SCRIPT}
 
@@ -154,6 +189,28 @@ export function buildReportsMapHtml(pins: PinnedReport[], zones: IncidentZone[] 
         var dotIcon = L.divIcon({ html: '<div class="zone-boundary-dot"></div>', className: '', iconSize: [7, 7], iconAnchor: [3.5, 3.5] });
         L.marker([p.lat, p.lng], { icon: dotIcon, interactive: false }).addTo(map);
       });
+    });
+
+    warningZones.forEach(function (w) {
+      var shapeOptions = {
+        color: w.color,
+        weight: 3,
+        fillColor: w.color,
+        fillOpacity: w.active ? 0.22 : 0.1,
+        dashArray: '4,6',
+      };
+      var popupHtml = '<div class="popup"><div class="popup-title">' + w.label + '</div><div class="popup-meta">' + w.meta + '</div><button class="popup-link" onclick="window.ReactNativeWebView.postMessage(JSON.stringify({type:\\'editWarning\\', id:\\'' + w.id + '\\'}))">Edit warning &rarr;</button></div>';
+
+      if (w.polygon && w.polygon.length >= 3) {
+        var wRing = w.polygon.map(function (p) { return [p.latitude, p.longitude]; });
+        var wPoly = L.polygon(wRing, shapeOptions).addTo(map);
+        wPoly.bindPopup(popupHtml);
+        wRing.forEach(function (ll) { bounds.push(ll); });
+      } else {
+        var wCircle = L.circle([w.centroid.latitude, w.centroid.longitude], Object.assign({ radius: w.radiusMeters }, shapeOptions)).addTo(map);
+        wCircle.bindPopup(popupHtml);
+        bounds.push([w.centroid.latitude, w.centroid.longitude]);
+      }
     });
 
     var markers = [];
