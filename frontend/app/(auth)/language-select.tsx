@@ -146,7 +146,6 @@ export default function LanguageSelectScreen() {
             title={t('languageSelect.continue')}
             onPress={handleContinue}
             loading={saving}
-            icon="chevron-forward"
             style={{ marginTop: 12 }}
           />
         </View>
@@ -195,7 +194,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   blobBackground: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   globeWrapper: {
     shadowColor: Colors.primary,

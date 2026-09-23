@@ -17,7 +17,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    compatibilityJSON: 'v3', // Required for React Native
+    compatibilityJSON: 'v4', // Required for React Native
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false,

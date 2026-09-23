@@ -257,7 +257,7 @@ export default function MapScreen() {
             style={[styles.filterChip, activeFilter === 'all' && styles.filterChipActive]}
             onPress={() => setActiveFilter('all')}
           >
-            <Text style={[styles.filterText, activeFilter === 'all' && styles.filterTextActive]}>All</Text>
+            <Text style={[styles.filterText, activeFilter === 'all' && styles.filterTextActive]}>{t('mapExtra.all')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -265,7 +265,7 @@ export default function MapScreen() {
             onPress={() => setActiveFilter('flood')}
           >
             <MaterialIcons name="flood" size={16} color={activeFilter === 'flood' ? 'white' : 'orange'} style={{ marginRight: 4 }} />
-            <Text style={[styles.filterText, activeFilter === 'flood' && styles.filterTextActive]}>Floods</Text>
+            <Text style={[styles.filterText, activeFilter === 'flood' && styles.filterTextActive]}>{t('mapExtra.floods')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -273,7 +273,7 @@ export default function MapScreen() {
             onPress={() => setActiveFilter('landslide')}
           >
             <MaterialIcons name="landslide" size={16} color={activeFilter === 'landslide' ? 'white' : Colors.danger} style={{ marginRight: 4 }} />
-            <Text style={[styles.filterText, activeFilter === 'landslide' && styles.filterTextActive]}>Landslides</Text>
+            <Text style={[styles.filterText, activeFilter === 'landslide' && styles.filterTextActive]}>{t('mapExtra.landslides')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -344,19 +344,19 @@ export default function MapScreen() {
           </View>
         ) : (
           <View>
-            <Text style={styles.cardTitle}>Report an incident here</Text>
-            <Text style={styles.cardSubtitle}>Tap another point on the map if the incident is elsewhere.</Text>
+            <Text style={styles.cardTitle}>{t('mapExtra.reportIncidentHere')}</Text>
+            <Text style={styles.cardSubtitle}>{t('mapExtra.tapAnotherPoint')}</Text>
             
             <View style={styles.addressBox}>
               <Ionicons name="location" size={20} color={Colors.primary} />
               <View style={styles.addressTextContainer}>
                 <Text style={styles.addressText}>{selectedAddress}</Text>
-                <Text style={styles.addressSubtext}>Selected location</Text>
+                <Text style={styles.addressSubtext}>{t('mapExtra.selectedLocation')}</Text>
               </View>
             </View>
 
             <TouchableOpacity style={styles.reportButton} onPress={handleReportLocation}>
-              <Text style={styles.reportButtonText}>Report this location</Text>
+              <Text style={styles.reportButtonText}>{t('mapExtra.reportThisLocation')}</Text>
               <Ionicons name="arrow-forward" size={20} color="white" />
             </TouchableOpacity>
           </View>

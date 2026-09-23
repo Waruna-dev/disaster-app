@@ -18,10 +18,12 @@ import { useAuth } from '../../../context/AuthContext';
 import { createReport, uploadReportPhoto } from '../../../services/reportService';
 import { getUserProfile } from '../../../services/userService';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CreateReportScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -262,7 +264,7 @@ export default function CreateReportScreen() {
 
         </AnimatedKeyboardAwareScrollView>
         
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
           <PrimaryButton 
             title={isLoading ? t('reportCreate.submitting') : t('reportCreate.submitReport')} 
             onPress={handleSubmit} 
@@ -325,7 +327,6 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 32,
     backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: '#F0F5F4',

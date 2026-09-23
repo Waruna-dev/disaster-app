@@ -8,15 +8,17 @@ import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 export default function SuccessScreen() {
   const { t } = useTranslation();
   const { referenceNumber, disasterType, affectedArea } = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* Header */}
@@ -123,7 +125,7 @@ export default function SuccessScreen() {
       </ScrollView>
 
       {/* Footer Buttons */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
         <TouchableOpacity 
           style={styles.primaryBtn} 
           activeOpacity={0.8}
@@ -362,7 +364,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 24,
-    paddingBottom: 32,
     paddingTop: 16,
     backgroundColor: Colors.background,
   },

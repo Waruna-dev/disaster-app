@@ -4,8 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { useLocationHelper } from '../../hooks/useLocationHelper';
 import * as Clipboard from 'expo-clipboard';
+import { useTranslation } from 'react-i18next';
 
 export const ShareLocationCard = () => {
+  const { t } = useTranslation();
   const { isGettingLocation, getCurrentLocationMapLink, shareLocation } = useLocationHelper();
 
   const handleCopyLocation = async () => {
@@ -32,9 +34,9 @@ export const ShareLocationCard = () => {
       </View>
       
       <View style={styles.bannerTextContainer}>
-        <Text style={styles.locationTitle}>Share my current location</Text>
+        <Text style={styles.locationTitle}>{t('emergency.shareLocation')}</Text>
         <Text style={styles.locationSubtitle}>
-          Open the share menu or copy a map link
+          {t('emergency.shareLocationDesc')}
         </Text>
       </View>
 

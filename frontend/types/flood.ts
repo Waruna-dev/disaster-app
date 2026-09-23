@@ -1,4 +1,4 @@
-export type FloodStatus = 'normal' | 'alert' | 'minor' | 'major';
+export type FloodStatus = 'normal' | 'alert' | 'minor' | 'major' | 'unknown';
 
 /** A gauging station, from the Irrigation Department's static station reference table. */
 export interface FloodStation {

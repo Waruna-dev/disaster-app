@@ -1,8 +1,11 @@
 import React from 'react';
 import { Stack } from 'expo-router';
+import { FloodUpdatesProvider } from '../../context/FloodUpdatesContext';
 
 export default function UserLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }} />
+    <FloodUpdatesProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </FloodUpdatesProvider>
   );
 }

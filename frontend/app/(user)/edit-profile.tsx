@@ -37,7 +37,6 @@ export default function EditProfileScreen() {
   const [age, setAge] = useState('');
   const [occupation, setOccupation] = useState('');
   const [homeArea, setHomeArea] = useState('');
-  const [workArea, setWorkArea] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const { i18n } = useTranslation();
@@ -75,7 +74,6 @@ export default function EditProfileScreen() {
           setAge(profile.age || '');
           setOccupation(profile.occupation || '');
           setHomeArea(profile.homeArea || '');
-          setWorkArea(profile.workArea || '');
         }
       } catch (error) {
         console.error('Error loading profile', error);
@@ -104,7 +102,6 @@ export default function EditProfileScreen() {
         age,
         occupation,
         homeArea,
-        workArea,
         language
       });
 
@@ -273,26 +270,13 @@ export default function EditProfileScreen() {
           {/* Alert areas */}
           <Text style={styles.sectionTitle}>{t('editProfile.alertAreas')}</Text>
           <View style={styles.formGroup}>
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
-                <FormInput
-                  label={t('editProfile.homeArea')}
-                  iconName="home-outline"
-                  value={homeArea}
-                  onChangeText={setHomeArea}
-                  placeholder=""
-                />
-              </View>
-              <View style={styles.halfWidth}>
-                <FormInput
-                  label={t('editProfile.workArea')}
-                  iconName="business-outline"
-                  value={workArea}
-                  onChangeText={setWorkArea}
-                  placeholder=""
-                />
-              </View>
-            </View>
+            <FormInput
+              label={t('editProfile.homeArea')}
+              iconName="home-outline"
+              value={homeArea}
+              onChangeText={setHomeArea}
+              placeholder=""
+            />
             
             <View style={{ marginBottom: 16 }}>
               <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.textDark, marginBottom: 8 }}>{t('Preferred language') || 'Preferred language'}</Text>
@@ -336,8 +320,8 @@ export default function EditProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Spacer before footer */}
-          <View style={{ height: 180 }} />
+          {/* Spacer to prevent content from hiding behind the fixed footer */}
+          <View style={{ height: 100 }} />
         </AnimatedKeyboardAwareScrollView>
       </View>
 
@@ -347,7 +331,6 @@ export default function EditProfileScreen() {
           title={t('editProfile.saveChanges')}
           onPress={handleSave}
           loading={saving}
-          icon="checkmark"
         />
       </View>
 
