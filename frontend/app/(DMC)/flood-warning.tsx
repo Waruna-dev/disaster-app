@@ -8,6 +8,7 @@ import { StatTile } from '../../components/StatTile';
 import { FloodLevelChart } from '../../components/FloodLevelChart';
 import { useFloodData } from '../../hooks/useFloodData';
 import { getFloodStatus } from '../../services/floodService';
+import { calculateLast24HourRainfall } from '../../utils/floodCalculations';
 import { FloodStatus } from '../../types/flood';
 
 const STATUS_CONFIG: Record<FloodStatus, { label: string; color: string; bg: string }> = {
@@ -15,6 +16,7 @@ const STATUS_CONFIG: Record<FloodStatus, { label: string; color: string; bg: str
   alert: { label: 'Alert', color: Colors.warning, bg: '#FEF5E7' },
   minor: { label: 'Minor Flood', color: '#EAB308', bg: '#FEF9E7' },
   major: { label: 'Major Flood', color: Colors.danger, bg: '#FDEDEC' },
+  unknown: { label: 'Unknown', color: '#667773', bg: '#EEF2F1' },
 };
 
 function formatRelative(timestamp: number | undefined) {
@@ -78,12 +80,11 @@ export default function FloodWarningScreen() {
     return counts;
   }, [stations, latestByStation]);
 
-  // Sum of the selected station's readings from the last 24 hours — each reading's
-  // rain_fall is the increment since the previous one, so summing gives a running total.
+  // Sum of the selected station's readings from the last 24 hours
   const rainfall24h = useMemo(() => {
-    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-    return history.filter((r) => r.timestamp >= cutoff).reduce((sum, r) => sum + (r.rainFall ?? 0), 0);
-  }, [history]);
+    if (!selectedStation) return null;
+    return calculateLast24HourRainfall(history, selectedStation);
+  }, [history, selectedStation]);
 
   return (
     <View style={styles.container}>
@@ -232,7 +233,7 @@ export default function FloodWarningScreen() {
             <View style={styles.rainfallCardRow}>
               <StatTile
                 materialIcon="weather-pouring"
-                value={`${rainfall24h.toFixed(1)} mm`}
+                value={rainfall24h == null ? 'Not reported' : `${rainfall24h.toFixed(1)} mm`}
                 label="Last 24 Hours Rainfall"
                 tint="#2E75D6"
                 tintBg="#E8F1FB"

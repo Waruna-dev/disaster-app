@@ -86,7 +86,7 @@ export default function ReportsScreen() {
                   location={report.affectedArea || 'Unknown Location'}
                   date={dateStr}
                   rejectReason={report.rejectReason}
-                  onPress={() => router.push('/(user)/report/' + report.id)}
+                  onPress={() => router.push({ pathname: '/(user)/report/[id]', params: { id: report.id } })}
                 />
               );
             })

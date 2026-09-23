@@ -9,8 +9,10 @@ import { useNearbyServicesContext, EmergencyService } from '../../../contexts/Ne
 import { ShareLocationCard } from '../../../components/emergency/ShareLocationCard';
 import { NationalEmergencyGrid } from '../../../components/emergency/NationalEmergencyGrid';
 import { PersonalEmergencyContacts } from '../../../components/emergency/PersonalEmergencyContacts';
+import { useTranslation } from 'react-i18next';
 
 export default function EmergencyContactsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const { services, isInitialLoading, isRefreshing, error, locationDenied, isUsingCache, lastUpdated, refreshServices } = useNearbyServicesContext();
@@ -66,10 +68,10 @@ export default function EmergencyContactsScreen() {
           </TouchableOpacity>
           <View style={styles.stickyTitleContainer}>
             <Text style={styles.stickyBarTitle}>
-              Emergency contacts
+              {t('emergency.title')}
             </Text>
             <Animated.Text style={[styles.stickyBarSubtitle, { opacity: headerContentOpacity }]}>
-              Call for help or share your GPS location
+              {t('emergency.subtitle')}
             </Animated.Text>
           </View>
           <View style={{ width: 40 }} />
@@ -124,8 +126,8 @@ export default function EmergencyContactsScreen() {
             <Ionicons name="alert" size={24} color="#F59E0B" />
           </View>
           <View style={styles.bannerTextContainer}>
-            <Text style={styles.dangerTitle}>Are you in immediate danger?</Text>
-            <Text style={styles.dangerSubtitle}>Move to safety first, then call for help.</Text>
+            <Text style={styles.dangerTitle}>{t('emergency.immediateDanger')}</Text>
+            <Text style={styles.dangerSubtitle}>{t('emergency.moveSafety')}</Text>
           </View>
           <TouchableOpacity style={styles.callActionButton}>
             <Ionicons name="call" size={20} color="#B45309" />
@@ -137,13 +139,13 @@ export default function EmergencyContactsScreen() {
 
         {/* National Emergency Services Grid */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>National emergency services</Text>
+          <Text style={styles.sectionTitle}>{t('emergency.nationalServices')}</Text>
         </View>
         <NationalEmergencyGrid />
 
         {/* Nearby Services (Intentionally Kept As Is) */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Nearby services</Text>
+          <Text style={styles.sectionTitle}>{t('emergency.nearbyServices')}</Text>
           <View style={styles.sectionActions}>
             <TouchableOpacity onPress={refreshServices} style={styles.refreshButton} disabled={isRefreshing}>
               {isRefreshing ? (
@@ -153,7 +155,7 @@ export default function EmergencyContactsScreen() {
               )}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/(user)/emergency/nearby-services' as any)}>
-              <Text style={styles.viewAllText}>View all</Text>
+              <Text style={styles.viewAllText}>{t('emergency.viewAll')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -161,7 +163,7 @@ export default function EmergencyContactsScreen() {
         {isInitialLoading && services.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Searching nearby services...</Text>
+            <Text style={styles.loadingText}>{t('emergency.searching')}</Text>
           </View>
         ) : locationDenied ? (
           <View style={styles.errorContainer}>
