@@ -10,6 +10,9 @@ import { db } from '../../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Report } from '../../../types/report';
 import { buildUserMapHtml } from '../../../utils/userMapHtml';
+import { useWarnings } from '../../../hooks/useWarnings';
+import { getWarningStatus } from '../../../utils/warningStatus';
+import { WarningZone } from '../../../utils/reportMap';
 
 export default function MapScreen() {
   const { t } = useTranslation();
@@ -198,7 +201,26 @@ export default function MapScreen() {
   };
 
   // Only initialize the HTML with empty reports so it doesn't reload entirely
-  const mapHtml = useMemo(() => buildUserMapHtml([]), []);
+  const { warnings } = useWarnings();
+  
+  const warningZones = useMemo<WarningZone[]>(
+    () =>
+      warnings
+        .filter((w) => getWarningStatus(w) === 'Active' && (activeFilter === 'all' || w.hazardType === activeFilter))
+        .map((w) => ({
+          id: w.id,
+          title: w.title,
+          affectedArea: w.affectedArea,
+          riskLevel: w.riskLevel,
+          status: getWarningStatus(w),
+          centroid: { latitude: w.latitude, longitude: w.longitude },
+          polygon: w.polygon ?? null,
+          radiusMeters: w.radius,
+        })),
+    [warnings, activeFilter]
+  );
+
+  const mapHtml = useMemo(() => buildUserMapHtml([], []), []);
 
   // Update markers via JavaScript injection when reports change
   useEffect(() => {
@@ -211,10 +233,22 @@ export default function MapScreen() {
         lng: r.longitude,
         type: r.disasterType,
       }));
-      const script = `window.updateMarkers && window.updateMarkers('${JSON.stringify(points)}'); true;`;
+      const script = `
+        window.updateWarnings && window.updateWarnings('${JSON.stringify(warningZones.map(w => ({
+          id: w.id,
+          centroid: w.centroid,
+          polygon: w.polygon,
+          radiusMeters: w.radiusMeters,
+          color: w.riskLevel === 'CRITICAL' ? Colors.danger : w.riskLevel === 'HIGH' ? Colors.warning : w.riskLevel === 'MEDIUM' ? '#EAB308' : '#2E75D6',
+          active: w.status === 'Active',
+          label: w.title,
+          meta: w.affectedArea + " · " + w.riskLevel + " risk"
+        })))}');
+        true;
+      `;
       webViewRef.current.injectJavaScript(script);
     }
-  }, [reports, isMapReady]);
+  }, [reports, warningZones, isMapReady, activeFilter]);
 
   if (locationPermission === null) {
     return (
