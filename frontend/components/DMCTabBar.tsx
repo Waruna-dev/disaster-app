@@ -29,7 +29,7 @@ const TABS: TabConfig[] = [
 // CustomTabBar) — reimplemented standalone since the admin screens sit in a plain Stack,
 // not a Tabs navigator, so the resident component's {state, descriptors, navigation} props
 // aren't available here.
-export function DMCTabBar({ active }: { active: DMCTab }) {
+export function DMCTabBar({ active }: { active?: DMCTab }) {
   const insets = useSafeAreaInsets();
 
   const handlePress = (tab: TabConfig) => {

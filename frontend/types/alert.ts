@@ -27,6 +27,8 @@ export interface Warning {
   latitude: number;
   longitude: number;
   radius: number; // meters
+  /** Officer-drawn disaster area boundary from the full-screen Polygon Creator; null when the zone is just a circle. */
+  polygon?: WarningLocation[] | null;
   message: string;
   status: WarningStatus;
   createdBy: string;
