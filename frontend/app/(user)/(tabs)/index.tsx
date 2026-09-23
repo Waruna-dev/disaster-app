@@ -56,6 +56,12 @@ export default function DashboardScreen() {
 
   const dashboardAlerts = activeAlerts.slice(0, 5);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
+
   useEffect(() => {
     let unsubscribe: () => void;
     if (user?.uid) {
@@ -91,6 +97,7 @@ export default function DashboardScreen() {
     <View style={styles.container}>
       <DashboardStickyBar scrollY={scrollY} initial={initial} />
       <Animated.ScrollView 
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}

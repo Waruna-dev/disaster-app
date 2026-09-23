@@ -22,9 +22,12 @@ export default function ProfileScreen() {
   const [initial, setInitial] = useState('U');
   const [occupation, setOccupation] = useState(t('profile.noOccupation'));
   const [homeArea, setHomeArea] = useState(t('profile.notSet'));
+  
+  const scrollRef = React.useRef<ScrollView>(null);
 
   useFocusEffect(
     useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
       let unsubscribe: () => void;
       if (user?.uid) {
         unsubscribe = onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
@@ -141,6 +144,7 @@ export default function ProfileScreen() {
       </View>
 
       <Animated.ScrollView 
+        ref={scrollRef}
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 120 }]} 
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
