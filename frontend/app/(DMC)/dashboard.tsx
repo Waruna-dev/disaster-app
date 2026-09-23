@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Timestamp } from 'firebase/firestore';
@@ -120,6 +120,15 @@ export default function DmcDashboardScreen() {
           </Text>
         </View>
 
+        <TouchableOpacity
+          style={styles.createWarningButton}
+          activeOpacity={0.85}
+          onPress={() => router.push('/(DMC)/create-alert' as any)}
+        >
+          <Ionicons name="add-circle" size={20} color={Colors.white} />
+          <Text style={styles.createWarningText}>Create Public Warning</Text>
+        </TouchableOpacity>
+
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>WEEKLY TREND</Text>
           <Text style={styles.trendSubtext}>Reports received and verified per day, last 7 days</Text>
@@ -193,22 +202,6 @@ export default function DmcDashboardScreen() {
           <TouchableOpacity
             style={styles.quickNavTile}
             activeOpacity={0.8}
-            onPress={() => router.push('/(DMC)/map' as any)}
-          >
-            <Ionicons name="location-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Map</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickNavTile}
-            activeOpacity={0.8}
-            onPress={() => Alert.alert('Coming soon', "Analytics isn't built yet.")}
-          >
-            <Ionicons name="bar-chart-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Analytics</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickNavTile}
-            activeOpacity={0.8}
             onPress={() => router.push('/(DMC)/flood-warning' as any)}
           >
             <Ionicons name="water-outline" size={22} color={Colors.primary} />
@@ -239,15 +232,6 @@ export default function DmcDashboardScreen() {
             <Text style={styles.quickNavLabel}>Warnings Map</Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.createWarningButton}
-          activeOpacity={0.85}
-          onPress={() => router.push('/(DMC)/create-alert' as any)}
-        >
-          <Ionicons name="add-circle" size={20} color={Colors.white} />
-          <Text style={styles.createWarningText}>Create Public Warning</Text>
-        </TouchableOpacity>
       </Animated.ScrollView>
 
       <DMCTabBar active="home" />
