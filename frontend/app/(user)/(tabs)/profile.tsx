@@ -180,7 +180,7 @@ export default function ProfileScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>{t('profile.savedAreas')}</Text>
-              <TouchableOpacity onPress={() => router.push('/(user)/edit-profile')}>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/(user)/edit-profile', params: { scrollTo: 'alertAreas' } })}>
                 <Text style={styles.manageText}>{t('profile.manage')}</Text>
               </TouchableOpacity>
             </View>
