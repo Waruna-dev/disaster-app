@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { RADIUS_PRESETS, RiskLevel } from '../types/alert';
+import { DisasterType } from '../types/report';
 import { buildWarningMapHtml, ExistingWarningZone, IncidentPin } from '../utils/warningMapHtml';
 
 function formatRadius(meters: number) {
@@ -18,6 +19,7 @@ interface CircleZoneFullScreenModalProps {
   longitude: number;
   radius: number;
   riskLevel: RiskLevel;
+  hazardType: DisasterType;
   incidents?: IncidentPin[];
   existingWarnings?: ExistingWarningZone[];
   onChangeLocation: (coords: { latitude: number; longitude: number }) => void;
@@ -39,6 +41,7 @@ export function CircleZoneFullScreenModal({
   longitude,
   radius,
   riskLevel,
+  hazardType,
   incidents = [],
   existingWarnings = [],
   onChangeLocation,
@@ -50,9 +53,9 @@ export function CircleZoneFullScreenModal({
   const [locating, setLocating] = useState(false);
 
   const mapHtml = useMemo(
-    () => buildWarningMapHtml(latitude, longitude, radius, riskLevel, incidents, null, existingWarnings, true),
+    () => buildWarningMapHtml(latitude, longitude, radius, riskLevel, hazardType, incidents, null, existingWarnings, true),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [riskLevel, incidents, existingWarnings]
+    [riskLevel, hazardType, incidents, existingWarnings]
   );
 
   useEffect(() => {

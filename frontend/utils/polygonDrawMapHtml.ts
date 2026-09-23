@@ -1,6 +1,7 @@
 import { Colors } from '../constants/colors';
 import { RiskLevel } from '../types/alert';
-import { ExistingWarningZone, IncidentPin } from './warningMapHtml';
+import { DisasterType } from '../types/report';
+import { ExistingWarningZone, IncidentPin, getZoneColor, getZoneDashArray } from './warningMapHtml';
 
 const RISK_COLOR: Record<string, string> = {
   LOW: '#2E75D6',
@@ -25,11 +26,13 @@ export function buildPolygonDrawMapHtml(
   latitude: number,
   longitude: number,
   riskLevel: RiskLevel,
+  hazardType: DisasterType = 'flood',
   initialPolygon: { latitude: number; longitude: number }[] = [],
   incidents: IncidentPin[] = [],
   existingWarnings: ExistingWarningZone[] = []
 ): string {
-  const zoneColor = RISK_COLOR[riskLevel] ?? Colors.warning;
+  const zoneColor = getZoneColor(hazardType, riskLevel);
+  const zoneDashArray = getZoneDashArray(hazardType);
 
   return `<!DOCTYPE html>
 <html>
@@ -45,7 +48,7 @@ export function buildPolygonDrawMapHtml(
       height: 18px;
       border-radius: 50%;
       background-color: #FFFFFF;
-      border: 3px solid ${zoneColor};
+      border: 3px ${zoneDashArray ? 'dashed' : 'solid'} ${zoneColor};
       box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     }
     .incident-pin {
@@ -75,6 +78,7 @@ export function buildPolygonDrawMapHtml(
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     var zoneColor = '${zoneColor}';
+    var zoneDashArray = ${zoneDashArray ? `'${zoneDashArray}'` : 'null'};
     var incidents = ${JSON.stringify(incidents)};
     var vertices = []; // [{ marker, lat, lng }]
     var ring = null;   // L.polygon while >= 3 points, else null
@@ -134,6 +138,7 @@ export function buildPolygonDrawMapHtml(
           weight: 2,
           fillColor: zoneColor,
           fillOpacity: 0.3,
+          dashArray: zoneDashArray,
         }).addTo(map);
       } else if (latlngs.length === 2) {
         line = L.polyline(latlngs, { color: zoneColor, weight: 2, dashArray: '6,6' }).addTo(map);

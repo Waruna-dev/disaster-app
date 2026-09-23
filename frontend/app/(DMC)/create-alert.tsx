@@ -297,6 +297,7 @@ export default function CreateWarningScreen() {
           longitude={coords.longitude}
           radius={radius}
           riskLevel={riskLevel}
+          hazardType={hazardType}
           incidents={incidentPins}
           polygon={polygon}
           existingWarnings={existingWarningZones}

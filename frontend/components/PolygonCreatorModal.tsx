@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { RiskLevel } from '../types/alert';
+import { DisasterType } from '../types/report';
 import { buildPolygonDrawMapHtml } from '../utils/polygonDrawMapHtml';
 import { ExistingWarningZone, IncidentPin } from '../utils/warningMapHtml';
 
@@ -18,6 +19,7 @@ interface PolygonCreatorModalProps {
   centerLatitude: number;
   centerLongitude: number;
   riskLevel: RiskLevel;
+  hazardType: DisasterType;
   initialPolygon?: PolygonPoint[] | null;
   incidents?: IncidentPin[];
   existingWarnings?: ExistingWarningZone[];
@@ -39,6 +41,7 @@ export function PolygonCreatorModal({
   centerLatitude,
   centerLongitude,
   riskLevel,
+  hazardType,
   initialPolygon,
   incidents = [],
   existingWarnings = [],
@@ -58,7 +61,7 @@ export function PolygonCreatorModal({
   // taps updating `points`) must NOT recompute this, or the WebView would reload
   // and wipe whatever the officer has drawn so far.
   const mapHtml = useMemo(
-    () => buildPolygonDrawMapHtml(centerLatitude, centerLongitude, riskLevel, initialPolygon ?? [], incidents, existingWarnings),
+    () => buildPolygonDrawMapHtml(centerLatitude, centerLongitude, riskLevel, hazardType, initialPolygon ?? [], incidents, existingWarnings),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [visible]
   );

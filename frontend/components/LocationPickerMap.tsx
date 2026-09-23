@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { RADIUS_PRESETS, RiskLevel, WarningLocation } from '../types/alert';
+import { DisasterType } from '../types/report';
 import { buildWarningMapHtml, ExistingWarningZone, IncidentPin } from '../utils/warningMapHtml';
 import { computeCentroid } from '../utils/geo';
 import { PolygonCreatorModal } from './PolygonCreatorModal';
@@ -15,6 +16,7 @@ interface LocationPickerMapProps {
   longitude: number;
   radius: number;
   riskLevel: RiskLevel;
+  hazardType: DisasterType;
   incidents?: IncidentPin[];
   polygon?: WarningLocation[] | null;
   existingWarnings?: ExistingWarningZone[];
@@ -36,6 +38,7 @@ export function LocationPickerMap({
   longitude,
   radius,
   riskLevel,
+  hazardType,
   incidents = [],
   polygon = null,
   existingWarnings = [],
@@ -59,9 +62,9 @@ export function LocationPickerMap({
   // lat/lng/radius updates in circle mode instead go through injectJavaScript
   // below to keep the map steady.
   const mapHtml = useMemo(
-    () => buildWarningMapHtml(latitude, longitude, radius, riskLevel, incidents, polygon, existingWarnings),
+    () => buildWarningMapHtml(latitude, longitude, radius, riskLevel, hazardType, incidents, polygon, existingWarnings),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [riskLevel, incidents, polygon, existingWarnings]
+    [riskLevel, hazardType, incidents, polygon, existingWarnings]
   );
 
   useEffect(() => {
@@ -200,6 +203,7 @@ export function LocationPickerMap({
           centerLatitude={latitude}
           centerLongitude={longitude}
           riskLevel={riskLevel}
+          hazardType={hazardType}
           initialPolygon={polygon}
           incidents={incidents}
           existingWarnings={existingWarnings}
@@ -214,6 +218,7 @@ export function LocationPickerMap({
         longitude={longitude}
         radius={radius}
         riskLevel={riskLevel}
+        hazardType={hazardType}
         incidents={incidents}
         existingWarnings={existingWarnings}
         onChangeLocation={onChangeLocation}

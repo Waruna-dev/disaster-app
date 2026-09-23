@@ -1,4 +1,5 @@
 import { Colors } from '../constants/colors';
+import { DisasterType } from '../types/report';
 
 export type IncidentPin = {
   id: string;
@@ -13,6 +14,25 @@ const RISK_COLOR: Record<string, string> = {
   HIGH: Colors.warning,
   CRITICAL: Colors.danger,
 };
+
+// Landslide zones render in this earth-tone brown everywhere the risk-level color
+// would otherwise apply, so a landslide zone reads as a landslide at a glance
+// instead of blending into whatever risk-level shade a flood zone would use —
+// matches the brown already used for landslide elsewhere (e.g. app/(DMC)/group-details.tsx's
+// DISASTER_CONFIG). Flood zones keep the existing risk-level color unchanged.
+export const LANDSLIDE_ZONE_COLOR = '#8A5A2B';
+
+export function getZoneColor(hazardType: DisasterType, riskLevel: string): string {
+  if (hazardType === 'landslide') return LANDSLIDE_ZONE_COLOR;
+  return RISK_COLOR[riskLevel] ?? Colors.warning;
+}
+
+// A dashed border on top of the color swap gives landslide zones a second,
+// non-color cue ("another pattern") so the distinction still reads for anyone
+// who can't easily tell brown from blue/orange at a glance.
+export function getZoneDashArray(hazardType: DisasterType): string | null {
+  return hazardType === 'landslide' ? '8,5' : null;
+}
 
 /** An already-published warning's zone, shown as a read-only reference shape so
  * an officer positioning a new (or edited) zone can see what's already covered.
@@ -45,12 +65,14 @@ export function buildWarningMapHtml(
   longitude: number,
   radius: number,
   riskLevel: string,
+  hazardType: DisasterType = 'flood',
   incidents: IncidentPin[] = [],
   polygon: { latitude: number; longitude: number }[] | null = null,
   existingWarnings: ExistingWarningZone[] = [],
   fitToExisting: boolean = false
 ): string {
-  const zoneColor = RISK_COLOR[riskLevel] ?? Colors.warning;
+  const zoneColor = getZoneColor(hazardType, riskLevel);
+  const zoneDashArray = getZoneDashArray(hazardType);
   const hasPolygon = !!polygon && polygon.length >= 3;
 
   return `<!DOCTYPE html>
@@ -68,7 +90,7 @@ export function buildWarningMapHtml(
       border-radius: 50% 50% 50% 0;
       transform: rotate(-45deg);
       background-color: ${zoneColor};
-      border: 2px solid #FFFFFF;
+      border: 2px ${zoneDashArray ? 'dashed' : 'solid'} #FFFFFF;
       box-shadow: 0 2px 6px rgba(0,0,0,0.35);
     }
     .incident-pin {
@@ -147,6 +169,7 @@ export function buildWarningMapHtml(
         weight: 2,
         fillColor: '${zoneColor}',
         fillOpacity: 0.3,
+        dashArray: ${zoneDashArray ? `'${zoneDashArray}'` : 'null'},
       }).addTo(map);
       map.fitBounds(ring, { padding: [24, 24] });
     } else {
@@ -158,6 +181,7 @@ export function buildWarningMapHtml(
         fillColor: '${zoneColor}',
         fillOpacity: 0.18,
         weight: 2,
+        dashArray: ${zoneDashArray ? `'${zoneDashArray}'` : 'null'},
       }).addTo(map);
 
       var report = function (lat, lng) {
