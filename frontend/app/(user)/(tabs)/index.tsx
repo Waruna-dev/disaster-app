@@ -16,6 +16,10 @@ import { getRelativeTimeString } from '../../../utils/floodFormatting';
 import { FloodStatus } from '../../../types/flood';
 import { ActivityIndicator } from 'react-native';
 
+import { HomeArea } from '../../../types/location';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -24,6 +28,37 @@ export default function DashboardScreen() {
   const [firstName, setFirstName] = useState('User');
   const [initial, setInitial] = useState('U');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [homeArea, setHomeArea] = useState<HomeArea | null>(null);
+  const [currentLocationName, setCurrentLocationName] = useState<string>('Locating...');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setCurrentLocationName('Unknown');
+          return;
+        }
+
+        let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest });
+        const geocode = await Location.reverseGeocodeAsync({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude
+        });
+        
+        if (geocode && geocode.length > 0) {
+          const place = geocode[0];
+          const name = place.district || place.city || place.subregion || 'Unknown Area';
+          setCurrentLocationName(name);
+        } else {
+          setCurrentLocationName('Unknown Area');
+        }
+      } catch (error) {
+        console.log('Error getting location in dashboard:', error);
+        setCurrentLocationName('Unknown');
+      }
+    })();
+  }, []);
 
   const { stations, latestByStation, loading, error, cached } = useUserFloodUpdates();
 
@@ -78,6 +113,11 @@ export default function DashboardScreen() {
           } else {
             setIsAdmin(false);
           }
+          if (data.homeArea) {
+            setHomeArea(data.homeArea);
+          } else {
+            setHomeArea(null);
+          }
         }
       }, (error) => {
         console.error("Error fetching user data:", error);
@@ -88,11 +128,6 @@ export default function DashboardScreen() {
     };
   }, [user]);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      // scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, [])
-  );
   return (
     <View style={styles.container}>
       <DashboardStickyBar scrollY={scrollY} initial={initial} />
@@ -103,8 +138,8 @@ export default function DashboardScreen() {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
       >
-        <DashboardHeader scrollY={scrollY} firstName={firstName} />
-        
+        <DashboardHeader scrollY={scrollY} firstName={firstName} homeArea={homeArea} currentLocationName={currentLocationName} />
+
         <View style={styles.alertWrapper}>
           <AlertCard />
         </View>

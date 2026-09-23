@@ -38,7 +38,11 @@ export default function ProfileScreen() {
               setInitial(data.fullName.charAt(0).toUpperCase());
             }
             if (data.occupation) setOccupation(data.occupation);
-            if (data.homeArea) setHomeArea(data.homeArea || t('profile.notSet'));
+            if (data.homeArea) {
+              setHomeArea(data.homeArea.name || data.homeArea.address || t('profile.notSet'));
+            } else {
+              setHomeArea(t('profile.notSet'));
+            }
           }
         }, (error) => {
           console.log("Error fetching user data:", error);

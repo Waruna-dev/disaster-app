@@ -48,7 +48,7 @@ export function buildUserMapHtml(reports: Report[], warnings: WarningZone[] = []
     .leaflet-control-attribution { display: none; }
     .leaflet-control-zoom {
       margin-top: 60px !important;
-      margin-left: 16px !important;
+      margin-right: 16px !important;
       border: none !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
     }
@@ -92,7 +92,8 @@ export function buildUserMapHtml(reports: Report[], warnings: WarningZone[] = []
   <script>
     var points = ${JSON.stringify(points)};
     var warningZones = ${JSON.stringify(warningPayload)};
-    var map = L.map('map', { zoomControl: true }).setView([${DEFAULT_REGION.latitude}, ${DEFAULT_REGION.longitude}], 8);
+    var map = L.map('map', { zoomControl: false }).setView([${DEFAULT_REGION.latitude}, ${DEFAULT_REGION.longitude}], 8);
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,

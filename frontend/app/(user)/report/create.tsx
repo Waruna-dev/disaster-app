@@ -100,7 +100,7 @@ export default function CreateReportScreen() {
     }
 
     if (!user) {
-      Alert.alert('Error', t('reportCreate.errorLoggedIn'));
+      Alert.alert(t('common.error', 'Error'), t('reportCreate.errorLoggedIn'));
       return;
     }
 

@@ -83,7 +83,19 @@
     "termsOfService": "Terms of service",
     "logout": "Log out",
     "logoutConfirm": "Are you sure you want to log out?",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "selectLocationMsg": "Please select a location on the map.",
+    "resolvingAddress": "Still resolving the address, please wait a moment.",
+    "saveFailed": "Failed to save home area. Please try again.",
+    "removeHomeError": "Could not remove home area.",
+    "locationPermReq": "Location permission is required.",
+    "locationError": "Failed to get current location.",
+    "removeHomeTitle": "Remove Home Area",
+    "removeHomeMsg": "Are you sure you want to remove your saved home area?",
+    "chooseHomeArea": "Choose your home area",
+    "tapMapHint": "Tap or drag the map to set your location",
+    "selectedLocation": "Selected Location",
+    "saveHomeArea": "Save home area"
   },
   "editProfile": {
     "title": "Edit Profile",
@@ -143,7 +155,8 @@
     "title": "Alerts Screen"
   },
   "map": {
-    "title": "Map Screen"
+    "title": "Map Screen",
+    "locationErrorMsg": "Unable to retrieve your location. Please ensure location services are enabled on your device."
   },
   "reports": {
     "myReports": "My reports",
@@ -189,7 +202,9 @@
     "cancel": "Cancel",
     "permissionNeeded": "Permission needed",
     "cameraPermission": "You need to grant camera permissions to take a photo.",
-    "galleryPermission": "You need to grant gallery permissions to pick a photo."
+    "galleryPermission": "You need to grant gallery permissions to pick a photo.",
+    "cameraPermMsg": "You need to grant camera permissions to take a photo.",
+    "galleryPermMsg": "You need to grant gallery permissions to pick a photo."
   },
   "reportDetails": {
     "notFound": "Report not found",
@@ -283,7 +298,15 @@
     "viewAll": "View all",
     "searching": "Searching nearby services...",
     "myEmergencyContacts": "My emergency contacts",
-    "add": "Add"
+    "add": "Add",
+    "deleteContact": "Delete Contact",
+    "deleteConfirmMsg": "Are you sure you want to delete {{name}} from your emergency contacts?",
+    "messagingUnavailable": "Messaging unavailable",
+    "messagingUnavailableMsg": "Your device could not open the messaging application.",
+    "limitReached": "Limit Reached",
+    "limitReachedMsg": "You can only add up to 5 emergency contacts.",
+    "myContacts": "My emergency contacts",
+    "copySuccessMsg": "Location link copied to clipboard!"
   },
   "riverUpdate": {
     "title": "River update",
@@ -327,5 +350,17 @@
     "tapAnotherPoint": "Tap another point on the map if the incident is elsewhere.",
     "selectedLocation": "Selected location",
     "reportThisLocation": "Report this location"
-  }
+  },
+  "common": {
+    "error": "Error",
+    "wait": "Wait",
+    "permissionDenied": "Permission denied",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "add": "Add",
+    "success": "Success",
+    "delete": "Delete",
+    "permissionNeeded": "Permission needed"
+  },
+  "Preferred language": "Preferred language"
 }
