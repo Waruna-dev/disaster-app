@@ -8,6 +8,14 @@
     "footerNote": "You can change this later from your profile.",
     "continue": "Continue"
   },
+  "welcome": {
+    "title": "Welcome to FloodGuard",
+    "subtitle": "Stay informed, report incidents, and help keep your community safe.",
+    "login": "Log In",
+    "createAccount": "Create Account",
+    "kelaniya": "Kelaniya",
+    "malabe": "Malabe"
+  },
   "login": {
     "welcomeBack": "Welcome back",
     "signInToContinue": "Log in to view local safety updates.",
@@ -221,7 +229,14 @@
     "success": "Success",
     "deletedSuccess": "Report deleted successfully",
     "error": "Error",
-    "deleteFailed": "Failed to delete report"
+    "deleteFailed": "Failed to delete report",
+    "locationTitle": "Location",
+    "tapToOpenMap": "Tap to open map",
+    "address": "ADDRESS",
+    "mapUnavailable": "Map unavailable",
+    "mapError": "The map application could not be opened.",
+    "mapUnavailableTitle": "Map location unavailable",
+    "mapUnavailableText": "The coordinates for this report were not recorded."
   },
   "reportSuccess": {
     "reportSubmitted": "Report submitted!",

@@ -30,14 +30,24 @@ export default function SplashScreen() {
           router.replace('/(user)/(tabs)' as any);
         } else {
           try {
-            const hasSelected = await AsyncStorage.getItem('hasSelectedLanguage');
-            if (hasSelected === 'true') {
-              router.replace('/(auth)/login' as any);
+            const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+            if (hasSeenOnboarding === 'true') {
+              const hasSelected = await AsyncStorage.getItem('hasSelectedLanguage');
+              if (hasSelected === 'true') {
+                const hasSeenWelcome = await AsyncStorage.getItem('hasSeenWelcome');
+                if (hasSeenWelcome === 'true') {
+                  router.replace('/(auth)/login' as any);
+                } else {
+                  router.replace('/(auth)/welcome' as any);
+                }
+              } else {
+                router.replace('/(auth)/language-select' as any);
+              }
             } else {
-              router.replace('/(auth)/language-select' as any);
+              router.replace('/(auth)/onboarding' as any);
             }
           } catch (e) {
-            router.replace('/(auth)/language-select' as any);
+            router.replace('/(auth)/onboarding' as any);
           }
         }
       }, 1500);

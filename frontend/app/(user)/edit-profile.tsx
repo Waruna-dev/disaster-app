@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +26,9 @@ export default function EditProfileScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const params = useLocalSearchParams();
+  const scrollRef = React.useRef<any>(null);
+  const [alertAreaY, setAlertAreaY] = useState(0);
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,6 +86,22 @@ export default function EditProfileScreen() {
     };
     loadProfile();
   }, [user]);
+
+  useEffect(() => {
+    if (params.scrollTo === 'alertAreas' && alertAreaY > 0 && !loading) {
+      setTimeout(() => {
+        if (scrollRef.current) {
+          if (typeof scrollRef.current.scrollTo === 'function') {
+            scrollRef.current.scrollTo({ y: alertAreaY - 100, animated: true });
+          } else if (scrollRef.current.getNode && typeof scrollRef.current.getNode().scrollToPosition === 'function') {
+            scrollRef.current.getNode().scrollToPosition(0, alertAreaY - 100, true);
+          } else if (typeof scrollRef.current.scrollToPosition === 'function') {
+            scrollRef.current.scrollToPosition(0, alertAreaY - 100, true);
+          }
+        }
+      }, 500);
+    }
+  }, [params.scrollTo, alertAreaY, loading]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -188,13 +207,14 @@ export default function EditProfileScreen() {
             <Ionicons name="chevron-back" size={24} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('editProfile.title')}</Text>
-          {/* Placeholder for balance */}
-          <View style={styles.iconButton} />
+          {/* Spacer to keep title centered */}
+          <View style={{ width: 44, height: 44 }} />
         </View>
       </View>
 
       <View style={{ flex: 1 }}>
         <AnimatedKeyboardAwareScrollView 
+          ref={scrollRef}
           showsVerticalScrollIndicator={false} 
           contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 50 }]}
           enableOnAndroid={true}
@@ -268,7 +288,12 @@ export default function EditProfileScreen() {
           </View>
 
           {/* Alert areas */}
-          <Text style={styles.sectionTitle}>{t('editProfile.alertAreas')}</Text>
+          <Text 
+            style={styles.sectionTitle}
+            onLayout={(e) => setAlertAreaY(e.nativeEvent.layout.y)}
+          >
+            {t('editProfile.alertAreas')}
+          </Text>
           <View style={styles.formGroup}>
             <FormInput
               label={t('editProfile.homeArea')}

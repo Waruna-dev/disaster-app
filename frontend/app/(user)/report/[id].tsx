@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Dimensions, Modal, Alert, Animated } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Dimensions, Modal, Alert, Animated, Linking, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
@@ -8,8 +9,47 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { format, formatDistanceToNow, isToday } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { STATUS_PIN, DISASTER_SYMBOL } from '../../../utils/reportMap';
 
 const { width, height } = Dimensions.get('window');
+
+const generateMiniMapHtml = (lat: number, lng: number, color: string, symbol: string) => {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; background: #eef2f1; }
+    .pin { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.35); }
+    .leaflet-control-zoom { display: none; }
+    .leaflet-control-attribution { font-size: 10px !important; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map', { 
+      zoomControl: false
+    }).setView([${lat}, ${lng}], 14);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    var icon = L.divIcon({
+      html: '<div class="pin" style="background:${color}">${symbol}</div>',
+      className: '',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+    L.marker([${lat}, ${lng}], { icon: icon }).addTo(map);
+  </script>
+</body>
+</html>`;
+};
 
 export default function ReportDetailsScreen() {
   const { t } = useTranslation();
@@ -47,6 +87,38 @@ export default function ReportDetailsScreen() {
     };
     loadReport();
   }, [id]);
+
+  const mapCoordinates = useMemo(() => {
+    if (!report) return null;
+    const lat = Number(report.latitude ?? report.location?.latitude);
+    const lng = Number(report.longitude ?? report.location?.longitude);
+
+    if (
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat >= -90 && lat <= 90 &&
+      lng >= -180 && lng <= 180
+    ) {
+      return { latitude: lat, longitude: lng };
+    }
+    return null;
+  }, [report]);
+
+  const mapRegion = useMemo(() => {
+    if (!mapCoordinates) return undefined;
+    return {
+      ...mapCoordinates,
+      latitudeDelta: 0.008,
+      longitudeDelta: 0.008,
+    };
+  }, [mapCoordinates]);
+
+  const htmlSource = useMemo(() => {
+    if (!mapCoordinates || !report) return null;
+    const color = STATUS_PIN[report.status as keyof typeof STATUS_PIN] || Colors.primary;
+    const symbol = DISASTER_SYMBOL[report.disasterType as keyof typeof DISASTER_SYMBOL] || '';
+    return { html: generateMiniMapHtml(mapCoordinates.latitude, mapCoordinates.longitude, color, symbol) };
+  }, [mapCoordinates, report]);
 
   if (loading) {
     return (
@@ -258,9 +330,6 @@ export default function ReportDetailsScreen() {
               <Text style={styles.infoLabel}>{t('reportDetails.timeReported') || 'SUBMITTED'}</Text>
               <Text style={styles.infoValue}>{exactDate}</Text>
             </View>
-            <TouchableOpacity>
-              <Text style={styles.linkText}>View map ›</Text>
-            </TouchableOpacity>
           </View>
           {exactReviewedDate && (
             <>
@@ -274,6 +343,33 @@ export default function ReportDetailsScreen() {
               </View>
             </>
           )}
+        </View>
+
+        {/* Location Mini Map */}
+        <Text style={styles.sectionTitle}>{t('reportDetails.locationTitle') || 'Location'}</Text>
+        <View style={styles.card}>
+          {mapCoordinates ? (
+            <View style={styles.mapContainer}>
+              {htmlSource && (
+                <View style={styles.miniMap}>
+                  <WebView 
+                    source={htmlSource} 
+                    style={styles.webView} 
+                    showsVerticalScrollIndicator={false}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.mapUnavailable}>
+              <Ionicons name="location-outline" size={32} color={Colors.placeholder} />
+              <Text style={styles.mapUnavailableTitle}>{t('reportDetails.mapUnavailableTitle') || 'Map location unavailable'}</Text>
+              <Text style={styles.mapUnavailableText}>{t('reportDetails.mapUnavailableText') || 'The coordinates for this report were not recorded.'}</Text>
+            </View>
+          )}
+          <Text style={styles.mapAddressLabel}>{t('reportDetails.address') || 'ADDRESS'}</Text>
+          <Text style={styles.infoValue}>{report.locationName || report.address || report.affectedArea}</Text>
         </View>
 
         {/* Description */}
@@ -597,6 +693,50 @@ const styles = StyleSheet.create({
   reporterText: {
     fontSize: 12,
     color: Colors.placeholder,
+  },
+  mapContainer: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    height: 180,
+    width: '100%',
+    marginBottom: 16,
+  },
+  miniMap: {
+    ...StyleSheet.absoluteFill,
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  mapUnavailable: {
+    height: 180,
+    width: '100%',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E8F1EF',
+  },
+  mapUnavailableTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textDark,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  mapUnavailableText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  mapAddressLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.placeholder,
+    marginBottom: 4,
   },
   photoCard: {
     flexDirection: 'row',

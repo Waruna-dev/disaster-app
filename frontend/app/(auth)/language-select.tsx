@@ -34,8 +34,8 @@ export default function LanguageSelectScreen() {
       await AsyncStorage.setItem('appLanguage', selectedLang);
       await AsyncStorage.setItem('hasSelectedLanguage', 'true');
       await i18n.changeLanguage(selectedLang);
-      // Navigate to login after language selection
-      router.replace('/(auth)/login');
+      // Navigate to welcome screen after language selection
+      router.replace('/(auth)/welcome' as any);
     } catch (error) {
       console.log('Error saving language preference:', error);
     } finally {
@@ -74,7 +74,7 @@ export default function LanguageSelectScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 24, 40) }}>
         {/* Header Section */}
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
           <View style={styles.logoRow}>
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   logoBox: {
     width: 32,
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   illustrationContainer: {
     width: '100%',
-    height: 280,
+    height: 200,
     backgroundColor: '#E8F6F3',
     borderRadius: 24,
     overflow: 'hidden',
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 16,
   },
   title: {
     fontSize: 26,
@@ -235,10 +235,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.placeholder,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
   },
   listContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   langCard: {
     flexDirection: 'row',
@@ -247,8 +247,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 12,
   },
   langCardSelected: {
     borderColor: Colors.primary,

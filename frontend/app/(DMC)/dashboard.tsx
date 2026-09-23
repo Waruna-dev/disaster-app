@@ -230,6 +230,14 @@ export default function DmcDashboardScreen() {
             <Ionicons name="megaphone-outline" size={22} color={Colors.primary} />
             <Text style={styles.quickNavLabel}>Public Warnings</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickNavTile}
+            activeOpacity={0.8}
+            onPress={() => router.push({ pathname: '/(DMC)/alerts', params: { openMap: '1' } } as any)}
+          >
+            <Ionicons name="map-outline" size={22} color={Colors.primary} />
+            <Text style={styles.quickNavLabel}>Warnings Map</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
