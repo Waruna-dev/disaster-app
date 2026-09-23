@@ -221,7 +221,14 @@
     "success": "සාර්ථකයි",
     "deletedSuccess": "වාර්තාව සාර්ථකව මකා දමන ලදි",
     "error": "දෝෂයකි",
-    "deleteFailed": "වාර්තාව මකා දැමීම අසාර්ථක විය"
+    "deleteFailed": "වාර්තාව මකා දැමීම අසාර්ථක විය",
+    "locationTitle": "ස්ථානය",
+    "tapToOpenMap": "සිතියම විවෘත කිරීමට තට්ටු කරන්න",
+    "address": "ලිපිනය",
+    "mapUnavailable": "සිතියම නොමැත",
+    "mapError": "සිතියම් යෙදුම විවෘත කිරීමට නොහැකි විය.",
+    "mapUnavailableTitle": "සිතියම් ස්ථානය නොමැත",
+    "mapUnavailableText": "මෙම වාර්තාව සඳහා ඛණ්ඩාංක සටහන් කර නොමැත."
   },
   "reportSuccess": {
     "reportSubmitted": "වාර්තාව ඉදිරිපත් කළා!",

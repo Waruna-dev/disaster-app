@@ -221,7 +221,14 @@
     "success": "Success",
     "deletedSuccess": "Report deleted successfully",
     "error": "Error",
-    "deleteFailed": "Failed to delete report"
+    "deleteFailed": "Failed to delete report",
+    "locationTitle": "Location",
+    "tapToOpenMap": "Tap to open map",
+    "address": "ADDRESS",
+    "mapUnavailable": "Map unavailable",
+    "mapError": "The map application could not be opened.",
+    "mapUnavailableTitle": "Map location unavailable",
+    "mapUnavailableText": "The coordinates for this report were not recorded."
   },
   "reportSuccess": {
     "reportSubmitted": "Report submitted!",

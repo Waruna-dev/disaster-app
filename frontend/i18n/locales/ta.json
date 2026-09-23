@@ -221,7 +221,14 @@
     "success": "வெற்றி",
     "deletedSuccess": "அறிக்கை வெற்றிகரமாக நீக்கப்பட்டது",
     "error": "பிழை",
-    "deleteFailed": "அறிக்கையை நீக்குவதில் தோல்வி"
+    "deleteFailed": "அறிக்கையை நீக்குவதில் தோல்வி",
+    "locationTitle": "இடம்",
+    "tapToOpenMap": "வரைபடத்தை திறக்க தட்டவும்",
+    "address": "முகவரி",
+    "mapUnavailable": "வரைபடம் இல்லை",
+    "mapError": "வரைபட பயன்பாட்டை திறக்க முடியவில்லை.",
+    "mapUnavailableTitle": "வரைபட இடம் இல்லை",
+    "mapUnavailableText": "இந்த அறிக்கைக்கான ஆயத்தொலைவுகள் பதிவு செய்யப்படவில்லை."
   },
   "reportSuccess": {
     "reportSubmitted": "அறிக்கை சமர்ப்பிக்கப்பட்டது!",
