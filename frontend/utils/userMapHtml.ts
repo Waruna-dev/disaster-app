@@ -1,6 +1,13 @@
 import { Colors } from '../constants/colors';
 import { Report } from '../types/report';
-import { STATUS_PIN, DISASTER_SYMBOL, DEFAULT_REGION } from './reportMap';
+import { STATUS_PIN, DISASTER_SYMBOL, DEFAULT_REGION, WarningZone } from './reportMap';
+
+const ZONE_RISK_COLOR: Record<string, string> = {
+  LOW: '#2E75D6',
+  MEDIUM: '#EAB308',
+  HIGH: Colors.warning,
+  CRITICAL: Colors.danger,
+};
 
 type ReportPoint = {
   id: string;
@@ -9,7 +16,7 @@ type ReportPoint = {
   type: string;
 };
 
-export function buildUserMapHtml(reports: Report[]): string {
+export function buildUserMapHtml(reports: Report[], warnings: WarningZone[] = []): string {
   const points: ReportPoint[] = reports
     .filter((r) => r.latitude && r.longitude)
     .map((r) => ({
@@ -18,6 +25,17 @@ export function buildUserMapHtml(reports: Report[]): string {
       lng: r.longitude!,
       type: r.disasterType,
     }));
+
+  const warningPayload = warnings.map((w) => ({
+    id: w.id,
+    centroid: w.centroid,
+    polygon: w.polygon,
+    radiusMeters: w.radiusMeters,
+    color: ZONE_RISK_COLOR[w.riskLevel] || Colors.warning,
+    active: w.status === 'Active',
+    label: w.title,
+    meta: `${w.affectedArea} · ${w.riskLevel} risk`,
+  }));
 
   return `<!DOCTYPE html>
 <html>
@@ -38,6 +56,11 @@ export function buildUserMapHtml(reports: Report[]): string {
       color: #0F5B46 !important;
       font-weight: bold !important;
     }
+    .popup { font-family: -apple-system, Roboto, sans-serif; min-width: 150px; }
+    .popup-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: ${Colors.textDark}; margin-bottom: 2px; }
+    .popup-meta { font-size: 11px; color: ${Colors.textMuted}; margin-bottom: 4px; }
+    .popup-link { font-size: 11px; font-weight: 700; color: ${Colors.primary}; background: none; border: none; padding: 0; cursor: pointer; }
+    .leaflet-popup-content-wrapper { border-radius: 10px; }
     .pin-marker {
       width: 28px;
       height: 28px;
@@ -68,64 +91,46 @@ export function buildUserMapHtml(reports: Report[]): string {
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     var points = ${JSON.stringify(points)};
+    var warningZones = ${JSON.stringify(warningPayload)};
     var map = L.map('map', { zoomControl: true }).setView([${DEFAULT_REGION.latitude}, ${DEFAULT_REGION.longitude}], 8);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
     }).addTo(map);
 
-    // Render existing reports
-    var markers = [];
-    points.forEach(function (p) {
-      var iconClass = p.type === 'flood' ? 'pin-flood' : 'pin-landslide';
-      var iconSymbol = p.type === 'flood' ? '&#x1F30A;' : '&#x26F0;&#xFE0F;';
-      var customIcon = L.divIcon({
-        className: 'custom-div-icon',
-        html: '<div class="pin-marker"><div class="pin-inner ' + iconClass + '">' + iconSymbol + '</div></div>',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
-      });
-
-      var marker = L.marker([p.lat, p.lng], {
-        icon: customIcon
-      }).addTo(map);
-
-      // Instead of popup, we send message to RN when a report is tapped
-      marker.on('click', function(e) {
-        L.DomEvent.stopPropagation(e);
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'reportTap', id: p.id }));
-      });
-      markers.push(marker);
-    });
-
-    window.updateMarkers = function(newPointsJson) {
+    var warningLayers = [];
+    window.updateWarnings = function(newWarningsJson) {
       try {
-        var newPoints = JSON.parse(newPointsJson);
-        markers.forEach(function(m) { map.removeLayer(m); });
-        markers = [];
+        var newWarnings = JSON.parse(newWarningsJson);
+        warningLayers.forEach(function(l) { map.removeLayer(l); });
+        warningLayers = [];
         
-        newPoints.forEach(function (p) {
-            var iconClass = p.type === 'flood' ? 'pin-flood' : 'pin-landslide';
-            var iconSymbol = p.type === 'flood' ? '&#x1F30A;' : '&#x26F0;&#xFE0F;';
-            var customIcon = L.divIcon({
-              className: 'custom-div-icon',
-              html: '<div class="pin-marker"><div class="pin-inner ' + iconClass + '">' + iconSymbol + '</div></div>',
-              iconSize: [28, 28],
-              iconAnchor: [14, 14]
-            });
+        newWarnings.forEach(function (w) {
+          var shapeOptions = {
+            color: w.color,
+            weight: 3,
+            fillColor: w.color,
+            fillOpacity: w.active ? 0.22 : 0.1,
+            dashArray: '4,6',
+          };
+          var popupHtml = '<div class="popup"><div class="popup-title">' + w.label + '</div><div class="popup-meta">' + w.meta + '</div></div>';
 
-            var marker = L.marker([p.lat, p.lng], {
-              icon: customIcon
-            }).addTo(map);
-
-            marker.on('click', function(e) {
-              L.DomEvent.stopPropagation(e);
-              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'reportTap', id: p.id }));
-            });
-            markers.push(marker);
+          if (w.polygon && w.polygon.length >= 3) {
+            var wRing = w.polygon.map(function (p) { return [p.latitude, p.longitude]; });
+            var wPoly = L.polygon(wRing, shapeOptions).addTo(map);
+            wPoly.bindPopup(popupHtml);
+            warningLayers.push(wPoly);
+          } else {
+            var wCircle = L.circle([w.centroid.latitude, w.centroid.longitude], Object.assign({ radius: w.radiusMeters }, shapeOptions)).addTo(map);
+            wCircle.bindPopup(popupHtml);
+            warningLayers.push(wCircle);
+          }
         });
       } catch(e) { console.error(e); }
     };
+
+    // Render initial Warnings
+    window.updateWarnings('${JSON.stringify(warningPayload)}');
 
     // Selected location pin (green)
     var selectedMarker = null;
