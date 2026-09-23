@@ -44,5 +44,22 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
+    match /warnings/{warningId} {
+      // Public warnings are readable by any signed-in user (resident app shows
+      // them); only a DMC admin can publish, edit or cancel one.
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Officer approve/reject decisions on auto-generated flood-affected-area
+    // polygons (see frontend/utils/floodIncidents.ts). Doc ID is a deterministic
+    // hash of the cluster's member report IDs, not user input.
+    match /floodIncidentReviews/{incidentId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() && request.resource.data.reviewedBy == request.auth.uid;
+    }
   }
 }

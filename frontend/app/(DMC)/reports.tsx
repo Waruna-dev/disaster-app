@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import { DMCHeader } from '../../components/DMCHeader';
+import { DMCNavHeader, useDMCScrollHeader } from '../../components/DMCNavHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
 import { ReportListItem } from '../../components/ReportListItem';
 import { useReports } from '../../hooks/useReports';
@@ -30,6 +30,12 @@ export default function AllReportsScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(isStatusFilter(status) ? status : 'all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const { reports, loading } = useReports(statusFilter);
+  const { scrollY, onScroll, headerHeight } = useDMCScrollHeader();
+
+  // The map view doesn't scroll, so a header left hidden by the list would have no way back.
+  useEffect(() => {
+    scrollY.setValue(0);
+  }, [viewMode, scrollY]);
 
   const pins = useMemo(() => reports.filter((r): r is PinnedReport => !!r.location), [reports]);
   const mapHtml = useMemo(() => buildReportsMapHtml(pins), [pins]);
@@ -45,50 +51,51 @@ export default function AllReportsScreen() {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <DMCHeader
-        eyebrow="DMC · ALL REPORTS"
-        title="All Reports"
-        onBack={() => router.push('/(DMC)/dashboard' as any)}
-      />
-
-      <View style={styles.controlsRow}>
-        <View style={styles.filterRow}>
-          {STATUS_FILTERS.map((filter) => {
-            const isActive = filter.key === statusFilter;
-            return (
-              <TouchableOpacity key={filter.key} style={styles.filterTab} activeOpacity={0.7} onPress={() => setStatusFilter(filter.key)}>
-                <Text style={[styles.filterLabel, isActive && styles.filterLabelActive]}>{filter.label}</Text>
-                {isActive && <View style={styles.filterUnderline} />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
-            activeOpacity={0.7}
-            onPress={() => setViewMode('list')}
-          >
-            <Ionicons name="list" size={16} color={viewMode === 'list' ? Colors.white : Colors.textMuted} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.viewToggleBtn, viewMode === 'map' && styles.viewToggleBtnActive]}
-            activeOpacity={0.7}
-            onPress={() => setViewMode('map')}
-          >
-            <Ionicons name="map-outline" size={16} color={viewMode === 'map' ? Colors.white : Colors.textMuted} />
-          </TouchableOpacity>
-        </View>
+  const controls = (
+    <View style={styles.controlsRow}>
+      <View style={styles.filterRow}>
+        {STATUS_FILTERS.map((filter) => {
+          const isActive = filter.key === statusFilter;
+          return (
+            <TouchableOpacity key={filter.key} style={styles.filterTab} activeOpacity={0.7} onPress={() => setStatusFilter(filter.key)}>
+              <Text style={[styles.filterLabel, isActive && styles.filterLabelActive]}>{filter.label}</Text>
+              {isActive && <View style={styles.filterUnderline} />}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
+      <View style={styles.viewToggle}>
+        <TouchableOpacity
+          style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
+          activeOpacity={0.7}
+          onPress={() => setViewMode('list')}
+        >
+          <Ionicons name="list" size={16} color={viewMode === 'list' ? Colors.white : Colors.textMuted} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewToggleBtn, viewMode === 'map' && styles.viewToggleBtnActive]}
+          activeOpacity={0.7}
+          onPress={() => setViewMode('map')}
+        >
+          <Ionicons name="map-outline" size={16} color={viewMode === 'map' ? Colors.white : Colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <DMCNavHeader eyebrow="DMC · ALL REPORTS" title="All Reports" scrollY={scrollY} onBack={() => router.push('/(DMC)/dashboard' as any)} />
+
       {viewMode === 'list' ? (
-        <FlatList
+        <Animated.FlatList
           data={reports}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingTop: headerHeight }]}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          ListHeaderComponent={<View style={styles.controlsBleed}>{controls}</View>}
           renderItem={({ item }) => <ReportListItem report={item} onPress={() => router.push(`/(DMC)/incident/${item.id}` as any)} />}
           ListEmptyComponent={
             !loading ? (
@@ -102,7 +109,8 @@ export default function AllReportsScreen() {
           }
         />
       ) : (
-        <View style={styles.mapCardWrap}>
+        <View style={[styles.mapCardWrap, { paddingTop: headerHeight }]}>
+          <View style={styles.controlsBleed}>{controls}</View>
           <View style={styles.mapCard}>
             <Text style={styles.mapCardTitle}>INCIDENT LOCATIONS</Text>
             <View style={styles.mapCardMap}>
@@ -146,6 +154,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 24,
+  },
+  // controlsRow carries its own 20px side padding; cancel the container's so it stays edge to edge.
+  controlsBleed: {
+    marginHorizontal: -20,
   },
   controlsRow: {
     flexDirection: 'row',

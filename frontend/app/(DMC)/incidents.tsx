@@ -1,18 +1,20 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Animated, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
-import { DMCHeader } from '../../components/DMCHeader';
+import { DMCNavHeader, useDMCScrollHeader } from '../../components/DMCNavHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
+import { StatTile } from '../../components/StatTile';
 import { ReportReviewCard } from '../../components/ReportReviewCard';
+import { ReportListItem } from '../../components/ReportListItem';
 import { ApproveConfirmDialog } from '../../components/ApproveConfirmDialog';
 import { RejectReasonDialog } from '../../components/RejectReasonDialog';
 import { useReports } from '../../hooks/useReports';
 import { Report, DisasterType } from '../../types/report';
 
 type TypeFilter = 'all' | DisasterType;
+type ViewMode = 'cards' | 'list';
 
 const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -26,8 +28,10 @@ const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
 export default function AdminReportApprovalScreen() {
   const { reports, loading } = useReports('Pending');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [approveTarget, setApproveTarget] = useState<Report | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Report | null>(null);
+  const { scrollY, onScroll, headerHeight } = useDMCScrollHeader();
 
   const visible = useMemo(
     () => (typeFilter === 'all' ? reports : reports.filter((r) => r.disasterType === typeFilter)),
@@ -42,80 +46,86 @@ export default function AdminReportApprovalScreen() {
 
   return (
     <View style={styles.container}>
-      <DMCHeader
-        eyebrow="DMC · APPROVAL SCREEN"
-        title="Pending Reports"
-        onBack={() => router.push('/(DMC)/dashboard' as any)}
-      />
+      <DMCNavHeader eyebrow="DMC · APPROVAL SCREEN" title="Pending Reports" scrollY={scrollY} onBack={() => router.push('/(DMC)/dashboard' as any)} />
 
-      <FlatList
+      <Animated.FlatList
         data={visible}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingTop: headerHeight }]}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <>
-            <LinearGradient
-              colors={[Colors.gradientStart, Colors.gradientEnd]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.summaryBanner}
+            <View style={styles.statsGrid}>
+              <StatTile icon="time-outline" value={String(pendingCount)} label="Pending" tint="#D68910" tintBg="#FEF5E7" compact />
+              <StatTile icon="water-outline" value={String(floodCount)} label="Flood" tint="#2E75D6" tintBg="#E8F1FB" compact />
+              <StatTile icon="triangle-outline" value={String(landslideCount)} label="Landslide" tint="#8A5A2B" tintBg="#F1EBE3" compact />
+            </View>
+
+            <TouchableOpacity
+              style={styles.groupedLink}
+              activeOpacity={0.7}
+              onPress={() => router.push('/(DMC)/report-groups' as any)}
             >
-              <View style={styles.summaryPattern} pointerEvents="none">
-                <View style={[styles.patternDot, { width: 44, height: 44, top: -16, right: 26 }]} />
-                <View style={[styles.patternDot, { width: 20, height: 20, top: 30, right: 4, opacity: 0.16 }]} />
-                <View style={[styles.patternDot, { width: 12, height: 12, top: -4, right: 72, opacity: 0.14 }]} />
-              </View>
+              <Ionicons name="git-network-outline" size={16} color={Colors.primary} />
+              <Text style={styles.groupedLinkText}>View grouped incidents</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+            </TouchableOpacity>
 
-              <View style={styles.summaryColumn}>
-                <View style={styles.summaryIconWrap}>
-                  <Ionicons name="time" size={16} color={Colors.white} />
-                </View>
-                <Text style={styles.summaryValue}>{pendingCount}</Text>
-                <Text style={styles.summaryLabel}>PENDING</Text>
-              </View>
-
-              <View style={styles.summaryDivider} />
-
-              <View style={styles.summaryColumn}>
-                <View style={styles.summaryIconWrap}>
-                  <Ionicons name="water" size={16} color={Colors.white} />
-                </View>
-                <Text style={styles.summaryValue}>{floodCount}</Text>
-                <Text style={styles.summaryLabel}>FLOOD</Text>
-              </View>
-
-              <View style={styles.summaryDivider} />
-
-              <View style={styles.summaryColumn}>
-                <View style={styles.summaryIconWrap}>
-                  <Ionicons name="triangle" size={16} color={Colors.white} />
-                </View>
-                <Text style={styles.summaryValue}>{landslideCount}</Text>
-                <Text style={styles.summaryLabel}>LANDSLIDE</Text>
-              </View>
-            </LinearGradient>
+            <TouchableOpacity
+              style={[styles.groupedLink, styles.floodZonesLink]}
+              activeOpacity={0.7}
+              onPress={() => router.push('/(DMC)/flood-incidents' as any)}
+            >
+              <Ionicons name="water-outline" size={16} color="#2E75D6" />
+              <Text style={[styles.groupedLinkText, styles.floodZonesLinkText]}>View flood affected areas</Text>
+              <Ionicons name="chevron-forward" size={16} color="#2E75D6" />
+            </TouchableOpacity>
 
             <View style={styles.filterRow}>
-              {TYPE_FILTERS.map((filter) => {
-                const isActive = filter.key === typeFilter;
-                return (
-                  <TouchableOpacity key={filter.key} style={styles.filterTab} activeOpacity={0.7} onPress={() => setTypeFilter(filter.key)}>
-                    <Text style={[styles.filterLabel, isActive && styles.filterLabelActive]}>{filter.label}</Text>
-                    {isActive && <View style={styles.filterUnderline} />}
-                  </TouchableOpacity>
-                );
-              })}
+              <View style={styles.filterTabs}>
+                {TYPE_FILTERS.map((filter) => {
+                  const isActive = filter.key === typeFilter;
+                  return (
+                    <TouchableOpacity key={filter.key} style={styles.filterTab} activeOpacity={0.7} onPress={() => setTypeFilter(filter.key)}>
+                      <Text style={[styles.filterLabel, isActive && styles.filterLabelActive]}>{filter.label}</Text>
+                      {isActive && <View style={styles.filterUnderline} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.viewToggle}>
+                <TouchableOpacity
+                  style={[styles.viewToggleBtn, viewMode === 'cards' && styles.viewToggleBtnActive]}
+                  activeOpacity={0.7}
+                  onPress={() => setViewMode('cards')}
+                >
+                  <Ionicons name="albums-outline" size={16} color={viewMode === 'cards' ? Colors.white : Colors.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
+                  activeOpacity={0.7}
+                  onPress={() => setViewMode('list')}
+                >
+                  <Ionicons name="list" size={16} color={viewMode === 'list' ? Colors.white : Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
           </>
         }
-        renderItem={({ item }) => (
-          <ReportReviewCard
-            report={item}
-            onViewDetails={() => router.push(`/(DMC)/incident/${item.id}` as any)}
-            onApprove={() => setApproveTarget(item)}
-            onReject={() => setRejectTarget(item)}
-          />
-        )}
+        renderItem={({ item }) =>
+          viewMode === 'list' ? (
+            <ReportListItem report={item} onPress={() => router.push(`/(DMC)/incident/${item.id}` as any)} />
+          ) : (
+            <ReportReviewCard
+              report={item}
+              onViewDetails={() => router.push(`/(DMC)/incident/${item.id}` as any)}
+              onApprove={() => setApproveTarget(item)}
+              onReject={() => setRejectTarget(item)}
+            />
+          )
+        }
         ListEmptyComponent={
           loading ? (
             <View>
@@ -136,13 +146,13 @@ export default function AdminReportApprovalScreen() {
 
       <ApproveConfirmDialog
         visible={approveTarget !== null}
-        report={approveTarget}
+        reports={approveTarget ? [approveTarget] : []}
         onClose={() => setApproveTarget(null)}
         onApproved={() => setApproveTarget(null)}
       />
       <RejectReasonDialog
         visible={rejectTarget !== null}
-        report={rejectTarget}
+        reports={rejectTarget ? [rejectTarget] : []}
         onClose={() => setRejectTarget(null)}
         onRejected={() => setRejectTarget(null)}
       />
@@ -165,68 +175,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 24,
   },
-  summaryBanner: {
+  statsGrid: {
     flexDirection: 'row',
-    borderRadius: 20,
-    marginTop: 16, // the wavy header curve dips unevenly, so a negative overlap here clips the numbers
-    paddingVertical: 16,
-    justifyContent: 'space-evenly',
-    overflow: 'hidden',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 5,
+    gap: 10,
+    marginTop: 16,
     marginBottom: 16,
   },
-  summaryPattern: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  patternDot: {
-    position: 'absolute',
-    borderRadius: 999,
-    backgroundColor: Colors.white,
-    opacity: 0.12,
-  },
-  summaryColumn: {
+  groupedLink: {
+    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-  },
-  summaryIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.18)',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+    gap: 6,
+    backgroundColor: '#E8F5F2',
+    borderRadius: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
   },
-  summaryDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginVertical: 4,
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.white,
-    marginBottom: 4,
-  },
-  summaryLabel: {
-    fontSize: 11,
+  groupedLinkText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.8)',
-    letterSpacing: 0.5,
+    color: Colors.primary,
+  },
+  floodZonesLink: {
+    backgroundColor: '#E8F1FB',
+  },
+  floodZonesLinkText: {
+    color: '#2E75D6',
   },
   filterRow: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
     marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E3F0EC',
+  },
+  filterTabs: {
+    flexDirection: 'row',
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    gap: 4,
+    backgroundColor: '#EFF4F3',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 10,
+  },
+  viewToggleBtn: {
+    width: 30,
+    height: 26,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewToggleBtnActive: {
+    backgroundColor: Colors.primary,
   },
   filterTab: {
     marginRight: 24,
