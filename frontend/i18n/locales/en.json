@@ -204,7 +204,17 @@
     "cameraPermission": "You need to grant camera permissions to take a photo.",
     "galleryPermission": "You need to grant gallery permissions to pick a photo.",
     "cameraPermMsg": "You need to grant camera permissions to take a photo.",
-    "galleryPermMsg": "You need to grant gallery permissions to pick a photo."
+    "galleryPermMsg": "You need to grant gallery permissions to pick a photo.",
+    "selectedLocationLabel": "Selected location",
+    "changeLabel": "Change",
+    "contactNumberLabel": "Contact number",
+    "whatIsAffected": "What is affected?",
+    "affectedRoad": "Road",
+    "affectedHome": "Home",
+    "affectedBusiness": "Business",
+    "affectedPeople": "People",
+    "affectedOther": "Other",
+    "maxPhotos": "Max 3 photos"
   },
   "reportDetails": {
     "notFound": "Report not found",

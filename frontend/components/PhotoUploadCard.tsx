@@ -67,7 +67,7 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Add photo evidence <Text style={styles.optional}>({photoUris.length}/3)</Text></Text>
+      <Text style={styles.label}>{t('reportCreate.addPhotoEvidence', 'Add photo evidence')} <Text style={styles.optional}>({photoUris.length}/3)</Text></Text>
       
       <View style={styles.gridContainer}>
         {photoUris.map((uri, index) => (
@@ -84,8 +84,8 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
             <Ionicons name="camera-outline" size={28} color={Colors.primary} style={styles.icon} />
             {photoUris.length === 0 && (
               <View style={styles.textContainer}>
-                <Text style={styles.title}>Choose photo</Text>
-                <Text style={styles.subtitle}>Max 3 photos</Text>
+                <Text style={styles.title}>{t('reportCreate.choosePhoto', 'Choose photo')}</Text>
+                <Text style={styles.subtitle}>{t('reportCreate.maxPhotos', 'Max 3 photos')}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -141,10 +141,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
     marginBottom: 2,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 12,
     color: Colors.textMuted,
+    textAlign: 'center',
   },
   previewContainer: {
     width: 110,

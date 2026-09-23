@@ -61,7 +61,7 @@ export default function ProfileScreen() {
       t('profile.logout') || 'Log out',
       t('profile.logoutConfirm') || 'Are you sure you want to log out?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
           text: t('profile.logout') || 'Log out',
           style: 'destructive',
