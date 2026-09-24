@@ -110,6 +110,29 @@ export async function fetchFloodHistory(gauge: string, count = 150, signal?: Abo
     .reverse();
 }
 
+/**
+ * Every reading in the last `days` days that reached at least the alert level,
+ * newest first. The threshold comparison runs server-side so only relevant rows
+ * come back; callers classify each one with getFloodStatus.
+ */
+export async function fetchFloodEvents(days = 4, signal?: AbortSignal): Promise<FloodReading[]> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  const where = `CreationDate >= timestamp '${since}' AND alertpull IS NOT NULL AND water_level >= alertpull`;
+  const url =
+    `${READINGS_URL}?where=${encodeURIComponent(where)}&outFields=gauge,basin,water_level,rain_fall,alertpull,minorpull,majorpull,CreationDate` +
+    `&orderByFields=CreationDate+DESC&resultRecordCount=1000&f=json`;
+
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error('Failed to load flood events');
+
+  const json = await response.json();
+  if (json.error) throw new Error(json.error.message ?? 'Failed to load flood events');
+
+  return (json.features ?? [])
+    .map((f: any) => toReading(f.attributes))
+    .filter((r: any): r is FloodReading => r !== null);
+}
+
 export function getFloodStatus(
   waterLevel: number | null | undefined,
   alertLevel: number | null | undefined,
