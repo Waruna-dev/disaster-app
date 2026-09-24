@@ -745,12 +745,11 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   noHomeButtons: {
-    flexDirection: 'row',
-    gap: 12,
+    flexDirection: 'column',
+    gap: 10,
     width: '100%',
   },
   homePrimaryBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -765,7 +764,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   homeSecondaryBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
