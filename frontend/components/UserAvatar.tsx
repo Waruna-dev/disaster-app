@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { Colors } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 
 interface UserAvatarProps {

@@ -228,7 +228,7 @@ export default function EditProfileScreen() {
     }
     options.push({ text: t('editProfile.cancel', 'Cancel'), style: 'cancel', onPress: () => {} });
 
-    Alert.alert(t('editProfile.changePhoto', 'Change Profile Photo'), '', options);
+    Alert.alert(t('editProfile.changePhoto', 'Change Profile Photo'), '', options, { cancelable: true });
   };
 
   const processImage = async (uri: string) => {
