@@ -6,8 +6,10 @@ import { Colors } from '../../constants/colors';
 import { DMCNavHeader, useDMCScrollHeader } from '../../components/DMCNavHeader';
 import { StatTile } from '../../components/StatTile';
 import { FloodLevelChart } from '../../components/FloodLevelChart';
+import { RiverAlertPanel } from '../../components/RiverAlertPanel';
 import { useFloodData } from '../../hooks/useFloodData';
 import { getFloodStatus } from '../../services/floodService';
+import { calculateLast24HourRainfall } from '../../utils/floodCalculations';
 import { FloodStatus } from '../../types/flood';
 
 const STATUS_CONFIG: Record<FloodStatus, { label: string; color: string; bg: string }> = {
@@ -15,6 +17,7 @@ const STATUS_CONFIG: Record<FloodStatus, { label: string; color: string; bg: str
   alert: { label: 'Alert', color: Colors.warning, bg: '#FEF5E7' },
   minor: { label: 'Minor Flood', color: '#EAB308', bg: '#FEF9E7' },
   major: { label: 'Major Flood', color: Colors.danger, bg: '#FDEDEC' },
+  unknown: { label: 'Unknown', color: '#667773', bg: '#EEF2F1' },
 };
 
 function formatRelative(timestamp: number | undefined) {
@@ -41,6 +44,7 @@ export default function FloodWarningScreen() {
   } = useFloodData();
 
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [levelPopup, setLevelPopup] = useState<'alert' | 'minor' | 'major' | null>(null);
   const { scrollY, onScroll, headerHeight } = useDMCScrollHeader();
 
   const station = useMemo(() => stations.find((s) => s.station === selectedStation) ?? null, [stations, selectedStation]);
@@ -62,6 +66,11 @@ export default function FloodWarningScreen() {
   // station is currently selected below.
   const statusCounts = useMemo(() => {
     const counts = { alert: 0, minor: 0, major: 0 };
+    const lists: Record<'alert' | 'minor' | 'major', { station: string; basin: string; waterLevel: number; timestamp: number }[]> = {
+      alert: [],
+      minor: [],
+      major: [],
+    };
     stations.forEach((s) => {
       const reading = latestByStation[s.station];
       if (!reading) return;
@@ -71,19 +80,19 @@ export default function FloodWarningScreen() {
         reading.minorFloodLevel ?? s.minorFloodLevel,
         reading.majorFloodLevel ?? s.majorFloodLevel
       );
-      if (st === 'alert') counts.alert += 1;
-      else if (st === 'minor') counts.minor += 1;
-      else if (st === 'major') counts.major += 1;
+      if (st === 'alert' || st === 'minor' || st === 'major') {
+        counts[st] += 1;
+        lists[st].push({ station: s.station, basin: s.basin, waterLevel: reading.waterLevel, timestamp: reading.timestamp });
+      }
     });
-    return counts;
+    return { ...counts, lists };
   }, [stations, latestByStation]);
 
-  // Sum of the selected station's readings from the last 24 hours — each reading's
-  // rain_fall is the increment since the previous one, so summing gives a running total.
+  // Sum of the selected station's readings from the last 24 hours
   const rainfall24h = useMemo(() => {
-    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-    return history.filter((r) => r.timestamp >= cutoff).reduce((sum, r) => sum + (r.rainFall ?? 0), 0);
-  }, [history]);
+    if (!selectedStation) return null;
+    return calculateLast24HourRainfall(history, selectedStation);
+  }, [history, selectedStation]);
 
   return (
     <View style={styles.container}>
@@ -112,6 +121,7 @@ export default function FloodWarningScreen() {
                 icon="notifications"
                 value={String(statusCounts.alert)}
                 label="Alert Stations"
+                onPress={() => setLevelPopup('alert')}
                 tint={Colors.warning}
                 tintBg="#F0F7F4"
                 iconColor="#C0C5C3"
@@ -121,6 +131,7 @@ export default function FloodWarningScreen() {
                 materialIcon="waves"
                 value={String(statusCounts.minor)}
                 label="Minor Flood"
+                onPress={() => setLevelPopup('minor')}
                 tint="#EAB308"
                 tintBg="#FEF9E7"
                 compact
@@ -129,11 +140,52 @@ export default function FloodWarningScreen() {
                 materialIcon="home-flood"
                 value={String(statusCounts.major)}
                 label="Major Flood"
+                onPress={() => setLevelPopup('major')}
                 tint={Colors.danger}
                 tintBg="#FDEDEC"
                 compact
               />
             </View>
+
+            <Modal visible={levelPopup !== null} transparent animationType="fade" onRequestClose={() => setLevelPopup(null)}>
+              <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setLevelPopup(null)}>
+                <View style={styles.pickerCard} onStartShouldSetResponder={() => true}>
+                  {levelPopup && (
+                    <>
+                      <View style={styles.popupHeader}>
+                        <View style={[styles.chipDot, { backgroundColor: STATUS_CONFIG[levelPopup].color }]} />
+                        <Text style={styles.pickerTitle}>
+                          {levelPopup === 'alert' ? 'Alert Stations' : STATUS_CONFIG[levelPopup].label} ({statusCounts.lists[levelPopup].length})
+                        </Text>
+                      </View>
+                      {statusCounts.lists[levelPopup].length === 0 ? (
+                        <Text style={styles.popupEmpty}>No stations at this level right now.</Text>
+                      ) : (
+                        <ScrollView style={styles.pickerList}>
+                          {statusCounts.lists[levelPopup].map((item) => (
+                            <TouchableOpacity
+                              key={item.station}
+                              style={styles.pickerRow}
+                              activeOpacity={0.7}
+                              onPress={() => {
+                                setSelectedStation(item.station);
+                                setLevelPopup(null);
+                              }}
+                            >
+                              <View>
+                                <Text style={styles.pickerRowText}>{item.station}</Text>
+                                <Text style={styles.pickerRowBasin}>{item.basin} · {formatRelative(item.timestamp)}</Text>
+                              </View>
+                              <Text style={[styles.popupLevel, { color: STATUS_CONFIG[levelPopup].color }]}>{item.waterLevel.toFixed(2)}m</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      )}
+                    </>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </Modal>
 
             <Text style={styles.sectionTitle}>GAUGE STATION</Text>
             <TouchableOpacity style={styles.filterButton} activeOpacity={0.8} onPress={() => setPickerVisible(true)}>
@@ -232,13 +284,16 @@ export default function FloodWarningScreen() {
             <View style={styles.rainfallCardRow}>
               <StatTile
                 materialIcon="weather-pouring"
-                value={`${rainfall24h.toFixed(1)} mm`}
+                value={rainfall24h == null ? 'Not reported' : `${rainfall24h.toFixed(1)} mm`}
                 label="Last 24 Hours Rainfall"
                 tint="#2E75D6"
                 tintBg="#E8F1FB"
                 fullWidth
               />
             </View>
+
+            <Text style={[styles.sectionTitle, { marginBottom: 10 }]}>RIVER ALERTS · {(station?.station ?? selectedStation ?? '').toUpperCase()}</Text>
+            <RiverAlertPanel station={selectedStation} />
 
             <Text style={styles.sourceText}>Source: Sri Lanka Irrigation Department — real-time river gauge network</Text>
           </>
@@ -356,6 +411,21 @@ const styles = StyleSheet.create({
   },
   pickerRowTextActive: {
     color: Colors.primary,
+  },
+  popupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  popupEmpty: {
+    fontSize: 13,
+    color: Colors.textLight,
+    paddingVertical: 12,
+  },
+  popupLevel: {
+    fontSize: 15,
+    fontWeight: '800',
   },
   pickerRowBasin: {
     fontSize: 11,

@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native'
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { NATIONAL_EMERGENCY_SERVICES } from '../../constants/emergencyServices';
+import { useTranslation } from 'react-i18next';
 
 export const NationalEmergencyGrid = () => {
+  const { t } = useTranslation();
   const handleCall = (number: string) => {
     Linking.openURL(`tel:${number}`);
   };
@@ -18,7 +20,12 @@ export const NationalEmergencyGrid = () => {
               <Ionicons name={service.icon} size={20} color={service.color} />
             </View>
             <View style={styles.titleContainer}>
-              <Text style={styles.cardTitle} numberOfLines={1}>{service.name}</Text>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {service.id === 'dmc' ? t('emergency.disasterCentre') : 
+                 service.id === 'ambulance' ? t('emergency.ambulance') :
+                 service.id === 'police' ? t('emergency.police') :
+                 service.id === 'fire' ? t('emergency.fireRescue') : service.name}
+              </Text>
               <Text style={styles.cardNumber}>{service.phone}</Text>
             </View>
           </View>
@@ -28,7 +35,7 @@ export const NationalEmergencyGrid = () => {
             accessibilityLabel={`Call ${service.name} on ${service.phone}`}
           >
             <Ionicons name="call" size={14} color={Colors.white} style={styles.btnIcon} />
-            <Text style={styles.btnText}>Call</Text>
+            <Text style={styles.btnText}>{t('emergency.callBtn')}</Text>
           </TouchableOpacity>
         </View>
       ))}

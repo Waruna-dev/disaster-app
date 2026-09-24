@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/colors';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -22,10 +22,12 @@ export default function ProfileScreen() {
   const [initial, setInitial] = useState('U');
   const [occupation, setOccupation] = useState(t('profile.noOccupation'));
   const [homeArea, setHomeArea] = useState(t('profile.notSet'));
-  const [workArea, setWorkArea] = useState(t('profile.notSet'));
+  
+  const scrollRef = React.useRef<ScrollView>(null);
 
   useFocusEffect(
     useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
       let unsubscribe: () => void;
       if (user?.uid) {
         unsubscribe = onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
@@ -37,7 +39,6 @@ export default function ProfileScreen() {
             }
             if (data.occupation) setOccupation(data.occupation);
             if (data.homeArea) setHomeArea(data.homeArea || t('profile.notSet'));
-            if (data.workArea) setWorkArea(data.workArea || t('profile.notSet'));
           }
         }, (error) => {
           console.log("Error fetching user data:", error);
@@ -51,13 +52,26 @@ export default function ProfileScreen() {
 
   const email = user?.email || 'N/A';
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.replace('/(auth)/login');
-    } catch (e) {
-      console.log(e);
-    }
+  const handleLogout = () => {
+    Alert.alert(
+      t('profile.logout') || 'Log out',
+      t('profile.logoutConfirm') || 'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: t('profile.logout') || 'Log out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              router.replace('/(auth)/login');
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const headerHeight = 220 + insets.top; // Adjusted to remove empty space
@@ -130,6 +144,7 @@ export default function ProfileScreen() {
       </View>
 
       <Animated.ScrollView 
+        ref={scrollRef}
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 120 }]} 
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
@@ -165,7 +180,7 @@ export default function ProfileScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>{t('profile.savedAreas')}</Text>
-              <TouchableOpacity onPress={() => router.push('/(user)/edit-profile')}>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/(user)/edit-profile', params: { scrollTo: 'alertAreas' } })}>
                 <Text style={styles.manageText}>{t('profile.manage')}</Text>
               </TouchableOpacity>
             </View>
@@ -177,18 +192,6 @@ export default function ProfileScreen() {
               <View style={styles.rowTextContent}>
                 <Text style={styles.rowLabel}>{t('profile.homeArea')}</Text>
                 <Text style={styles.rowValue}>{homeArea}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.divider} />
-            
-            <View style={styles.cardRow}>
-              <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
-                <Ionicons name="business-outline" size={22} color="#4F46E5" />
-              </View>
-              <View style={styles.rowTextContent}>
-                <Text style={styles.rowLabel}>{t('profile.workArea')}</Text>
-                <Text style={styles.rowValue}>{workArea}</Text>
               </View>
             </View>
           </View>

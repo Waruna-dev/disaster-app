@@ -31,44 +31,6 @@ const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
   { key: 'Rejected', label: 'Rejected' },
 ];
 
-// TEMP: sample pins so markers are visible while real reports don't have saved
-// coordinates yet. Remove once report creation reliably captures location.
-const SAMPLE_PINS: PinnedReport[] = [
-  {
-    id: 'sample-1',
-    userId: 'sample',
-    disasterType: 'flood',
-    affectedArea: 'Colombo',
-    location: { latitude: 6.9271, longitude: 79.8612 },
-    description: 'Sample pin for testing map markers.',
-    status: 'Pending',
-    referenceNumber: 'REP-00001',
-    createdAt: null,
-  },
-  {
-    id: 'sample-2',
-    userId: 'sample',
-    disasterType: 'landslide',
-    affectedArea: 'Kandy',
-    location: { latitude: 7.2906, longitude: 80.6337 },
-    description: 'Sample pin for testing map markers.',
-    status: 'Verified',
-    referenceNumber: 'REP-00002',
-    createdAt: null,
-  },
-  {
-    id: 'sample-3',
-    userId: 'sample',
-    disasterType: 'flood',
-    affectedArea: 'Galle',
-    location: { latitude: 6.0535, longitude: 80.2210 },
-    description: 'Sample pin for testing map markers.',
-    status: 'Rejected',
-    referenceNumber: 'REP-00003',
-    createdAt: null,
-  },
-];
-
 export default function MapScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [fullMap, setFullMap] = useState(false);
@@ -93,11 +55,7 @@ export default function MapScreen() {
   const { incidents: floodIncidents } = useFloodIncidents();
   const { warnings } = useWarnings();
 
-  const pins = useMemo(() => {
-    const realPins = reports.filter((r): r is PinnedReport => !!r.location);
-    const samplePins = SAMPLE_PINS.filter((p) => statusFilter === 'all' || p.status === statusFilter);
-    return [...realPins, ...samplePins];
-  }, [reports, statusFilter]);
+  const pins = useMemo(() => reports.filter((r): r is PinnedReport => !!r.location), [reports]);
 
   const zones = useMemo<IncidentZone[]>(
     () =>

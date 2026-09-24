@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Timestamp } from 'firebase/firestore';
@@ -66,6 +66,44 @@ export default function DmcDashboardScreen() {
           <ActivityIndicator color={Colors.primary} style={{ marginBottom: 16 }} />
         ) : (
           <View style={styles.statsGrid}>
+            <View style={styles.statsRow}>
+              <StatTile
+                compact
+                icon="time-outline"
+                value={String(stats.pending)}
+                label="Pending"
+                tint="#D68910"
+                tintBg="#FEF5E7"
+                onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Pending' } } as any)}
+              />
+              <StatTile
+                compact
+                icon="checkmark-circle-outline"
+                value={String(stats.verified)}
+                label="Verified"
+                tint={Colors.primary}
+                tintBg="#E8F5F2"
+                onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Verified' } } as any)}
+              />
+              <StatTile
+                compact
+                icon="close-circle-outline"
+                value={String(stats.rejected)}
+                label="Rejected"
+                tint={Colors.danger}
+                tintBg="#FDEDEC"
+                onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Rejected' } } as any)}
+              />
+              <StatTile
+                compact
+                icon="albums-outline"
+                value={String(stats.total)}
+                label="Total reports"
+                tint={Colors.textDark}
+                tintBg="#EFF4F3"
+                onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'all' } } as any)}
+              />
+            </View>
             <StatTile
               icon="git-network-outline"
               value={String(groupCount)}
@@ -74,38 +112,6 @@ export default function DmcDashboardScreen() {
               tint="#2E75D6"
               tintBg="#E8F1FB"
               onPress={() => router.push('/(DMC)/report-groups' as any)}
-            />
-            <StatTile
-              icon="time-outline"
-              value={String(stats.pending)}
-              label="Pending"
-              tint="#D68910"
-              tintBg="#FEF5E7"
-              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Pending' } } as any)}
-            />
-            <StatTile
-              icon="checkmark-circle-outline"
-              value={String(stats.verified)}
-              label="Verified"
-              tint={Colors.primary}
-              tintBg="#E8F5F2"
-              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Verified' } } as any)}
-            />
-            <StatTile
-              icon="close-circle-outline"
-              value={String(stats.rejected)}
-              label="Rejected"
-              tint={Colors.danger}
-              tintBg="#FDEDEC"
-              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Rejected' } } as any)}
-            />
-            <StatTile
-              icon="albums-outline"
-              value={String(stats.total)}
-              label="Total reports"
-              tint={Colors.textDark}
-              tintBg="#EFF4F3"
-              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'all' } } as any)}
             />
           </View>
         )}
@@ -119,6 +125,15 @@ export default function DmcDashboardScreen() {
             {reviewed === 0 ? 'No reports reviewed yet' : `${stats.verified} verified · ${stats.rejected} rejected`}
           </Text>
         </View>
+
+        <TouchableOpacity
+          style={styles.createWarningButton}
+          activeOpacity={0.85}
+          onPress={() => router.push('/(DMC)/create-alert' as any)}
+        >
+          <Ionicons name="add-circle" size={20} color={Colors.white} />
+          <Text style={styles.createWarningText}>Create Public Warning</Text>
+        </TouchableOpacity>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>WEEKLY TREND</Text>
@@ -193,22 +208,6 @@ export default function DmcDashboardScreen() {
           <TouchableOpacity
             style={styles.quickNavTile}
             activeOpacity={0.8}
-            onPress={() => router.push('/(DMC)/map' as any)}
-          >
-            <Ionicons name="location-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Map</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickNavTile}
-            activeOpacity={0.8}
-            onPress={() => Alert.alert('Coming soon', "Analytics isn't built yet.")}
-          >
-            <Ionicons name="bar-chart-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Analytics</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickNavTile}
-            activeOpacity={0.8}
             onPress={() => router.push('/(DMC)/flood-warning' as any)}
           >
             <Ionicons name="water-outline" size={22} color={Colors.primary} />
@@ -239,15 +238,6 @@ export default function DmcDashboardScreen() {
             <Text style={styles.quickNavLabel}>Warnings Map</Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.createWarningButton}
-          activeOpacity={0.85}
-          onPress={() => router.push('/(DMC)/create-alert' as any)}
-        >
-          <Ionicons name="add-circle" size={20} color={Colors.white} />
-          <Text style={styles.createWarningText}>Create Public Warning</Text>
-        </TouchableOpacity>
       </Animated.ScrollView>
 
       <DMCTabBar active="home" />
@@ -275,6 +265,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
     marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    width: '100%',
   },
   card: {
     backgroundColor: Colors.white,
