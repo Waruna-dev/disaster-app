@@ -11,8 +11,9 @@ import { Colors } from '../constants/colors';
 import { Logo } from './Logo';
 import { useTranslation } from 'react-i18next';
 import { HomeArea } from '../types/location';
+import { UserAvatar } from './UserAvatar';
 
-export function DashboardStickyBar({ scrollY, initial }: { scrollY: Animated.Value, initial: string }) {
+export function DashboardStickyBar({ scrollY, initial, imageUrl }: { scrollY: Animated.Value, initial: string, imageUrl?: string | null }) {
   const insets = useSafeAreaInsets();
   
   const headerBgOpacity = scrollY.interpolate({
@@ -43,7 +44,12 @@ export function DashboardStickyBar({ scrollY, initial }: { scrollY: Animated.Val
             activeOpacity={0.7}
             onPress={() => router.push('/(user)/(tabs)/profile')}
           >
-            <Text style={styles.avatarText}>{initial}</Text>
+            <UserAvatar 
+              imageUrl={imageUrl} 
+              name={initial} 
+              size={36} 
+              borderWidth={0} 
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -215,14 +221,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: Colors.white,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  avatarText: {
-    color: Colors.textDark,
-    fontSize: 18,
-    fontWeight: '700',
   },
   greetingContainer: {
     marginBottom: 20,

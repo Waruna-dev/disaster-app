@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useAuth } from '../../../context/AuthContext';
+import { getOptimizedAvatarUrl } from '../../../utils/cloudinaryUtils';
 import { useUserFloodUpdates } from '../../../hooks/useUserFloodUpdates';
 import { getFloodStatus } from '../../../services/floodService';
 import { getRelativeTimeString } from '../../../utils/floodFormatting';
@@ -22,14 +23,17 @@ import * as Location from 'expo-location';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [firstName, setFirstName] = useState('User');
-  const [initial, setInitial] = useState('U');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [homeArea, setHomeArea] = useState<HomeArea | null>(null);
+  
   const [currentLocationName, setCurrentLocationName] = useState<string>('Locating...');
+
+  const firstName = userProfile?.fullName ? userProfile.fullName.split(' ')[0] : 'User';
+  const initial = userProfile?.fullName ? userProfile.fullName.charAt(0).toUpperCase() : 'U';
+  const isAdmin = userProfile?.occupation === 'admin' || (userProfile as any)?.role === 'admin';
+  const homeArea = userProfile?.homeArea || null;
+  const avatarUrl = getOptimizedAvatarUrl(userProfile?.profileImage);
 
   useEffect(() => {
     (async () => {
@@ -97,40 +101,10 @@ export default function DashboardScreen() {
     }, [])
   );
 
-  useEffect(() => {
-    let unsubscribe: () => void;
-    if (user?.uid) {
-      unsubscribe = onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.fullName) {
-            const first = data.fullName.split(' ')[0];
-            setFirstName(first);
-            setInitial(first.charAt(0).toUpperCase());
-          }
-          if (data.role === 'admin') {
-            setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
-          }
-          if (data.homeArea) {
-            setHomeArea(data.homeArea);
-          } else {
-            setHomeArea(null);
-          }
-        }
-      }, (error) => {
-        console.error("Error fetching user data:", error);
-      });
-    }
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [user]);
-
+  // Firestore listener is now handled in AuthContext, no need to duplicate here
   return (
     <View style={styles.container}>
-      <DashboardStickyBar scrollY={scrollY} initial={initial} />
+      <DashboardStickyBar scrollY={scrollY} initial={initial} imageUrl={avatarUrl} />
       <Animated.ScrollView 
         ref={scrollRef}
         showsVerticalScrollIndicator={false}

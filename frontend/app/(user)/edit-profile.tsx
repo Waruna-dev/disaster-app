@@ -16,9 +16,20 @@ import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
 import { getUserProfile, saveUserProfile, deleteUserData } from '../../services/userService';
-import { updateUserPassword, deleteUserAccount, logoutUser } from '../../services/authService';
+import { updateUserPassword, deleteUserAccount } from '../../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import { AlertButton } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { uploadImage } from '../../services/imageUploadService';
+import { getOptimizedAvatarUrl } from '../../utils/cloudinaryUtils';
+import { UserAvatar } from '../../components/UserAvatar';
+
+type ProfilePhotoChange =
+  | { type: 'unchanged' }
+  | { type: 'replace'; localUri: string }
+  | { type: 'remove' };
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -29,7 +40,7 @@ const LANGUAGES = [
 export default function EditProfileScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const params = useLocalSearchParams();
   const scrollRef = React.useRef<any>(null);
   const [alertAreaY, setAlertAreaY] = useState(0);
@@ -48,6 +59,9 @@ export default function EditProfileScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [photoState, setPhotoState] = useState<ProfilePhotoChange>({ type: 'unchanged' });
+  const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
+
   const { i18n } = useTranslation();
   const language = i18n.language?.split('-')[0] || 'en';
 
@@ -131,6 +145,28 @@ export default function EditProfileScreen() {
 
     try {
       setSaving(true);
+      
+      let finalPhotoInfo: any = userProfile?.profileImage;
+
+      // Handle photo upload
+      if (photoState.type === 'remove') {
+        finalPhotoInfo = null; // We remove it from Firestore
+      } else if (photoState.type === 'replace') {
+        // Upload to Cloudinary using unsigned upload
+        const uploadResult = await uploadImage(photoState.localUri, 'profile');
+        finalPhotoInfo = {
+          url: uploadResult.url,
+          publicId: uploadResult.publicId,
+          version: uploadResult.version,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          format: uploadResult.format,
+          updatedAt: Date.now()
+        };
+        // We only replace the Firestore image reference here.
+        // NOTE: Secure old-image cleanup requires a trusted backend (Firebase Functions) to avoid placing the Cloudinary API secret in the mobile application.
+      }
+
       // Update profile info
       await saveUserProfile(user.uid, {
         fullName,
@@ -138,7 +174,8 @@ export default function EditProfileScreen() {
         age,
         occupation,
         homeArea,
-        language
+        language,
+        profileImage: finalPhotoInfo
       });
 
       // Update password if provided
@@ -160,6 +197,7 @@ export default function EditProfileScreen() {
         setConfirmPassword('');
       }
 
+      setPhotoState({ type: 'unchanged' });
       Alert.alert(t('editProfile.success'), t('editProfile.profileUpdated'));
     } catch (error: any) {
       console.log('Error updating profile:', error);
@@ -170,6 +208,80 @@ export default function EditProfileScreen() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarPress = () => {
+    const hasExistingPhoto = photoState.type === 'replace' || (photoState.type === 'unchanged' && userProfile?.profileImage);
+
+    const options: AlertButton[] = [
+      { text: t('editProfile.takePhoto', 'Take photo'), onPress: handleTakePhoto },
+      { text: t('editProfile.chooseGallery', 'Choose from gallery'), onPress: handleChooseGallery },
+    ];
+
+    if (hasExistingPhoto) {
+      options.push({
+        text: t('editProfile.removePhoto', 'Remove current photo'),
+        onPress: () => setPhotoState({ type: 'remove' }),
+        style: 'destructive'
+      });
+    }
+    options.push({ text: t('editProfile.cancel', 'Cancel'), style: 'cancel', onPress: () => {} });
+
+    Alert.alert(t('editProfile.changePhoto', 'Change Profile Photo'), '', options);
+  };
+
+  const processImage = async (uri: string) => {
+    try {
+      setIsPhotoProcessing(true);
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 512, height: 512 } }], // Square crop is usually handled by the picker, but resize here
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setPhotoState({ type: 'replace', localUri: manipResult.uri });
+    } catch (error) {
+      console.log('Error processing image:', error);
+      Alert.alert(t('editProfile.error', 'Error'), t('editProfile.photoProcessFailed', 'Failed to process photo.'));
+    } finally {
+      setIsPhotoProcessing(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('editProfile.permissionDenied', 'Permission Denied'), t('editProfile.cameraPermissionRequired', 'Camera permission is required to take photos.'));
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      await processImage(result.assets[0].uri);
+    }
+  };
+
+  const handleChooseGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('editProfile.permissionDenied', 'Permission Denied'), t('editProfile.galleryPermissionRequired', 'Gallery permission is required to select photos.'));
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      await processImage(result.assets[0].uri);
     }
   };
 
@@ -259,12 +371,19 @@ export default function EditProfileScreen() {
           
           {/* Profile Avatar Badge */}
           <Animated.View style={[styles.avatarContainer, { transform: [{ scale: avatarScale }] }]}>
-            <View style={styles.avatarCircle}>
-              <Ionicons name="person" size={50} color={Colors.primary} />
-              <TouchableOpacity style={styles.cameraBadge} activeOpacity={0.8}>
+            <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8} style={{ borderRadius: 50 }}>
+              <UserAvatar
+                imageUrl={photoState.type === 'replace' ? photoState.localUri : (photoState.type === 'remove' ? null : getOptimizedAvatarUrl(userProfile?.profileImage))}
+                name={fullName ? fullName.charAt(0).toUpperCase() : 'U'}
+                size={100}
+                borderWidth={4}
+                borderColor={Colors.white}
+                loading={isPhotoProcessing}
+              />
+              <View style={styles.cameraBadge}>
                 <Ionicons name="camera" size={16} color={Colors.white} />
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           </Animated.View>
 
           {/* Personal Information */}
@@ -761,17 +880,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
     zIndex: 10,
-  },
-  avatarCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#D1EAE2',
-    borderWidth: 6,
-    borderColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
   },
   cameraBadge: {
     position: 'absolute',
