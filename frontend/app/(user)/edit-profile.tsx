@@ -257,7 +257,12 @@ export default function EditProfileScreen() {
         occupation,
         homeArea
       });
-      Alert.alert(t('editProfile.success', 'Success'), t('editProfile.profileUpdated', 'Profile updated successfully.'));
+      Alert.alert(
+        t('editProfile.success', 'Success'), 
+        t('editProfile.profileUpdated', 'Profile updated successfully.'),
+        [{ text: 'OK' }],
+        { cancelable: true }
+      );
     } catch (error: any) {
       console.log('Error updating profile:', error);
       if (error.code === 'auth/requires-recent-login') {
