@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, Modal, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, Modal, Animated, BackHandler } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
@@ -61,6 +61,7 @@ export default function EditProfileScreen() {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [photoState, setPhotoState] = useState<ProfilePhotoChange>({ type: 'unchanged' });
   const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
+  const [initialProfile, setInitialProfile] = useState<any>(null);
 
   const { i18n } = useTranslation();
   const language = i18n.language?.split('-')[0] || 'en';
@@ -98,6 +99,13 @@ export default function EditProfileScreen() {
             setAge(profile.age || '');
             setOccupation(profile.occupation || '');
             setHomeArea(profile.homeArea || null);
+            setInitialProfile({
+              fullName: profile.fullName || '',
+              contactNumber: profile.contactNumber || '',
+              age: profile.age || '',
+              occupation: profile.occupation || '',
+              homeArea: profile.homeArea || null,
+            });
           }
         } catch (error) {
           console.error('Error loading profile', error);
@@ -124,6 +132,50 @@ export default function EditProfileScreen() {
       }, 500);
     }
   }, [params.scrollTo, alertAreaY, loading]);
+
+  const hasUnsavedChanges = useCallback(() => {
+    if (!initialProfile) return false;
+    if (photoState.type !== 'unchanged') return true;
+    if (fullName !== initialProfile.fullName) return true;
+    if (contactNumber !== initialProfile.contactNumber) return true;
+    if (age !== initialProfile.age) return true;
+    if (occupation !== initialProfile.occupation) return true;
+    if (newPassword.trim() !== '') return true;
+    if (JSON.stringify(homeArea) !== JSON.stringify(initialProfile.homeArea)) return true;
+    return false;
+  }, [initialProfile, photoState, fullName, contactNumber, age, occupation, newPassword, homeArea]);
+
+  const handleBack = useCallback(() => {
+    if (hasUnsavedChanges()) {
+      Alert.alert(
+        t('editProfile.discardChangesTitle', 'Discard unsaved changes?'),
+        t('editProfile.discardChangesMsg', 'You have unsaved changes. Are you sure you want to discard them and leave?'),
+        [
+          { text: t('editProfile.keepEditing', 'Keep Editing'), style: 'cancel' },
+          { 
+            text: t('editProfile.discard', 'Discard'), 
+            style: 'destructive',
+            onPress: () => router.back() 
+          }
+        ]
+      );
+      return true;
+    } else {
+      router.back();
+      return true;
+    }
+  }, [hasUnsavedChanges, t]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (hasUnsavedChanges()) {
+        handleBack();
+        return true; 
+      }
+      return false;
+    });
+    return () => backHandler.remove();
+  }, [hasUnsavedChanges, handleBack]);
 
   const validatePassword = (pwd: string) => {
     if (pwd.length < 8) return t('register.passwordTooShort', 'Password must be at least 8 characters.');
@@ -198,7 +250,14 @@ export default function EditProfileScreen() {
       }
 
       setPhotoState({ type: 'unchanged' });
-      Alert.alert(t('editProfile.success'), t('editProfile.profileUpdated'));
+      setInitialProfile({
+        fullName,
+        contactNumber,
+        age,
+        occupation,
+        homeArea
+      });
+      Alert.alert(t('editProfile.success', 'Success'), t('editProfile.profileUpdated', 'Profile updated successfully.'));
     } catch (error: any) {
       console.log('Error updating profile:', error);
       if (error.code === 'auth/requires-recent-login') {
@@ -345,7 +404,7 @@ export default function EditProfileScreen() {
       <View style={styles.headerBar}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
         <View style={[styles.headerBarContent, { paddingTop: insets.top + 10 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+          <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
             <Ionicons name="chevron-back" size={24} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('editProfile.title')}</Text>
