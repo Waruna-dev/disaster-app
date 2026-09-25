@@ -66,6 +66,44 @@ export default function DmcDashboardScreen() {
           <ActivityIndicator color={Colors.primary} style={{ marginBottom: 16 }} />
         ) : (
           <View style={styles.statsGrid}>
+            <View style={styles.statsRow}>
+              <StatTile
+                compact
+                icon="time-outline"
+                value={String(stats.pending)}
+                label="Pending"
+                tint="#D68910"
+                tintBg="#FEF5E7"
+                onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Pending' } } as any)}
+              />
+              <StatTile
+                compact
+                icon="checkmark-circle-outline"
+                value={String(stats.verified)}
+                label="Verified"
+                tint={Colors.primary}
+                tintBg="#E8F5F2"
+                onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Verified' } } as any)}
+              />
+              <StatTile
+                compact
+                icon="close-circle-outline"
+                value={String(stats.rejected)}
+                label="Rejected"
+                tint={Colors.danger}
+                tintBg="#FDEDEC"
+                onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Rejected' } } as any)}
+              />
+              <StatTile
+                compact
+                icon="albums-outline"
+                value={String(stats.total)}
+                label="Total reports"
+                tint={Colors.textDark}
+                tintBg="#EFF4F3"
+                onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'all' } } as any)}
+              />
+            </View>
             <StatTile
               icon="git-network-outline"
               value={String(groupCount)}
@@ -74,38 +112,6 @@ export default function DmcDashboardScreen() {
               tint="#2E75D6"
               tintBg="#E8F1FB"
               onPress={() => router.push('/(DMC)/report-groups' as any)}
-            />
-            <StatTile
-              icon="time-outline"
-              value={String(stats.pending)}
-              label="Pending"
-              tint="#D68910"
-              tintBg="#FEF5E7"
-              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Pending' } } as any)}
-            />
-            <StatTile
-              icon="checkmark-circle-outline"
-              value={String(stats.verified)}
-              label="Verified"
-              tint={Colors.primary}
-              tintBg="#E8F5F2"
-              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Verified' } } as any)}
-            />
-            <StatTile
-              icon="close-circle-outline"
-              value={String(stats.rejected)}
-              label="Rejected"
-              tint={Colors.danger}
-              tintBg="#FDEDEC"
-              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'Rejected' } } as any)}
-            />
-            <StatTile
-              icon="albums-outline"
-              value={String(stats.total)}
-              label="Total reports"
-              tint={Colors.textDark}
-              tintBg="#EFF4F3"
-              onPress={() => router.push({ pathname: '/(DMC)/reports', params: { status: 'all' } } as any)}
             />
           </View>
         )}
@@ -259,6 +265,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
     marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    width: '100%',
   },
   card: {
     backgroundColor: Colors.white,
