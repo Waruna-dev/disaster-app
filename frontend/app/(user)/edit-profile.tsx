@@ -1,20 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, Modal, Animated } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, Modal, Animated, BackHandler } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { HomeArea } from '../../types/location';
+import { removeHomeArea } from '../../services/userService';
+import { deleteField } from 'firebase/firestore';
+import * as Location from 'expo-location';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
 import { getUserProfile, saveUserProfile, deleteUserData } from '../../services/userService';
-import { updateUserPassword, deleteUserAccount, logoutUser } from '../../services/authService';
+import { updateUserPassword, deleteUserAccount } from '../../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import { AlertButton } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { uploadImage } from '../../services/imageUploadService';
+import { getOptimizedAvatarUrl } from '../../utils/cloudinaryUtils';
+import { UserAvatar } from '../../components/UserAvatar';
+
+type ProfilePhotoChange =
+  | { type: 'unchanged' }
+  | { type: 'replace'; localUri: string }
+  | { type: 'remove' };
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -25,7 +40,7 @@ const LANGUAGES = [
 export default function EditProfileScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const params = useLocalSearchParams();
   const scrollRef = React.useRef<any>(null);
   const [alertAreaY, setAlertAreaY] = useState(0);
@@ -39,9 +54,15 @@ export default function EditProfileScreen() {
   const [contactNumber, setContactNumber] = useState('');
   const [age, setAge] = useState('');
   const [occupation, setOccupation] = useState('');
-  const [homeArea, setHomeArea] = useState('');
+  const [homeArea, setHomeArea] = useState<HomeArea | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [photoState, setPhotoState] = useState<ProfilePhotoChange>({ type: 'unchanged' });
+  const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
+  const [initialProfile, setInitialProfile] = useState<any>(null);
+
   const { i18n } = useTranslation();
   const language = i18n.language?.split('-')[0] || 'en';
 
@@ -65,30 +86,39 @@ export default function EditProfileScreen() {
     extrapolate: 'clamp',
   });
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!user) return;
-      try {
-        const profile = await getUserProfile(user.uid);
-        if (profile) {
-          setFullName(profile.fullName || '');
-          setEmail(profile.email || user.email || '');
-          setContactNumber(profile.contactNumber || '');
-          setAge(profile.age || '');
-          setOccupation(profile.occupation || '');
-          setHomeArea(profile.homeArea || '');
+  useFocusEffect(
+    useCallback(() => {
+      const loadProfile = async () => {
+        if (!user) return;
+        try {
+          const profile = await getUserProfile(user.uid);
+          if (profile) {
+            setFullName(profile.fullName || '');
+            setEmail(profile.email || user.email || '');
+            setContactNumber(profile.contactNumber || '');
+            setAge(profile.age || '');
+            setOccupation(profile.occupation || '');
+            setHomeArea(profile.homeArea || null);
+            setInitialProfile({
+              fullName: profile.fullName || '',
+              contactNumber: profile.contactNumber || '',
+              age: profile.age || '',
+              occupation: profile.occupation || '',
+              homeArea: profile.homeArea || null,
+            });
+          }
+        } catch (error) {
+          console.error('Error loading profile', error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Error loading profile', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProfile();
-  }, [user]);
+      };
+      loadProfile();
+    }, [user])
+  );
 
   useEffect(() => {
-    if (params.scrollTo === 'alertAreas' && alertAreaY > 0 && !loading) {
+    if ((params.scrollTo === 'alertAreas' || params.scrollTo === 'homeArea') && alertAreaY > 0 && !loading) {
       setTimeout(() => {
         if (scrollRef.current) {
           if (typeof scrollRef.current.scrollTo === 'function') {
@@ -103,6 +133,59 @@ export default function EditProfileScreen() {
     }
   }, [params.scrollTo, alertAreaY, loading]);
 
+  const hasUnsavedChanges = useCallback(() => {
+    if (!initialProfile) return false;
+    if (photoState.type !== 'unchanged') return true;
+    if (fullName !== initialProfile.fullName) return true;
+    if (contactNumber !== initialProfile.contactNumber) return true;
+    if (age !== initialProfile.age) return true;
+    if (occupation !== initialProfile.occupation) return true;
+    if (newPassword.trim() !== '') return true;
+    if (JSON.stringify(homeArea) !== JSON.stringify(initialProfile.homeArea)) return true;
+    return false;
+  }, [initialProfile, photoState, fullName, contactNumber, age, occupation, newPassword, homeArea]);
+
+  const handleBack = useCallback(() => {
+    if (hasUnsavedChanges()) {
+      Alert.alert(
+        t('editProfile.discardChangesTitle', 'Discard unsaved changes?'),
+        t('editProfile.discardChangesMsg', 'You have unsaved changes. Are you sure you want to discard them and leave?'),
+        [
+          { text: t('editProfile.keepEditing', 'Keep Editing'), style: 'cancel' },
+          { 
+            text: t('editProfile.discard', 'Discard'), 
+            style: 'destructive',
+            onPress: () => router.back() 
+          }
+        ]
+      );
+      return true;
+    } else {
+      router.back();
+      return true;
+    }
+  }, [hasUnsavedChanges, t]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (hasUnsavedChanges()) {
+        handleBack();
+        return true; 
+      }
+      return false;
+    });
+    return () => backHandler.remove();
+  }, [hasUnsavedChanges, handleBack]);
+
+  const validatePassword = (pwd: string) => {
+    if (pwd.length < 8) return t('register.passwordTooShort', 'Password must be at least 8 characters.');
+    if (!/[A-Z]/.test(pwd)) return t('register.passwordNoUpper', 'Password must contain at least one uppercase letter.');
+    if (!/[a-z]/.test(pwd)) return t('register.passwordNoLower', 'Password must contain at least one lowercase letter.');
+    if (!/[0-9]/.test(pwd)) return t('register.passwordNoNumber', 'Password must contain at least one number.');
+    if (!/[^A-Za-z0-9]/.test(pwd)) return t('register.passwordNoSpecial', 'Password must contain at least one special character.');
+    return null;
+  };
+
   const handleSave = async () => {
     if (!user) return;
     
@@ -114,6 +197,28 @@ export default function EditProfileScreen() {
 
     try {
       setSaving(true);
+      
+      let finalPhotoInfo: any = userProfile?.profileImage;
+
+      // Handle photo upload
+      if (photoState.type === 'remove') {
+        finalPhotoInfo = null; // We remove it from Firestore
+      } else if (photoState.type === 'replace') {
+        // Upload to Cloudinary using unsigned upload
+        const uploadResult = await uploadImage(photoState.localUri, 'profile');
+        finalPhotoInfo = {
+          url: uploadResult.url,
+          publicId: uploadResult.publicId,
+          version: uploadResult.version,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          format: uploadResult.format,
+          updatedAt: Date.now()
+        };
+        // We only replace the Firestore image reference here.
+        // NOTE: Secure old-image cleanup requires a trusted backend (Firebase Functions) to avoid placing the Cloudinary API secret in the mobile application.
+      }
+
       // Update profile info
       await saveUserProfile(user.uid, {
         fullName,
@@ -121,16 +226,38 @@ export default function EditProfileScreen() {
         age,
         occupation,
         homeArea,
-        language
+        language,
+        profileImage: finalPhotoInfo
       });
 
       // Update password if provided
       if (newPassword.trim()) {
+        if (newPassword !== confirmPassword) {
+          Alert.alert(t('editProfile.error', 'Error'), t('editProfile.passwordMismatch', 'Passwords do not match.'));
+          setSaving(false);
+          return;
+        }
+        
+        const pwdError = validatePassword(newPassword);
+        if (pwdError) {
+          Alert.alert(t('editProfile.error', 'Error'), pwdError);
+          setSaving(false);
+          return;
+        }
         await updateUserPassword(newPassword);
         setNewPassword(''); // clear after success
+        setConfirmPassword('');
       }
 
-      Alert.alert(t('editProfile.success'), t('editProfile.profileUpdated'));
+      setPhotoState({ type: 'unchanged' });
+      setInitialProfile({
+        fullName,
+        contactNumber,
+        age,
+        occupation,
+        homeArea
+      });
+      Alert.alert(t('editProfile.success', 'Success'), t('editProfile.profileUpdated', 'Profile updated successfully.'));
     } catch (error: any) {
       console.log('Error updating profile:', error);
       if (error.code === 'auth/requires-recent-login') {
@@ -140,6 +267,80 @@ export default function EditProfileScreen() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarPress = () => {
+    const hasExistingPhoto = photoState.type === 'replace' || (photoState.type === 'unchanged' && userProfile?.profileImage);
+
+    const options: AlertButton[] = [
+      { text: t('editProfile.takePhoto', 'Take photo'), onPress: handleTakePhoto },
+      { text: t('editProfile.chooseGallery', 'Choose from gallery'), onPress: handleChooseGallery },
+    ];
+
+    if (hasExistingPhoto) {
+      options.push({
+        text: t('editProfile.removePhoto', 'Remove current photo'),
+        onPress: () => setPhotoState({ type: 'remove' }),
+        style: 'destructive'
+      });
+    }
+    options.push({ text: t('editProfile.cancel', 'Cancel'), style: 'cancel', onPress: () => {} });
+
+    Alert.alert(t('editProfile.changePhoto', 'Change Profile Photo'), '', options, { cancelable: true });
+  };
+
+  const processImage = async (uri: string) => {
+    try {
+      setIsPhotoProcessing(true);
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 512, height: 512 } }], // Square crop is usually handled by the picker, but resize here
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setPhotoState({ type: 'replace', localUri: manipResult.uri });
+    } catch (error) {
+      console.log('Error processing image:', error);
+      Alert.alert(t('editProfile.error', 'Error'), t('editProfile.photoProcessFailed', 'Failed to process photo.'));
+    } finally {
+      setIsPhotoProcessing(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('editProfile.permissionDenied', 'Permission Denied'), t('editProfile.cameraPermissionRequired', 'Camera permission is required to take photos.'));
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      await processImage(result.assets[0].uri);
+    }
+  };
+
+  const handleChooseGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('editProfile.permissionDenied', 'Permission Denied'), t('editProfile.galleryPermissionRequired', 'Gallery permission is required to select photos.'));
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      await processImage(result.assets[0].uri);
     }
   };
 
@@ -203,7 +404,7 @@ export default function EditProfileScreen() {
       <View style={styles.headerBar}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.gradientStart, opacity: headerBgOpacity }]} />
         <View style={[styles.headerBarContent, { paddingTop: insets.top + 10 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+          <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
             <Ionicons name="chevron-back" size={24} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('editProfile.title')}</Text>
@@ -229,12 +430,19 @@ export default function EditProfileScreen() {
           
           {/* Profile Avatar Badge */}
           <Animated.View style={[styles.avatarContainer, { transform: [{ scale: avatarScale }] }]}>
-            <View style={styles.avatarCircle}>
-              <Ionicons name="person" size={50} color={Colors.primary} />
-              <TouchableOpacity style={styles.cameraBadge} activeOpacity={0.8}>
+            <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8} style={{ borderRadius: 50 }}>
+              <UserAvatar
+                imageUrl={photoState.type === 'replace' ? photoState.localUri : (photoState.type === 'remove' ? null : getOptimizedAvatarUrl(userProfile?.profileImage))}
+                name={fullName ? fullName.charAt(0).toUpperCase() : 'U'}
+                size={100}
+                borderWidth={4}
+                borderColor={Colors.white}
+                loading={isPhotoProcessing}
+              />
+              <View style={styles.cameraBadge}>
                 <Ionicons name="camera" size={16} color={Colors.white} />
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           </Animated.View>
 
           {/* Personal Information */}
@@ -287,23 +495,130 @@ export default function EditProfileScreen() {
             />
           </View>
 
-          {/* Alert areas */}
+          {/* Home Area Section */}
           <Text 
             style={styles.sectionTitle}
             onLayout={(e) => setAlertAreaY(e.nativeEvent.layout.y)}
           >
-            {t('editProfile.alertAreas')}
+            {t('profile.homeArea', 'Home Area')}
           </Text>
           <View style={styles.formGroup}>
-            <FormInput
-              label={t('editProfile.homeArea')}
-              iconName="home-outline"
-              value={homeArea}
-              onChangeText={setHomeArea}
-              placeholder=""
-            />
+            {homeArea ? (
+              <View style={styles.savedHomeCard}>
+                <View style={styles.savedHomeIcon}>
+                  <Ionicons name="home" size={24} color={Colors.primary} />
+                </View>
+                <View style={styles.savedHomeDetails}>
+                  <Text style={styles.savedHomeName}>{homeArea.name}</Text>
+                  <Text style={styles.savedHomeAddress} numberOfLines={2}>{homeArea.address}</Text>
+                </View>
+                <View style={styles.savedHomeActions}>
+                  <TouchableOpacity style={styles.homeActionBtn} onPress={() => router.push('/(user)/select-home-location' as any)}>
+                    <Ionicons name="pencil" size={18} color={Colors.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.homeActionBtn} onPress={() => {
+                    Alert.alert(
+                      t('profile.removeHomeTitle', 'Remove Home Area'),
+                      t('profile.removeHomeMsg', 'Are you sure you want to remove your saved home area?'),
+                      [
+                        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+                        { 
+                          text: t('common.remove', 'Remove'), 
+                          style: 'destructive',
+                          onPress: async () => {
+                            if (user) {
+                              try {
+                                await removeHomeArea(user.uid, deleteField);
+                                setHomeArea(null);
+                              } catch (e) {
+                                Alert.alert(t('common.error', 'Error'), t('profile.removeHomeError', 'Could not remove home area.'));
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    );
+                  }}>
+                    <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.noHomeCard}>
+                <View style={styles.noHomeHeader}>
+                  <Ionicons name="home-outline" size={24} color={Colors.textMuted} />
+                  <Text style={styles.noHomeTitle}>{t('profile.setHomeArea', 'Set your home area')}</Text>
+                </View>
+                <View style={styles.noHomeButtons}>
+                  <TouchableOpacity 
+                    style={styles.homePrimaryBtn} 
+                    onPress={async () => {
+                      setIsLocating(true);
+                      try {
+                        let { status } = await Location.requestForegroundPermissionsAsync();
+                        if (status !== 'granted') {
+                          Alert.alert(t('common.permissionDenied', 'Permission denied'), t('profile.locationPermReq', 'Location permission is required.'));
+                          setIsLocating(false);
+                          return;
+                        }
+                        let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                        const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+                        const geocode = await Location.reverseGeocodeAsync(coords);
+                        let address = 'Unknown Location';
+                        let areaName = 'Selected Area';
+                        if (geocode && geocode.length > 0) {
+                          const place = geocode[0];
+                          address = [place.name, place.street, place.district || place.city || place.subregion, place.postalCode].filter(Boolean).join(', ');
+                          areaName = place.name || place.street || place.district || 'Current Location';
+                        }
+                        
+                        Alert.alert(
+                          'Save Location?',
+                          `Do you want to save ${areaName} as your home area?`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Save',
+                              onPress: async () => {
+                                if (user) {
+                                  const ha: HomeArea = {
+                                    name: areaName,
+                                    address: address,
+                                    latitude: coords.latitude,
+                                    longitude: coords.longitude,
+                                    source: 'gps'
+                                  };
+                                  await saveUserProfile(user.uid, { homeArea: ha, homeAreaUpdatedAt: new Date().toISOString() });
+                                  setHomeArea(ha);
+                                }
+                              }
+                            }
+                          ]
+                        );
+                      } catch (error) {
+                        Alert.alert(t('common.error', 'Error'), t('profile.locationError', 'Failed to get current location.'));
+                      } finally {
+                        setIsLocating(false);
+                      }
+                    }}
+                    disabled={isLocating}
+                  >
+                    {isLocating ? <ActivityIndicator size="small" color={Colors.primary} /> : (
+                      <>
+                        <Ionicons name="locate" size={18} color={Colors.primary} />
+                        <Text style={styles.homePrimaryBtnText}>{t('profile.useCurrentLoc', 'Use current location')}</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.homeSecondaryBtn} onPress={() => router.push('/(user)/select-home-location' as any)}>
+                    <Ionicons name="map-outline" size={18} color={Colors.textDark} />
+                    <Text style={styles.homeSecondaryBtnText}>{t('profile.chooseOnMap', 'Choose on map')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
             
-            <View style={{ marginBottom: 16 }}>
+            <View style={{ marginTop: 20, marginBottom: 16 }}>
               <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.textDark, marginBottom: 8 }}>{t('Preferred language') || 'Preferred language'}</Text>
               <TouchableOpacity 
                 style={styles.languageDropdown}
@@ -332,6 +647,16 @@ export default function EditProfileScreen() {
               isPassword
               placeholder={t('editProfile.newPasswordPlaceholder')}
             />
+            {newPassword.length > 0 && (
+              <FormInput
+                label={t('register.confirmPassword') || 'Confirm Password'}
+                iconName="lock-closed-outline"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                isPassword
+                placeholder={t('register.confirmPasswordPlaceholder') || 'Confirm your new password'}
+              />
+            )}
           </View>
 
           <View style={{ marginTop: 10, marginBottom: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' }}>
@@ -411,6 +736,108 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+
+  savedHomeCard: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  savedHomeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E3F0EC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  savedHomeDetails: {
+    flex: 1,
+  },
+  savedHomeName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textDark,
+    marginBottom: 4,
+  },
+  savedHomeAddress: {
+    fontSize: 13,
+    color: Colors.textMuted,
+  },
+  savedHomeActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginLeft: 12,
+  },
+  homeActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noHomeCard: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  noHomeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  noHomeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textMuted,
+  },
+  noHomeButtons: {
+    flexDirection: 'column',
+    gap: 10,
+    width: '100%',
+  },
+  homePrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E3F0EC',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  homePrimaryBtnText: {
+    color: Colors.primary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  homeSecondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  homeSecondaryBtnText: {
+    color: Colors.textDark,
+    fontWeight: '600',
+    fontSize: 14,
+  },
   languageDropdown: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -510,17 +937,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
     zIndex: 10,
-  },
-  avatarCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#D1EAE2',
-    borderWidth: 6,
-    borderColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
   },
   cameraBadge: {
     position: 'absolute',

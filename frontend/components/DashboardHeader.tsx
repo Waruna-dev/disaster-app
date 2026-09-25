@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } from 'react-native-svg';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { useAuth } from '../context/AuthContext';
 import { Colors } from '../constants/colors';
 import { Logo } from './Logo';
 import { useTranslation } from 'react-i18next';
+import { HomeArea } from '../types/location';
+import { UserAvatar } from './UserAvatar';
 
-export function DashboardStickyBar({ scrollY, initial }: { scrollY: Animated.Value, initial: string }) {
+export function DashboardStickyBar({ scrollY, initial, imageUrl }: { scrollY: Animated.Value, initial: string, imageUrl?: string | null }) {
   const insets = useSafeAreaInsets();
   
   const headerBgOpacity = scrollY.interpolate({
@@ -42,7 +41,12 @@ export function DashboardStickyBar({ scrollY, initial }: { scrollY: Animated.Val
             activeOpacity={0.7}
             onPress={() => router.push('/(user)/(tabs)/profile')}
           >
-            <Text style={styles.avatarText}>{initial}</Text>
+            <UserAvatar 
+              imageUrl={imageUrl} 
+              name={initial} 
+              size={36} 
+              borderWidth={0} 
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -50,7 +54,7 @@ export function DashboardStickyBar({ scrollY, initial }: { scrollY: Animated.Val
   );
 }
 
-export function DashboardHeader({ scrollY, firstName }: { scrollY: Animated.Value, firstName: string }) {
+export function DashboardHeader({ scrollY, firstName, homeArea, currentLocationName = 'Locating...' }: { scrollY: Animated.Value, firstName: string, homeArea: HomeArea | null, currentLocationName?: string }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
@@ -112,15 +116,20 @@ export function DashboardHeader({ scrollY, firstName }: { scrollY: Animated.Valu
 
         {/* Bottom Row: Location Pills */}
         <View style={styles.locationRow}>
-          <TouchableOpacity style={styles.activePill} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.activePill, { flexShrink: 1, maxWidth: '55%' }]} activeOpacity={0.7}>
             <Ionicons name="location" size={16} color={Colors.primary} />
-            <Text style={styles.activePillText}>Kelaniya</Text>
-            <Ionicons name="chevron-down" size={16} color={Colors.primary} />
+            <Text style={[styles.activePillText, { flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{currentLocationName}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.inactivePill} activeOpacity={0.7}>
-            <Ionicons name="locate-outline" size={16} color={Colors.white} />
-            <Text style={styles.inactivePillText}>Malabe</Text>
+          <TouchableOpacity 
+            style={[styles.inactivePill, { flexShrink: 1, maxWidth: '45%' }]} 
+            activeOpacity={0.7}
+            onPress={() => router.push('/(user)/edit-profile?scrollTo=homeArea' as any)}
+          >
+            <Ionicons name={homeArea ? "home" : "home-outline"} size={16} color={Colors.white} />
+            <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.inactivePillText, {color: Colors.white, marginLeft: 4, fontWeight: '600', fontSize: 13, flexShrink: 1, maxWidth: 120}]}>
+              {homeArea ? homeArea.name : t('profile.setHomeArea', 'Set home area')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -209,14 +218,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: Colors.white,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  avatarText: {
-    color: Colors.textDark,
-    fontSize: 18,
-    fontWeight: '700',
   },
   greetingContainer: {
     marginBottom: 20,
@@ -254,6 +258,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     marginHorizontal: 8,
+    maxWidth: 120,
   },
   inactivePill: {
     flexDirection: 'row',

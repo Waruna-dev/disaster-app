@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } fr
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
 
 interface PhotoUploadCardProps {
   photoUris?: string[];
@@ -11,17 +12,19 @@ interface PhotoUploadCardProps {
 }
 
 export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }: PhotoUploadCardProps) {
+  const { t } = useTranslation();
+
   const handlePress = async () => {
     Alert.alert(
-      'Upload Photo',
-      'Choose an option',
+      t('reportCreate.uploadPhoto', 'Upload Photo'),
+      t('reportCreate.chooseOption', 'Choose an option'),
       [
         {
-          text: 'Take Photo',
+          text: t('reportCreate.takePhoto', 'Take Photo'),
           onPress: async () => {
             const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
             if (permissionResult.granted === false) {
-              Alert.alert('Permission needed', 'You need to grant camera permissions to take a photo.');
+              Alert.alert(t('common.permissionNeeded', 'Permission needed'), t('reportCreate.cameraPermMsg', 'You need to grant camera permissions to take a photo.'));
               return;
             }
             const result = await ImagePicker.launchCameraAsync({
@@ -35,11 +38,11 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
           }
         },
         {
-          text: 'Choose from Gallery',
+          text: t('reportCreate.chooseGallery', 'Choose from Gallery'),
           onPress: async () => {
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (permissionResult.granted === false) {
-              Alert.alert('Permission needed', 'You need to grant gallery permissions to pick a photo.');
+              Alert.alert(t('common.permissionNeeded', 'Permission needed'), t('reportCreate.galleryPermMsg', 'You need to grant gallery permissions to pick a photo.'));
               return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -55,7 +58,7 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
           }
         },
         {
-          text: 'Cancel',
+          text: t('common.cancel', 'Cancel'),
           style: 'cancel'
         }
       ]
@@ -64,7 +67,7 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Add photo evidence <Text style={styles.optional}>({photoUris.length}/3)</Text></Text>
+      <Text style={styles.label}>{t('reportCreate.addPhotoEvidence', 'Add photo evidence')} <Text style={styles.optional}>({photoUris.length}/3)</Text></Text>
       
       <View style={styles.gridContainer}>
         {photoUris.map((uri, index) => (
@@ -81,8 +84,8 @@ export function PhotoUploadCard({ photoUris = [], onPhotoSelect, onPhotoRemove }
             <Ionicons name="camera-outline" size={28} color={Colors.primary} style={styles.icon} />
             {photoUris.length === 0 && (
               <View style={styles.textContainer}>
-                <Text style={styles.title}>Choose photo</Text>
-                <Text style={styles.subtitle}>Max 3 photos</Text>
+                <Text style={styles.title}>{t('reportCreate.choosePhoto', 'Choose photo')}</Text>
+                <Text style={styles.subtitle}>{t('reportCreate.maxPhotos', 'Max 3 photos')}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -138,10 +141,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
     marginBottom: 2,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 12,
     color: Colors.textMuted,
+    textAlign: 'center',
   },
   previewContainer: {
     width: 110,

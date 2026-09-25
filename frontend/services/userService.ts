@@ -1,5 +1,5 @@
 import { db } from '../config/firebase';
-import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteDoc, updateDoc, FieldValue } from 'firebase/firestore';
 import { anonymizeUserReports } from './reportService';
 
 /**
@@ -45,3 +45,19 @@ export const deleteUserData = async (userId: string) => {
     throw error;
   }
 };
+
+/**
+ * Removes the home area from the user's profile.
+ */
+export const removeHomeArea = async (userId: string, deleteField: () => FieldValue) => {
+  try {
+    await updateDoc(doc(db, 'users', userId), {
+      homeArea: deleteField(),
+      homeAreaUpdatedAt: deleteField(),
+    });
+  } catch (error) {
+    console.error('Error removing home area:', error);
+    throw error;
+  }
+};
+

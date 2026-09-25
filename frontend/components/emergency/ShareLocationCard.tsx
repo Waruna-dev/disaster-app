@@ -15,9 +15,9 @@ export const ShareLocationCard = () => {
     if (mapLink) {
       await Clipboard.setStringAsync(mapLink);
       if (Platform.OS === 'android') {
-        ToastAndroid.show('Location link copied to clipboard!', ToastAndroid.SHORT);
+        ToastAndroid.show(t('emergency.copySuccessMsg', 'Location link copied to clipboard!'), ToastAndroid.SHORT);
       } else {
-        Alert.alert('Success', 'Location link copied to clipboard!');
+        Alert.alert(t('common.success', 'Success'), t('emergency.copySuccessMsg', 'Location link copied to clipboard!'));
       }
     }
   };

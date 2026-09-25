@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, PanResponder, Image, ScrollView, Alert } from 'react-native';
-import { WebView, WebViewMessageEvent } from 'react-native-webview';
-import * as Location from 'expo-location';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -9,17 +7,16 @@ import { Colors } from '../../../constants/colors';
 import { db } from '../../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Report } from '../../../types/report';
-import { buildUserMapHtml } from '../../../utils/userMapHtml';
 import { useWarnings } from '../../../hooks/useWarnings';
 import { getWarningStatus } from '../../../utils/warningStatus';
 import { WarningZone } from '../../../utils/reportMap';
+import { UserMapEngine, UserMapEngineRef } from '../../../components/UserMapEngine';
 
 export default function MapScreen() {
   const { t } = useTranslation();
 
-  const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
-  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
+  const mapEngineRef = useRef<UserMapEngineRef>(null);
 
   // Pan Responder for swipe gestures on bottom card
   const panResponder = useRef(
@@ -45,10 +42,7 @@ export default function MapScreen() {
   const [selectedLocation, setSelectedLocation] = useState<{ latitude: number, longitude: number } | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string>('Loading address...');
   
-  const [reports, setReports] = useState<Report[]>([]);
 
-  const webViewRef = useRef<WebView>(null);
-  const [isMapReady, setIsMapReady] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const [cardState, setCardState] = useState<'minimized' | 'default' | 'expanded'>('default');
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,113 +72,19 @@ export default function MapScreen() {
     fetchReports();
   }, [activeFilter]);
 
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationPermission(false);
-        return;
-      }
-      setLocationPermission(true);
 
-      try {
-        let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        const coords = { latitude: location.coords.latitude, longitude: location.coords.longitude };
-        setUserLocation(coords);
-        setSelectedLocation(coords);
-        
-        // The webview will center automatically or we inject once ready
-        if (isMapReady && webViewRef.current) {
-          webViewRef.current.injectJavaScript(`window.centerOnUser(${coords.latitude}, ${coords.longitude}); true;`);
-        }
-
-        fetchAddress(coords);
-      } catch (error) {
-        console.log("Error getting location:", error);
-        // Fallback location (e.g., Colombo, Sri Lanka) if GPS is off on emulator
-        const fallbackCoords = { latitude: 6.9271, longitude: 79.8612 };
-        setUserLocation(fallbackCoords);
-        setSelectedLocation(fallbackCoords);
-        if (isMapReady && webViewRef.current) {
-          webViewRef.current.injectJavaScript(`window.centerOnUser(${fallbackCoords.latitude}, ${fallbackCoords.longitude}); true;`);
-        }
-        fetchAddress(fallbackCoords);
-      }
-    })();
-  }, []);
-
-  const fetchAddress = async (coords: { latitude: number, longitude: number }) => {
-    try {
-      const geocode = await Location.reverseGeocodeAsync(coords);
-      if (geocode && geocode.length > 0) {
-        const place = geocode[0];
-        const areaName = [place.name, place.street, place.district || place.city || place.subregion, place.postalCode].filter(Boolean).join(', ');
-        setSelectedAddress(areaName || 'Unknown Location');
-      } else {
-        setSelectedAddress('Unknown Location');
-      }
-    } catch (error) {
-      setSelectedAddress('Failed to fetch address');
-    }
+  const handleLocationSelect = (coords: { latitude: number; longitude: number }, address: string, isResolving: boolean) => {
+    setSelectedLocation(coords);
+    setSelectedAddress(isResolving ? 'Loading address...' : address);
+    setSelectedReport(null);
+    setCardState('default');
   };
 
-  const handleWebViewMessage = (event: WebViewMessageEvent) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'mapTap') {
-        const coords = { latitude: data.lat, longitude: data.lng };
-        setSelectedLocation(coords);
-        setSelectedReport(null);
-        setCardState('default');
-        fetchAddress(coords);
-      } else if (data.type === 'reportTap' && data.id) {
-        const report = reports.find(r => r.id === data.id);
-        if (report) {
-          setSelectedReport(report);
-          setCardState('default');
-        }
-      }
-    } catch (e) {
-      console.log('WebView message error:', e);
-    }
-  };
-
-  const handleLocateMe = async () => {
-    try {
-      let location = await Location.getLastKnownPositionAsync();
-      if (!location) {
-        location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      }
-      if (location) {
-        const coords = { latitude: location.coords.latitude, longitude: location.coords.longitude };
-        setUserLocation(coords);
-        setSelectedLocation(coords);
-        if (webViewRef.current) {
-          webViewRef.current.injectJavaScript(`window.centerOnUser(${coords.latitude}, ${coords.longitude}); true;`);
-        }
-        setSelectedReport(null);
-        fetchAddress(coords);
-      }
-    } catch (error) {
-        console.log("Location error:", error);
-        Alert.alert("Location Error", "Unable to retrieve your location. Please ensure location services are enabled on your device.");
-        if (userLocation) {
-        setSelectedLocation(userLocation);
-        if (webViewRef.current) {
-          webViewRef.current.injectJavaScript(`window.centerOnUser(${userLocation.latitude}, ${userLocation.longitude}); true;`);
-        }
-        setSelectedReport(null);
-        fetchAddress(userLocation);
-      } else {
-        // Fallback to default region if no user location
-        const coords = { latitude: 7.8731, longitude: 80.7718 };
-        setSelectedLocation(coords);
-        if (webViewRef.current) {
-          webViewRef.current.injectJavaScript(`window.centerOnUser(${coords.latitude}, ${coords.longitude}); true;`);
-        }
-        setSelectedReport(null);
-        fetchAddress(coords);
-      }
+  const handleReportTap = (reportId: string) => {
+    const report = reports.find(r => r.id === reportId);
+    if (report) {
+      setSelectedReport(report);
+      setCardState('default');
     }
   };
 
@@ -206,7 +106,7 @@ export default function MapScreen() {
   const warningZones = useMemo<WarningZone[]>(
     () =>
       warnings
-        .filter((w) => getWarningStatus(w) === 'Active' && (activeFilter === 'all' || w.hazardType === activeFilter))
+        .filter((w) => getWarningStatus(w) === 'Active' && (activeFilter === 'all' || w.hazardType?.toLowerCase() === activeFilter.toLowerCase()))
         .map((w) => ({
           id: w.id,
           title: w.title,
@@ -220,67 +120,15 @@ export default function MapScreen() {
     [warnings, activeFilter]
   );
 
-  const mapHtml = useMemo(() => buildUserMapHtml([], []), []);
-
-  // Update markers via JavaScript injection when reports change
-  useEffect(() => {
-    if (isMapReady && webViewRef.current) {
-      const points = reports
-        .filter(r => r.latitude && r.longitude)
-        .map(r => ({
-        id: r.id,
-        lat: r.latitude,
-        lng: r.longitude,
-        type: r.disasterType,
-      }));
-      const script = `
-        window.updateWarnings && window.updateWarnings('${JSON.stringify(warningZones.map(w => ({
-          id: w.id,
-          centroid: w.centroid,
-          polygon: w.polygon,
-          radiusMeters: w.radiusMeters,
-          color: w.riskLevel === 'CRITICAL' ? Colors.danger : w.riskLevel === 'HIGH' ? Colors.warning : w.riskLevel === 'MEDIUM' ? '#EAB308' : '#2E75D6',
-          active: w.status === 'Active',
-          label: w.title,
-          meta: w.affectedArea + " · " + w.riskLevel + " risk"
-        })))}');
-        true;
-      `;
-      webViewRef.current.injectJavaScript(script);
-    }
-  }, [reports, warningZones, isMapReady, activeFilter]);
-
-  if (locationPermission === null) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
-  }
-
-  if (locationPermission === false) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{t('map.permissionDenied', 'Location permission is required to use the map.')}</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <WebView
-        ref={webViewRef}
-        style={styles.map}
-        originWhitelist={['*']}
-        source={{ html: mapHtml }}
-        onMessage={handleWebViewMessage}
-        onLoadEnd={() => {
-          setIsMapReady(true);
-          // If we already have user location by the time it loads, place the pin
-          if (userLocation && webViewRef.current) {
-             webViewRef.current.injectJavaScript(`window.centerOnUser(${userLocation.latitude}, ${userLocation.longitude}); true;`);
-          }
-        }}
+      <UserMapEngine
+        ref={mapEngineRef}
+        mode="report"
+        warnings={warningZones}
+        onLocationSelect={handleLocationSelect}
+        onReportTap={handleReportTap}
+        locateMeButtonBottom={cardState === 'minimized' ? 100 : (selectedReport ? (cardState === 'expanded' ? 450 : 210) : 280)}
       />
 
       {/* Top Floating Header */}
@@ -311,17 +159,6 @@ export default function MapScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* Locate Me FAB */}
-      <TouchableOpacity 
-        style={[
-          styles.locateButton, 
-          { bottom: cardState === 'minimized' ? 100 : (selectedReport ? (cardState === 'expanded' ? 450 : 210) : 280) }
-        ]} 
-        onPress={handleLocateMe}
-      >
-        <Ionicons name="locate" size={24} color={Colors.primary} />
-      </TouchableOpacity>
 
       {/* Bottom Sheet / Card */}
       <View style={[styles.bottomCard, cardState === 'expanded' && { maxHeight: '70%' }]} {...panResponder.panHandlers}>
@@ -423,15 +260,15 @@ const styles = StyleSheet.create({
   topHeaderContainer: {
     position: 'absolute',
     top: 60,
-    right: 16,
+    left: 16,
     zIndex: 10,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   filterContainer: {
     flexDirection: 'row',
     gap: 8,
     flexWrap: 'wrap',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   filterChip: {
     flexDirection: 'row',

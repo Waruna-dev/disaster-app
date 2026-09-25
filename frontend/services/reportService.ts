@@ -16,35 +16,15 @@ interface ReportData {
   status?: 'Pending' | 'Verified' | 'Rejected';
 }
 
+import { uploadImage } from './imageUploadService';
+
 /**
  * Uploads a local image URI to Cloudinary via unsigned REST API.
  * Requires EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME and EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET to be set.
  */
 export const uploadReportPhoto = async (uri: string): Promise<string> => {
-  const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
-  if (!cloudName || !uploadPreset) {
-    throw new Error('Cloudinary environment variables are missing.');
-  }
-
-  const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-
-  const uploadResult = await FileSystem.uploadAsync(url, uri, {
-    httpMethod: 'POST',
-    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-    fieldName: 'file',
-    parameters: {
-      upload_preset: uploadPreset,
-    },
-  });
-
-  if (uploadResult.status < 200 || uploadResult.status >= 300) {
-    throw new Error('Failed to upload photo to Cloudinary: ' + uploadResult.body);
-  }
-
-  const responseData = JSON.parse(uploadResult.body);
-  return responseData.secure_url;
+  const result = await uploadImage(uri, 'report');
+  return result.url;
 };
 
 /**

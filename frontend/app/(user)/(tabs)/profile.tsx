@@ -7,47 +7,30 @@ import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } fr
 import { useAuth } from '../../../context/AuthContext';
 import { auth, db } from '../../../config/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { UserAvatar } from '../../../components/UserAvatar';
+import { getOptimizedAvatarUrl } from '../../../utils/cloudinaryUtils';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
-  const [fullName, setFullName] = useState('User');
-  const [initial, setInitial] = useState('U');
-  const [occupation, setOccupation] = useState(t('profile.noOccupation'));
-  const [homeArea, setHomeArea] = useState(t('profile.notSet'));
+  const fullName = userProfile?.fullName || 'User';
+  const initial = fullName.charAt(0).toUpperCase();
+  const occupation = userProfile?.occupation || t('profile.noOccupation');
+  const homeArea = userProfile?.homeArea?.name || userProfile?.homeArea?.address || t('profile.notSet');
+  const avatarUrl = getOptimizedAvatarUrl(userProfile?.profileImage);
   
   const scrollRef = React.useRef<ScrollView>(null);
 
   useFocusEffect(
     useCallback(() => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-      let unsubscribe: () => void;
-      if (user?.uid) {
-        unsubscribe = onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (data.fullName) {
-              setFullName(data.fullName);
-              setInitial(data.fullName.charAt(0).toUpperCase());
-            }
-            if (data.occupation) setOccupation(data.occupation);
-            if (data.homeArea) setHomeArea(data.homeArea || t('profile.notSet'));
-          }
-        }, (error) => {
-          console.log("Error fetching user data:", error);
-        });
-      }
-      return () => {
-        if (unsubscribe) unsubscribe();
-      };
-    }, [user])
+    }, [])
   );
 
   const email = user?.email || 'N/A';
@@ -57,7 +40,7 @@ export default function ProfileScreen() {
       t('profile.logout') || 'Log out',
       t('profile.logoutConfirm') || 'Are you sure you want to log out?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
           text: t('profile.logout') || 'Log out',
           style: 'destructive',
@@ -152,9 +135,13 @@ export default function ProfileScreen() {
       >
         
         <Animated.View style={[styles.profileInfoContainer, { transform: [{ scale: avatarScale }] }]}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitial}>{initial}</Text>
-          </View>
+          <UserAvatar
+            imageUrl={avatarUrl}
+            name={initial}
+            size={90}
+            borderWidth={4}
+            borderColor={Colors.white}
+          />
           <Text style={styles.profileName}>{fullName}</Text>
           <Text style={styles.profileOccupation}>{occupation}</Text>
         </Animated.View>
@@ -281,22 +268,7 @@ const styles = StyleSheet.create({
   profileInfoContainer: {
     alignItems: 'center',
     marginTop: -20,
-  },
-  avatarCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#E8F5F2',
-    borderWidth: 4,
-    borderColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  avatarInitial: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: Colors.primary,
+    marginBottom: 12, // Added margin bottom since it was on avatarCircle
   },
   profileName: {
     fontSize: 22,
