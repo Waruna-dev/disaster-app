@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, Modal, Animated, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert, ActivityIndicator, Modal, Animated, BackHandler } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
@@ -574,7 +574,16 @@ export default function EditProfileScreen() {
                         if (geocode && geocode.length > 0) {
                           const place = geocode[0];
                           address = [place.name, place.street, place.district || place.city || place.subregion, place.postalCode].filter(Boolean).join(', ');
-                          areaName = place.name || place.street || place.district || 'Current Location';
+                          
+                          // Prioritize street, district, or city if the name is just a building number or a Plus Code
+                          const isHouseNumber = place.name && (/^\d+[A-Za-z]?$/.test(place.name) || /^no\.?\s*\d+/i.test(place.name) || /^\d+\/\d+[A-Za-z]?$/.test(place.name));
+                          const isPlusCode = place.name && /^[A-Z0-9]{4,8}\+[A-Z0-9]{2,}$/i.test(place.name);
+
+                          if (isHouseNumber || isPlusCode) {
+                            areaName = place.street || place.district || place.city || place.subregion || 'Current Location';
+                          } else {
+                            areaName = place.name || place.street || place.district || place.city || 'Current Location';
+                          }
                         }
                         
                         Alert.alert(

@@ -24,11 +24,11 @@ export default function SelectHomeLocationScreen() {
   const [isResolving, setIsResolving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const translateY = useRef(new Animated.Value(0)).current;
+  const [translateY] = useState(() => new Animated.Value(0));
   const cardState = useRef<'open' | 'minimized'>('open');
   const MINIMIZED_OFFSET = 220; // How far down it pushes
 
-  const panResponder = useRef(
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
         return Math.abs(gestureState.dy) > 10;
@@ -64,9 +64,9 @@ export default function SelectHomeLocationScreen() {
           useNativeDriver: true,
           bounciness: 4,
         }).start();
-      },
+      }
     })
-  ).current;
+  );
 
   const handleLocationSelect = (coords: { latitude: number; longitude: number }, address: string, resolving: boolean) => {
     setSelectedLocation(coords);
@@ -87,7 +87,16 @@ export default function SelectHomeLocationScreen() {
 
     setIsSaving(true);
     try {
-      const areaName = selectedAddress.split(',')[0] || 'Unknown Location';
+      const parts = selectedAddress.split(',').map(p => p.trim());
+      let areaName = parts[0] || 'Unknown Location';
+      // If the first part is a house number (e.g. 18, 18A, 23/4, No.18) or a Plus Code (e.g. PWJ5+R36), use the second part
+      const isHouseNumber = /^\d+[A-Za-z]?$/.test(areaName) || /^no\.?\s*\d+/i.test(areaName) || /^\d+\/\d+[A-Za-z]?$/.test(areaName);
+      const isPlusCode = /^[A-Z0-9]{4,8}\+[A-Z0-9]{2,}$/i.test(areaName);
+      
+      if (parts.length > 1 && (isHouseNumber || isPlusCode)) {
+        areaName = parts[1];
+      }
+      
       const homeArea: HomeArea = {
         name: areaName,
         address: selectedAddress,
