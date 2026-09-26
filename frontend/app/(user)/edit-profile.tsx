@@ -7,7 +7,7 @@ import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } from 'react-native-svg';
 import { HomeArea } from '../../types/location';
 import { removeHomeArea } from '../../services/userService';
 import { deleteField } from 'firebase/firestore';
@@ -391,17 +391,40 @@ export default function EditProfileScreen() {
     );
   }
 
-  const headerHeight = 160 + insets.top;
+  const headerHeight = 220 + insets.top;
 
   return (
     <View style={styles.container}>
       {/* Header Background */}
       <Animated.View style={[styles.headerContainer, { height: headerHeight, transform: [{ translateY: headerTranslateY }] }]}>
-        <Svg width="100%" height="100%" viewBox={`0 0 402 180`} preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 402 ${190 + insets.top}`}
+          preserveAspectRatio="none"
+          style={StyleSheet.absoluteFill}
+        >
+          <Defs>
+            <SvgLinearGradient id="headerGradient" x1="18" y1="0" x2="384" y2="224" gradientUnits="userSpaceOnUse">
+              <Stop offset="0" stopColor={Colors.gradientStart} />
+              <Stop offset="1" stopColor={Colors.gradientEnd} />
+            </SvgLinearGradient>
+          </Defs>
           <Path
-            d="M0 0 H402 V120 Q201 200 0 120 Z"
-            fill={Colors.gradientStart}
+            d={`
+              M0 0
+              H402
+              V${139 + insets.top}
+              C323 ${169 + insets.top} 247 ${164 + insets.top} 183 ${143 + insets.top}
+              C117 ${121 + insets.top} 62 ${127 + insets.top} 0 ${154 + insets.top}
+              V0
+              Z
+            `}
+            fill="url(#headerGradient)"
           />
+          {/* Decorative circles */}
+          <Circle cx="419" cy="48" r="100" fill="none" stroke={Colors.white} strokeOpacity={0.05} strokeWidth={26} />
+          <Circle cx="-26" cy="61" r="89" fill={Colors.white} fillOpacity={0.035} />
         </Svg>
       </Animated.View>
 
@@ -422,7 +445,7 @@ export default function EditProfileScreen() {
         <AnimatedKeyboardAwareScrollView 
           ref={scrollRef}
           showsVerticalScrollIndicator={false} 
-          contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 50 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 70 }]}
           enableOnAndroid={true}
           extraScrollHeight={120}
           keyboardShouldPersistTaps="handled"
@@ -439,7 +462,7 @@ export default function EditProfileScreen() {
               <UserAvatar
                 imageUrl={photoState.type === 'replace' ? photoState.localUri : (photoState.type === 'remove' ? null : getOptimizedAvatarUrl(userProfile?.profileImage))}
                 name={fullName ? fullName.charAt(0).toUpperCase() : 'U'}
-                size={100}
+                size={90}
                 borderWidth={4}
                 borderColor={Colors.white}
                 loading={isPhotoProcessing}
@@ -477,6 +500,7 @@ export default function EditProfileScreen() {
                   onChangeText={setAge}
                   keyboardType="numeric"
                   placeholder="23"
+                  iconName="calendar-outline"
                 />
               </View>
               <View style={styles.halfWidth}>
@@ -485,7 +509,7 @@ export default function EditProfileScreen() {
                   value={occupation}
                   onChangeText={setOccupation}
                   placeholder=""
-                  iconName="ellipse"
+                  iconName="briefcase-outline"
                 />
               </View>
             </View>
@@ -511,7 +535,7 @@ export default function EditProfileScreen() {
             {homeArea ? (
               <View style={styles.savedHomeCard}>
                 <View style={styles.savedHomeIcon}>
-                  <Ionicons name="home" size={24} color={Colors.primary} />
+                  <Ionicons name="home-outline" size={24} color={Colors.textMuted} />
                 </View>
                 <View style={styles.savedHomeDetails}>
                   <Text style={styles.savedHomeName}>{homeArea.name}</Text>
@@ -640,7 +664,7 @@ export default function EditProfileScreen() {
                 onPress={() => setShowLanguageModal(true)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}>
-                  <Ionicons name="language-outline" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+                  <Ionicons name="language-outline" size={20} color={Colors.textMuted} style={{ marginRight: 12 }} />
                   <Text style={{ fontSize: 16, color: Colors.textDark, flexShrink: 1 }} numberOfLines={1}>
                     {LANGUAGES.find(l => l.code === language)?.name || 'English'}
                   </Text>
@@ -763,8 +787,6 @@ const styles = StyleSheet.create({
   savedHomeIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E3F0EC',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -949,6 +971,7 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     alignItems: 'center',
+    marginTop: -20,
     marginBottom: 24,
     zIndex: 10,
   },
