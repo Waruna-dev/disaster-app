@@ -7,7 +7,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <Stack screenOptions={{ headerShown: false }} initialRouteName="index">
+        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} initialRouteName="index">
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(user)" />
