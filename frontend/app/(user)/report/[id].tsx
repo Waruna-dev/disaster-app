@@ -68,8 +68,8 @@ export default function ReportDetailsScreen() {
   });
 
   const headerTranslateY = scrollY.interpolate({
-    inputRange: [-100, 0, 200],
-    outputRange: [0, 0, -50],
+    inputRange: [-100, 0, 500],
+    outputRange: [0, 0, -500],
     extrapolate: 'clamp',
   });
 
@@ -383,24 +383,24 @@ export default function ReportDetailsScreen() {
 
         {/* Photo Evidence */}
         <Text style={styles.sectionTitle}>{t('reportDetails.photoEvidence') || 'Photo evidence'}</Text>
-        {photos.length > 0 ? (
-          photos.map((uri, index) => (
-            <View key={index} style={styles.photoCard}>
-              <Image source={{ uri }} style={styles.photoThumbnail} />
-              <Text style={styles.photoName} numberOfLines={1}>evidence-photo-{index + 1}.jpg</Text>
-              <TouchableOpacity onPress={() => setFullScreenImage(uri)}>
-                <Text style={styles.linkText}>View photo</Text>
-              </TouchableOpacity>
+        <View style={styles.photoGridContainer}>
+          {photos.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoGrid}>
+              {photos.map((uri, index) => (
+                <TouchableOpacity key={index} activeOpacity={0.9} onPress={() => setFullScreenImage(uri)}>
+                  <Image source={{ uri }} style={styles.photoGridImage} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.photoCard}>
+              <View style={[styles.photoThumbnail, { backgroundColor: '#F0F5F4', justifyContent: 'center', alignItems: 'center' }]}>
+                 <Ionicons name="image-outline" size={24} color={Colors.placeholder} />
+              </View>
+              <Text style={styles.photoName} numberOfLines={1}>No photo uploaded</Text>
             </View>
-          ))
-        ) : (
-          <View style={styles.photoCard}>
-            <View style={[styles.photoThumbnail, { backgroundColor: '#F0F5F4', justifyContent: 'center', alignItems: 'center' }]}>
-               <Ionicons name="image-outline" size={24} color={Colors.placeholder} />
-            </View>
-            <Text style={styles.photoName} numberOfLines={1}>No photo uploaded</Text>
-          </View>
-        )}
+          )}
+        </View>
 
       </Animated.ScrollView>
     </View>
@@ -757,5 +757,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.textDark,
+  },
+  photoGridContainer: {
+    marginBottom: 24,
+    marginLeft: -20, // To make scroll start from edge if container has padding, or just 0
+    marginRight: -20,
+    paddingLeft: 20,
+  },
+  photoGrid: {
+    gap: 16,
+    paddingRight: 40, 
+  },
+  photoGridImage: {
+    width: 240,
+    height: 180,
+    borderRadius: 16,
+    backgroundColor: '#F0F5F4',
   },
 });

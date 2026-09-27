@@ -35,8 +35,8 @@ export function ReportsHeader({ scrollY }: { scrollY: Animated.Value }) {
   const headerHeight = 220 + insets.top; // Adjust based on needs
 
   const headerTranslateY = scrollY.interpolate({
-    inputRange: [-100, 0, 200],
-    outputRange: [-50, 0, 100],
+    inputRange: [-100, 0, 500],
+    outputRange: [-50, 0, 0], // Keeps it attached to the top of the scrollview when scrolling down
     extrapolate: 'clamp',
   });
 

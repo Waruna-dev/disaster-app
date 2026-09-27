@@ -75,8 +75,8 @@ export default function EditProfileScreen() {
   });
 
   const headerTranslateY = scrollY.interpolate({
-    inputRange: [-100, 0, 200],
-    outputRange: [0, 0, -50],
+    inputRange: [-100, 0, 500],
+    outputRange: [0, 0, -500],
     extrapolate: 'clamp',
   });
 
