@@ -21,6 +21,8 @@ export interface Report {
   latitude?: number;
   longitude?: number;
   description: string;
+  contactNumber?: string | null;
+  affectedItems?: string[] | null;
   photoUrl?: string | null;
   photoUrls?: string[] | null;
   status: ReportStatus;
