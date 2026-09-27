@@ -168,7 +168,7 @@ export default function OnboardingScreen() {
                     <Ionicons name="add" size={14} color={Colors.primary} />
                   </View>
                   <View style={[styles.timelineContent, { marginTop: 14 }]}>
-                    <Text style={styles.timelineTitle}>Under review</Text>
+                    <Text style={styles.timelineTitle}>Pending</Text>
                     <Text style={styles.timelineDesc}>Evidence and location checked</Text>
                   </View>
                 </View>
