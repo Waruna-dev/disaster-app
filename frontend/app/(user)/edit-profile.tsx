@@ -202,7 +202,7 @@ export default function EditProfileScreen() {
 
       // Handle photo upload
       if (photoState.type === 'remove') {
-        finalPhotoInfo = null; // We remove it from Firestore
+        finalPhotoInfo = deleteField(); // We remove it from Firestore using FieldValue
       } else if (photoState.type === 'replace') {
         // Upload to Cloudinary using unsigned upload
         const uploadResult = await uploadImage(photoState.localUri, 'profile');
@@ -220,15 +220,23 @@ export default function EditProfileScreen() {
       }
 
       // Update profile info
-      await saveUserProfile(user.uid, {
+      const profileUpdates: any = {
         fullName,
         contactNumber,
         age,
         occupation,
-        homeArea,
         language,
-        profileImage: finalPhotoInfo
-      });
+      };
+
+      if (homeArea !== null) {
+        profileUpdates.homeArea = homeArea;
+      }
+
+      if (finalPhotoInfo !== undefined) {
+        profileUpdates.profileImage = finalPhotoInfo;
+      }
+
+      await saveUserProfile(user.uid, profileUpdates);
 
       // Update password if provided
       if (newPassword.trim()) {
