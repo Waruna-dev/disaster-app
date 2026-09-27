@@ -284,8 +284,8 @@
     "refCopied": "Reference number copied to clipboard!",
     "whatHappensNext": "What happens next?",
     "submitted": "Submitted",
-    "underReview": "Under review",
-    "decision": "Decision",
+    "pending": "Pending",
+    "approved": "Approved",
     "trackReport": "You can track this report from My Reports.",
     "viewMyReports": "View My Reports",
     "returnHome": "Return Home"
