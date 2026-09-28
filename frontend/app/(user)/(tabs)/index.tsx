@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert , ActivityIndicator } from 'react-native';
 import { Colors } from '../../../constants/colors';
 import { DashboardHeader, DashboardStickyBar } from '../../../components/DashboardHeader';
 import { AlertCard } from '../../../components/AlertCard';
@@ -15,7 +15,7 @@ import { useUserFloodUpdates } from '../../../hooks/useUserFloodUpdates';
 import { getFloodStatus } from '../../../services/floodService';
 import { getRelativeTimeString } from '../../../utils/floodFormatting';
 import { FloodStatus } from '../../../types/flood';
-import { ActivityIndicator } from 'react-native';
+
 
 import { HomeArea } from '../../../types/location';
 import { Ionicons } from '@expo/vector-icons';
@@ -139,6 +139,49 @@ export default function DashboardScreen() {
                 onPress={() => router.push('/(user)/emergency' as any)} 
               />
             </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitleNoMargin}>Emergency Services</Text>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(user)/my-requests' as any)}>
+              <Text style={styles.viewAllText}>My Requests</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.servicesRow}>
+            <TouchableOpacity
+              style={styles.serviceButton}
+              activeOpacity={0.8}
+              onPress={() => router.push('/(user)/shelters' as any)}
+            >
+              <View style={styles.serviceIconWrap}>
+                <Ionicons name="home-outline" size={22} color={Colors.primary} />
+              </View>
+              <Text style={styles.serviceLabel}>Shelters</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.serviceButton}
+              activeOpacity={0.8}
+              onPress={() => router.push('/(user)/rescue-teams' as any)}
+            >
+              <View style={styles.serviceIconWrap}>
+                <Ionicons name="people-outline" size={22} color={Colors.primary} />
+              </View>
+              <Text style={styles.serviceLabel}>Rescue Teams</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.serviceButton}
+              activeOpacity={0.8}
+              onPress={() => router.push('/(user)/resources' as any)}
+            >
+              <View style={styles.serviceIconWrap}>
+                <Ionicons name="cube-outline" size={22} color={Colors.primary} />
+              </View>
+              <Text style={styles.serviceLabel}>Resources</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -277,6 +320,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 16, // Using gap for spacing
+  },
+  servicesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  serviceButton: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EEF3F1',
+  },
+  serviceIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E8F5F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  serviceLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textDark,
   },
   actionColumn: {
     flex: 1,
