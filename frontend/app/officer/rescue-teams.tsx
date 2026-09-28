@@ -118,7 +118,7 @@ export default function RescueTeamsPage() {
                   <View style={{ flexDirection: 'row', gap: 6 }}>
                     <Btn small label={t.status === 'Available' ? 'Assign' : 'View'} variant={t.status === 'Available' ? 'primary' : 'secondary'} onPress={() => setSel(t)} />
                     <Btn small variant="secondary" icon="create-outline" label="" onPress={() => openForm(t)} />
-                    <Btn small variant="danger" icon="trash-outline" label="" onPress={() => remove(t)} />
+                    <Btn small variant="danger" icon="trash-outline" label="" accessibilityLabel={`Delete ${t.name}`} onPress={() => remove(t)} />
                   </View>) },
               ]} />
           </Card>

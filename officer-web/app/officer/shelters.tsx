@@ -84,7 +84,7 @@ export default function SheltersPage() {
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       <Btn small variant="secondary" label="View" onPress={() => setSel(r)} />
                       <Btn small variant="secondary" icon="create-outline" label="" onPress={() => router.push({ pathname: '/officer/shelter-form', params: { id: r.id } } as any)} />
-                      <Btn small variant="danger" icon="trash-outline" label="" onPress={() => remove(r)} />
+                      <Btn small variant="danger" icon="trash-outline" label="" accessibilityLabel={`Delete ${r.name}`} onPress={() => remove(r)} />
                     </View>) },
                 ]} />
               <View style={s.pager}>

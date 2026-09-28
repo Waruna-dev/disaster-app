@@ -104,7 +104,7 @@ export default function ResourcesPage() {
               { key: 'st', title: 'Stock', flex: 0.8, render: (r) => { const p = r.totalQuantity ? r.availableQuantity / r.totalQuantity : 0; return <Badge text={p <= 0.2 ? 'Low' : 'Good'} tone={p <= 0.2 ? 'danger' : 'success'} />; } },
               { key: 'a', title: 'Actions', flex: 1.1, render: (r) => <View style={{ flexDirection: 'row', gap: 6 }}>
                 <Btn small variant="secondary" icon="send-outline" label="Distribute" onPress={() => { setDRes(r.name); setTab('record'); }} />
-                <Btn small variant="secondary" icon="create-outline" label="" onPress={() => openForm(r)} /><Btn small variant="danger" icon="trash-outline" label="" onPress={() => removeResource(r)} /></View> },
+                <Btn small variant="secondary" icon="create-outline" label="" accessibilityLabel={`Edit ${r.name}`} onPress={() => openForm(r)} /><Btn small variant="danger" icon="trash-outline" label="" accessibilityLabel={`Delete ${r.name}`} onPress={() => removeResource(r)} /></View> },
             ]} />
           </Card>
         </>

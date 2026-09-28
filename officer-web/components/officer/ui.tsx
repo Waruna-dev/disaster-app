@@ -121,9 +121,9 @@ export function Col({ flex = 1, children, style }: { flex?: number; children: Re
 }
 
 /* ───────────── buttons / badges ───────────── */
-export function Btn({ label, icon, onPress, variant = 'primary', disabled, loading, small, style }: {
+export function Btn({ label, icon, onPress, variant = 'primary', disabled, loading, small, accessibilityLabel, style }: {
   label: string; icon?: IconName; onPress?: () => void; variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'success';
-  disabled?: boolean; loading?: boolean; small?: boolean; style?: StyleProp<ViewStyle>;
+  disabled?: boolean; loading?: boolean; small?: boolean; accessibilityLabel?: string; style?: StyleProp<ViewStyle>;
 }) {
   const v = {
     primary: { bg: O.primary, fg: '#fff', bd: O.primary },
@@ -138,7 +138,8 @@ export function Btn({ label, icon, onPress, variant = 'primary', disabled, loadi
       activeOpacity={0.8}
       disabled={off}
       onPress={onPress}
-      style={[s.btn, small && s.btnSmall, { backgroundColor: v.bg, borderColor: v.bd, opacity: off ? 0.55 : 1 }, style]}
+      accessibilityLabel={accessibilityLabel || label}
+      style={[s.btn, small && s.btnSmall, !label && s.btnIconOnly, { backgroundColor: v.bg, borderColor: v.bd, opacity: off ? 0.55 : 1 }, style]}
     >
       {loading ? <ActivityIndicator size="small" color={v.fg} /> : icon ? <Ionicons name={icon} size={small ? 14 : 16} color={v.fg} /> : null}
       <Text style={[s.btnText, small && { fontSize: 12 }, { color: v.fg }]}>{label}</Text>
@@ -391,6 +392,7 @@ const s = StyleSheet.create({
   pageActions: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 18, height: 42, borderRadius: 10, borderWidth: 1 },
   btnSmall: { height: 32, paddingHorizontal: 12, borderRadius: 8 },
+  btnIconOnly: { width: 40, height: 40, paddingHorizontal: 0, borderRadius: 10 },
   btnText: { fontSize: 13, fontWeight: '700' },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start' },
   badgeText: { fontSize: 11, fontWeight: '800' },
