@@ -45,19 +45,21 @@ export default function AlertsScreen() {
 
   const mapItems: WarningMapItem[] = useMemo(
     () =>
-      visible.map((w) => ({
-        id: w.id,
-        title: w.title,
-        affectedArea: w.affectedArea,
-        hazardType: w.hazardType,
-        riskLevel: w.riskLevel,
-        status: getWarningStatus(w),
-        latitude: w.latitude,
-        longitude: w.longitude,
-        radius: w.radius,
-        polygon: w.polygon ?? null,
-      })),
-    [visible]
+      warnings
+        .filter((w) => getWarningStatus(w) === 'Active')
+        .map((w) => ({
+          id: w.id,
+          title: w.title,
+          affectedArea: w.affectedArea,
+          hazardType: w.hazardType,
+          riskLevel: w.riskLevel,
+          status: getWarningStatus(w),
+          latitude: w.latitude,
+          longitude: w.longitude,
+          radius: w.radius,
+          polygon: w.polygon ?? null,
+        })),
+    [warnings]
   );
 
   const handleEdit = (warning: Warning) => {
