@@ -535,6 +535,8 @@ export default function RiverUpdateDetailsScreen() {
         visible={pickerVisible}
         transparent
         animationType="slide"
+        statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={() => setPickerVisible(false)}
       >
         <View style={styles.modalOverlay}>

@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/images/Vector.png",
     "backgroundColor": "#097B6A",
-    "splash": {
-      "image": "./assets/images/Vector.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#097B6A"
-    },
     "scheme": "frontend",
     "userInterfaceStyle": "automatic",
     "ios": {

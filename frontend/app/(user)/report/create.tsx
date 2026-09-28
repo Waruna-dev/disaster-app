@@ -100,7 +100,7 @@ export default function CreateReportScreen() {
     }
 
     if (!user) {
-      Alert.alert('Error', t('reportCreate.errorLoggedIn'));
+      Alert.alert(t('common.error', 'Error'), t('reportCreate.errorLoggedIn'));
       return;
     }
 
@@ -176,7 +176,7 @@ export default function CreateReportScreen() {
           />
 
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Selected location <Text style={styles.asterisk}>*</Text></Text>
+            <Text style={styles.inputLabel}>{t('reportCreate.selectedLocationLabel', 'Selected location')} <Text style={styles.asterisk}>*</Text></Text>
             {isFetchingLocation ? (
               <View style={styles.loadingArea}>
                 <ActivityIndicator size="small" color={Colors.primary} />
@@ -189,7 +189,7 @@ export default function CreateReportScreen() {
                   <Text style={styles.readOnlyLocationText}>{affectedArea}</Text>
                 </View>
                 <TouchableOpacity onPress={() => router.back()}>
-                  <Text style={styles.changeLocationText}>Change</Text>
+                  <Text style={styles.changeLocationText}>{t('reportCreate.changeLabel', 'Change')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -213,7 +213,7 @@ export default function CreateReportScreen() {
           </View>
 
           <View style={[styles.inputWrapper, { marginBottom: 20 }]}>
-            <Text style={styles.inputLabel}>Contact number <Text style={styles.asterisk}>*</Text></Text>
+            <Text style={styles.inputLabel}>{t('reportCreate.contactNumberLabel', 'Contact number')} <Text style={styles.asterisk}>*</Text></Text>
             {!isEditingContact && contactNumber.trim() ? (
               <View style={styles.readOnlyLocationBox}>
                 <View style={styles.readOnlyLocationContent}>
@@ -221,7 +221,7 @@ export default function CreateReportScreen() {
                   <Text style={styles.readOnlyLocationText}>{contactNumber}</Text>
                 </View>
                 <TouchableOpacity onPress={() => setIsEditingContact(true)}>
-                  <Text style={styles.changeLocationText}>Change</Text>
+                  <Text style={styles.changeLocationText}>{t('reportCreate.changeLabel', 'Change')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -236,10 +236,11 @@ export default function CreateReportScreen() {
           </View>
 
           <View style={[styles.inputWrapper, { marginBottom: 20 }]}>
-            <Text style={styles.inputLabel}>What is affected? <Text style={styles.asterisk}>*</Text></Text>
+            <Text style={styles.inputLabel}>{t('reportCreate.whatIsAffected', 'What is affected?')} <Text style={styles.asterisk}>*</Text></Text>
             <View style={styles.chipsContainer}>
               {['Road', 'Home', 'Business', 'People', 'Other'].map((item) => {
                 const isSelected = affectedItems.includes(item);
+                const translationKey = `reportCreate.affected${item}` as keyof typeof t;
                 return (
                   <TouchableOpacity 
                     key={item}
@@ -247,7 +248,7 @@ export default function CreateReportScreen() {
                     onPress={() => toggleAffectedItem(item)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{item}</Text>
+                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{t(translationKey, item)}</Text>
                   </TouchableOpacity>
                 );
               })}

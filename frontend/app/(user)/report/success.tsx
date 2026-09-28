@@ -106,7 +106,7 @@ export default function SuccessScreen() {
               <View style={[styles.stepCircle, { borderColor: '#E69C24', backgroundColor: '#FFF9ED' }]}>
                 <View style={styles.stepDotOrange} />
               </View>
-              <Text style={[styles.stepTextActive, { color: '#E69C24' }]}>{t('reportSuccess.underReview')}</Text>
+              <Text style={[styles.stepTextActive, { color: '#E69C24' }]}>{t('reportSuccess.pending')}</Text>
             </View>
             
             {/* Line 2 */}
@@ -115,7 +115,7 @@ export default function SuccessScreen() {
             {/* Step 3 */}
             <View style={styles.step}>
               <View style={[styles.stepCircle, { borderColor: '#D1D5DB' }]} />
-              <Text style={styles.stepTextInactive}>{t('reportSuccess.decision')}</Text>
+              <Text style={styles.stepTextInactive}>{t('reportSuccess.approved')}</Text>
             </View>
           </View>
           

@@ -6,8 +6,10 @@ import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 import { useLocationHelper } from '../../hooks/useLocationHelper';
 import { AddEmergencyContactModal } from './AddEmergencyContactModal';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export const PersonalEmergencyContacts = () => {
+  const { t } = useTranslation();
   const { contacts, isLoadingContacts, addContact, deleteContact } = useEmergencyContacts();
   const { user } = useAuth();
   const { getCurrentLocationMapLink } = useLocationHelper();
@@ -16,12 +18,12 @@ export const PersonalEmergencyContacts = () => {
 
   const handleDeleteContact = (id: string, name: string) => {
     Alert.alert(
-      'Delete Contact',
-      `Are you sure you want to delete ${name} from your emergency contacts?`,
+      t('emergency.deleteContact', 'Delete Contact'),
+      t('emergency.deleteConfirmMsg', 'Are you sure you want to delete {{name}} from your emergency contacts?', { name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         { 
-          text: 'Delete', 
+          text: t('common.delete', 'Delete'), 
           style: 'destructive',
           onPress: () => deleteContact(id)
         }
@@ -61,8 +63,8 @@ export const PersonalEmergencyContacts = () => {
         const supported = await Linking.canOpenURL(smsUrl);
         if (!supported) {
           Alert.alert(
-            "Messaging unavailable",
-            "Your device could not open the messaging application."
+            t('emergency.messagingUnavailable', "Messaging unavailable"),
+            t('emergency.messagingUnavailableMsg', "Your device could not open the messaging application.")
           );
           return;
         }
@@ -76,7 +78,7 @@ export const PersonalEmergencyContacts = () => {
 
   const handleOpenAddModal = () => {
     if (contacts.length >= 5) {
-      Alert.alert('Limit Reached', 'You can only add up to 5 emergency contacts.');
+      Alert.alert(t('emergency.limitReached', 'Limit Reached'), t('emergency.limitReachedMsg', 'You can only add up to 5 emergency contacts.'));
       return;
     }
     setAddModalVisible(true);
@@ -95,9 +97,9 @@ export const PersonalEmergencyContacts = () => {
   return (
     <View>
       <View style={[styles.sectionHeaderRow, { marginTop: 8 }]}>
-        <Text style={styles.sectionTitle}>My emergency contacts</Text>
+        <Text style={styles.sectionTitle}>{t('emergency.myContacts', 'My emergency contacts')}</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleOpenAddModal}>
-          <Text style={styles.addButtonText}>+ Add</Text>
+          <Text style={styles.addButtonText}>+ {t('common.add', 'Add')}</Text>
         </TouchableOpacity>
       </View>
 

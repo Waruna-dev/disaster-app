@@ -10,20 +10,59 @@ import { useTranslation } from 'react-i18next';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useAuth } from '../../../context/AuthContext';
+import { getOptimizedAvatarUrl } from '../../../utils/cloudinaryUtils';
 import { useUserFloodUpdates } from '../../../hooks/useUserFloodUpdates';
 import { getFloodStatus } from '../../../services/floodService';
 import { getRelativeTimeString } from '../../../utils/floodFormatting';
 import { FloodStatus } from '../../../types/flood';
 import { ActivityIndicator } from 'react-native';
 
+import { HomeArea } from '../../../types/location';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+
 export default function DashboardScreen() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [firstName, setFirstName] = useState('User');
-  const [initial, setInitial] = useState('U');
-  const [isAdmin, setIsAdmin] = useState(false);
+  
+  const [currentLocationName, setCurrentLocationName] = useState<string>('Locating...');
+
+  const firstName = userProfile?.fullName ? userProfile.fullName.split(' ')[0] : 'User';
+  const initial = userProfile?.fullName ? userProfile.fullName.charAt(0).toUpperCase() : 'U';
+  const isAdmin = userProfile?.occupation === 'admin' || (userProfile as any)?.role === 'admin';
+  const homeArea = userProfile?.homeArea || null;
+  const avatarUrl = getOptimizedAvatarUrl(userProfile?.profileImage);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setCurrentLocationName('Unknown');
+          return;
+        }
+
+        let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest });
+        const geocode = await Location.reverseGeocodeAsync({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude
+        });
+        
+        if (geocode && geocode.length > 0) {
+          const place = geocode[0];
+          const name = place.district || place.city || place.subregion || 'Unknown Area';
+          setCurrentLocationName(name);
+        } else {
+          setCurrentLocationName('Unknown Area');
+        }
+      } catch (error) {
+        console.log('Error getting location in dashboard:', error);
+        setCurrentLocationName('Unknown');
+      }
+    })();
+  }, []);
 
   const { stations, latestByStation, loading, error, cached } = useUserFloodUpdates();
 
@@ -62,40 +101,10 @@ export default function DashboardScreen() {
     }, [])
   );
 
-  useEffect(() => {
-    let unsubscribe: () => void;
-    if (user?.uid) {
-      unsubscribe = onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.fullName) {
-            const first = data.fullName.split(' ')[0];
-            setFirstName(first);
-            setInitial(first.charAt(0).toUpperCase());
-          }
-          if (data.role === 'admin') {
-            setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
-          }
-        }
-      }, (error) => {
-        console.error("Error fetching user data:", error);
-      });
-    }
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [user]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      // scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, [])
-  );
+  // Firestore listener is now handled in AuthContext, no need to duplicate here
   return (
     <View style={styles.container}>
-      <DashboardStickyBar scrollY={scrollY} initial={initial} />
+      <DashboardStickyBar scrollY={scrollY} initial={initial} imageUrl={avatarUrl} />
       <Animated.ScrollView 
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
@@ -103,8 +112,8 @@ export default function DashboardScreen() {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
       >
-        <DashboardHeader scrollY={scrollY} firstName={firstName} />
-        
+        <DashboardHeader scrollY={scrollY} firstName={firstName} homeArea={homeArea} currentLocationName={currentLocationName} />
+
         <View style={styles.alertWrapper}>
           <AlertCard />
         </View>
