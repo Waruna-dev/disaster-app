@@ -10,8 +10,10 @@ import {
   where,
   orderBy,
   serverTimestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { ShelterRequest, ShelterRequestStatus } from '../types/shelter';
+import { deriveShelterStatus } from './shelterService';
 
 const COLLECTION = 'shelterRequests';
 
@@ -68,12 +70,38 @@ export const assignShelterToRequest = async (
   shelterName: string,
   officerNotes?: string
 ): Promise<void> => {
-  await updateDoc(doc(db, COLLECTION, requestId), {
-    status: 'Assigned' as ShelterRequestStatus,
-    shelterId,
-    shelterName,
-    officerNotes: officerNotes ?? null,
-    updatedAt: serverTimestamp(),
+  await runTransaction(db, async (transaction) => {
+    const requestRef = doc(db, COLLECTION, requestId);
+    const shelterRef = doc(db, 'shelters', shelterId);
+    const requestSnap = await transaction.get(requestRef);
+    const shelterSnap = await transaction.get(shelterRef);
+
+    if (!requestSnap.exists()) throw new Error('Shelter request no longer exists.');
+    if (!shelterSnap.exists()) throw new Error('Selected shelter no longer exists.');
+
+    const request = requestSnap.data() as ShelterRequest;
+    const shelter = shelterSnap.data();
+    const peopleCount = Math.max(0, Number(request.peopleCount) || 0);
+    const capacity = Number(shelter.capacity) || 0;
+    const currentOccupancy = Number(shelter.currentOccupancy) || 0;
+
+    if (request.status !== 'Pending') throw new Error('This request has already been processed.');
+    if (shelter.status === 'Closed' || currentOccupancy + peopleCount > capacity) {
+      throw new Error('This shelter does not have enough available capacity.');
+    }
+
+    transaction.update(shelterRef, {
+      currentOccupancy: currentOccupancy + peopleCount,
+      status: deriveShelterStatus(capacity, currentOccupancy + peopleCount),
+      updatedAt: serverTimestamp(),
+    });
+    transaction.update(requestRef, {
+      status: 'Assigned' as ShelterRequestStatus,
+      shelterId,
+      shelterName,
+      officerNotes: officerNotes ?? null,
+      updatedAt: serverTimestamp(),
+    });
   });
 };
 
