@@ -17,6 +17,8 @@ interface DMCHeaderProps {
   onMenuPress?: () => void;
   onRightPress?: () => void;
   badgeCount?: number;
+  /** Overrides the right button's default bell/overflow icon with a screen-specific action icon. */
+  rightIcon?: keyof typeof Ionicons.glyphMap;
   /** Shrinks the curve/title to free up vertical space for content-heavy screens (e.g. a map). */
   compact?: boolean;
   /**
@@ -89,7 +91,7 @@ export function DMCHeaderBackground({ compact, height }: DMCHeaderBackgroundProp
 
 // Same curved-gradient background as the resident DashboardHeader (components/DashboardHeader.tsx),
 // just shorter and with DMC-admin-specific content, so both apps share one visual language.
-export function DMCHeader({ eyebrow, title, onBack, onMenuPress, onRightPress, badgeCount, compact, hideIcons }: DMCHeaderProps) {
+export function DMCHeader({ eyebrow, title, onBack, onMenuPress, onRightPress, badgeCount, rightIcon, compact, hideIcons }: DMCHeaderProps) {
   const insets = useSafeAreaInsets();
   // Long titles (e.g. a full street address) wrap to a second line, which can push
   // past the fixed-height curve into its lighter, low-contrast lower edge. Growing
@@ -123,8 +125,8 @@ export function DMCHeader({ eyebrow, title, onBack, onMenuPress, onRightPress, b
                 <Ionicons name={onBack ? 'chevron-back' : 'menu'} size={20} color={Colors.white} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton} activeOpacity={0.7} onPress={onRightPress}>
-                <Ionicons name={showBell ? 'notifications-outline' : 'ellipsis-vertical'} size={18} color={Colors.white} />
-                {showBell && !!badgeCount && badgeCount > 0 && (
+                <Ionicons name={rightIcon ?? (showBell ? 'notifications-outline' : 'ellipsis-vertical')} size={18} color={Colors.white} />
+                {!rightIcon && showBell && !!badgeCount && badgeCount > 0 && (
                   <View style={styles.badge}>
                     <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
                   </View>

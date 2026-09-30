@@ -36,6 +36,30 @@ function formatRelative(timestamp: Timestamp | null | undefined) {
   return `${days} d ago`;
 }
 
+// Each shortcut gets its own color by meaning so an officer can tell them apart at a
+// glance: amber = needs attention, blue = records, cyan = flood data, purple = zones,
+// red = public alerts, orange = alerts on the map.
+const QUICK_NAV: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  tint: string;
+  href: string | { pathname: string; params: Record<string, string> };
+}[] = [
+  { label: 'Pending Reports', icon: 'document-text-outline', color: '#D68910', tint: '#FEF5E7', href: '/(DMC)/incidents' },
+  { label: 'All Reports', icon: 'albums-outline', color: '#2E75D6', tint: '#E8F1FB', href: '/(DMC)/reports' },
+  { label: 'Flood Warning', icon: 'water-outline', color: '#0891B2', tint: '#E0F4F8', href: '/(DMC)/flood-warning' },
+  { label: 'Flood Zones', icon: 'map-outline', color: '#7C5CBF', tint: '#F1ECFA', href: '/(DMC)/flood-incidents' },
+  { label: 'Public Warnings', icon: 'megaphone-outline', color: Colors.danger, tint: '#FDEDEC', href: '/(DMC)/alerts' },
+  {
+    label: 'Warnings Map',
+    icon: 'location-outline',
+    color: '#E65100',
+    tint: '#FFF0E5',
+    href: { pathname: '/(DMC)/alerts', params: { openMap: '1' } },
+  },
+];
+
 export default function DmcDashboardScreen() {
   const { stats, loading: statsLoading } = useReportStats();
   const { days } = useWeeklyTrend();
@@ -197,46 +221,19 @@ export default function DmcDashboardScreen() {
         </View>
 
         <View style={styles.quickNavGrid}>
-          <TouchableOpacity style={styles.quickNavTile} activeOpacity={0.8} onPress={() => router.push('/(DMC)/incidents' as any)}>
-            <Ionicons name="document-text-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Pending Reports</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickNavTile} activeOpacity={0.8} onPress={() => router.push('/(DMC)/reports' as any)}>
-            <Ionicons name="albums-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>All Reports</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickNavTile}
-            activeOpacity={0.8}
-            onPress={() => router.push('/(DMC)/flood-warning' as any)}
-          >
-            <Ionicons name="water-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Flood Warning</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickNavTile}
-            activeOpacity={0.8}
-            onPress={() => router.push('/(DMC)/flood-incidents' as any)}
-          >
-            <Ionicons name="map-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Flood Zones</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickNavTile}
-            activeOpacity={0.8}
-            onPress={() => router.push('/(DMC)/alerts' as any)}
-          >
-            <Ionicons name="megaphone-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Public Warnings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickNavTile}
-            activeOpacity={0.8}
-            onPress={() => router.push({ pathname: '/(DMC)/alerts', params: { openMap: '1' } } as any)}
-          >
-            <Ionicons name="map-outline" size={22} color={Colors.primary} />
-            <Text style={styles.quickNavLabel}>Warnings Map</Text>
-          </TouchableOpacity>
+          {QUICK_NAV.map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={[styles.quickNavTile, { borderColor: item.tint }]}
+              activeOpacity={0.8}
+              onPress={() => router.push(item.href as any)}
+            >
+              <View style={[styles.quickNavIconWrap, { backgroundColor: item.tint }]}>
+                <Ionicons name={item.icon} size={22} color={item.color} />
+              </View>
+              <Text style={styles.quickNavLabel}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </Animated.ScrollView>
 
@@ -371,6 +368,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F0F5F4',
   },
+  quickNavIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   quickNavLabel: {
     fontSize: 13,
     fontWeight: '700',
@@ -385,7 +389,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.danger,
     borderRadius: 14,
     paddingVertical: 15,
-    marginTop: 16,
+    // The card above already adds a 16px bottom margin; this one keeps the same
+    // gap below so the button doesn't sit flush against the Weekly Trend card.
+    marginBottom: 16,
   },
   createWarningText: {
     fontSize: 14,

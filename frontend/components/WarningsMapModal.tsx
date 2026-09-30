@@ -19,6 +19,8 @@ interface WarningsMapModalProps {
   warnings: WarningMapItem[];
   onClose: () => void;
   onEditWarning: (id: string) => void;
+  /** Header list button: leave the map and show the active warnings list. */
+  onViewList: () => void;
 }
 
 /**
@@ -28,7 +30,7 @@ interface WarningsMapModalProps {
  * glance instead of scrolling cards one at a time. Tapping a zone's popup jumps
  * straight into editing that warning (app/(DMC)/create-alert.tsx's edit mode).
  */
-export function WarningsMapModal({ visible, warnings, onClose, onEditWarning }: WarningsMapModalProps) {
+export function WarningsMapModal({ visible, warnings, onClose, onEditWarning, onViewList }: WarningsMapModalProps) {
   const insets = useSafeAreaInsets();
 
   const mapHtml = useMemo(() => buildWarningsMapHtml(warnings), [warnings]);
@@ -57,7 +59,9 @@ export function WarningsMapModal({ visible, warnings, onClose, onEditWarning }: 
             <Text style={styles.headerTitle}>All Warnings</Text>
             <Text style={styles.headerSubtitle}>{warnings.length} zone{warnings.length === 1 ? '' : 's'} on map</Text>
           </View>
-          <View style={styles.headerButton} />
+          <TouchableOpacity style={styles.headerButton} activeOpacity={0.7} onPress={onViewList}>
+            <Ionicons name="list" size={20} color={Colors.primary} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.mapWrap}>
@@ -97,36 +101,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.white,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3F2',
-  },
-  headerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F3F9F7',
-  },
-  headerTitleWrap: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textDark,
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginTop: 1,
   },
   mapWrap: {
     flex: 1,
@@ -170,6 +144,36 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: Colors.textMedium,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF3F2',
+  },
+  headerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F9F7',
+  },
+  headerTitleWrap: {
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 1,
   },
   footer: {
     borderTopWidth: 1,
