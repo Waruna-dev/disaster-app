@@ -1,0 +1,523 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for db.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="prettify.css" />
+    <link rel="stylesheet" href="base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="index.html">All files</a> db.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">26.66% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>24/90</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">15.25% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>9/59</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">4.16% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>1/24</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">34.92% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>22/63</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {
+  addDoc, collection, deleteDoc, doc, runTransaction, serverTimestamp, Timestamp, updateDoc,
+} from 'firebase/firestore';
+import { db } from './firebase';
+import type { ActivityStatus, RescueRequestStatus, RescueTeamStatus, RescueTeamType, RiskLevel, ShelterStatus } from './types';
+&nbsp;
+/* ───────── activity log (powers dashboard + "Information Updated") ───────── */
+export async function <span class="fstat-no" title="function not covered" >logActivity(a</span>: { type: 'shelter' | 'rescue' | 'resource' | 'alert' | 'notification'; title: string; detail: string; location?: string | null; status: ActivityStatus; createdBy?: string | null }) {
+<span class="cstat-no" title="statement not covered" >  try { <span class="cstat-no" title="statement not covered" >await addDoc(collection(db, 'activities'), { ...a, location: a.location ?? null, createdBy: a.createdBy ?? null, createdAt: serverTimestamp() }); }</span></span>
+  catch (e) { <span class="cstat-no" title="statement not covered" >console.warn('logActivity failed', e); }</span>
+}
+&nbsp;
+/* ───────── shelters ───────── */
+export const deriveShelterStatus = (capacity: number, occupancy: number, closed = false): ShelterStatus =&gt; {
+  if (closed) return 'Closed';
+  if (capacity &lt;= 0) return 'Full';
+  const r = occupancy / capacity;
+  return r &gt;= 1 ? 'Full' : r &gt;= 0.85 ? 'Limited' : 'Available';
+};
+export interface ShelterInput {
+  name: string; district: string; location: string; latitude: number; longitude: number; capacity: number; currentOccupancy: number;
+  facilities: string[]; status: ShelterStatus; notes?: string | null;
+}
+export const createShelter = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>: ShelterInput) =&gt; addDoc(collection(db, 'shelters'), { ...i, notes: i.notes ?? null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });</span>
+export const updateShelter = <span class="fstat-no" title="function not covered" >(i</span>d: string, <span class="cstat-no" title="statement not covered" >i: Partial&lt;ShelterInput&gt;) =&gt; updateDoc(doc(db, 'shelters', id), { ...i, updatedAt: serverTimestamp() });</span>
+export const deleteShelter = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>d: string) =&gt; deleteDoc(doc(db, 'shelters', id));</span>
+&nbsp;
+export async function <span class="fstat-no" title="function not covered" >assignShelter(r</span>equestId: string, shelterId: string, shelterName: string, peopleCount: number, notes?: string) {
+<span class="cstat-no" title="statement not covered" >  if (!Number.isInteger(peopleCount) || peopleCount &lt; 1) <span class="cstat-no" title="statement not covered" >throw new Error('The request must include at least one person.');</span></span>
+  const <span class="cstat-no" title="statement not covered" >requestRef = doc(db, 'shelterRequests', requestId);</span>
+  const <span class="cstat-no" title="statement not covered" >shelterRef = doc(db, 'shelters', shelterId);</span>
+<span class="cstat-no" title="statement not covered" >  await runTransaction(db, <span class="fstat-no" title="function not covered" >async (t</span>x) =&gt; {</span>
+    const [requestSnap, shelterSnap] = <span class="cstat-no" title="statement not covered" >await Promise.all([tx.get(requestRef), tx.get(shelterRef)]);</span>
+<span class="cstat-no" title="statement not covered" >    if (!requestSnap.exists()) <span class="cstat-no" title="statement not covered" >throw new Error('Shelter request no longer exists.');</span></span>
+<span class="cstat-no" title="statement not covered" >    if (!shelterSnap.exists()) <span class="cstat-no" title="statement not covered" >throw new Error('Shelter no longer exists.');</span></span>
+    const request = <span class="cstat-no" title="statement not covered" >requestSnap.data() as { status?: string; peopleCount?: number };</span>
+    const shelter = <span class="cstat-no" title="statement not covered" >shelterSnap.data() as { capacity?: number; currentOccupancy?: number; status?: ShelterStatus };</span>
+<span class="cstat-no" title="statement not covered" >    if (request.status !== 'Pending') <span class="cstat-no" title="statement not covered" >throw new Error('This shelter request has already been processed.');</span></span>
+    const capacity = <span class="cstat-no" title="statement not covered" >Number(shelter.capacity ?? 0);</span>
+    const occupancy = <span class="cstat-no" title="statement not covered" >Number(shelter.currentOccupancy ?? 0);</span>
+    const nextOccupancy = <span class="cstat-no" title="statement not covered" >occupancy + peopleCount;</span>
+<span class="cstat-no" title="statement not covered" >    if (shelter.status === 'Closed' || nextOccupancy &gt; capacity) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error(`Only ${Math.max(0, capacity - occupancy)} spaces are available in this shelter.`);</span>
+    }
+<span class="cstat-no" title="statement not covered" >    tx.update(shelterRef, {</span>
+      currentOccupancy: nextOccupancy,
+      status: deriveShelterStatus(capacity, nextOccupancy),
+      updatedAt: serverTimestamp(),
+    });
+<span class="cstat-no" title="statement not covered" >    tx.update(requestRef, { status: 'Assigned', shelterId, shelterName, officerNotes: notes ?? null, updatedAt: serverTimestamp() });</span>
+  });
+}
+export const setShelterRequestStatus = <span class="fstat-no" title="function not covered" >(i</span>d: string, status: 'Rejected' | 'Completed', <span class="cstat-no" title="statement not covered" >notes?: string) =&gt;</span>
+  updateDoc(doc(db, 'shelterRequests', id), { status, ...(notes !== undefined ? { officerNotes: notes } : {}), updatedAt: serverTimestamp() });
+&nbsp;
+/* ───────── rescue teams / requests / assignments ───────── */
+export interface TeamInput {
+  name: string; type: RescueTeamType; district: string; members: number; equipment?: string | null; status: RescueTeamStatus;
+  latitude: number; longitude: number; currentLocationLabel?: string | null;
+}
+export const createTeam = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>: TeamInput) =&gt; addDoc(collection(db, 'rescueTeams'), { ...i, equipment: i.equipment ?? null, currentLocationLabel: i.currentLocationLabel ?? null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });</span>
+export const updateTeam = <span class="fstat-no" title="function not covered" >(i</span>d: string, <span class="cstat-no" title="statement not covered" >i: Partial&lt;TeamInput&gt;) =&gt; updateDoc(doc(db, 'rescueTeams', id), { ...i, updatedAt: serverTimestamp() });</span>
+export const deleteTeam = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>d: string) =&gt; deleteDoc(doc(db, 'rescueTeams', id));</span>
+&nbsp;
+export const assignTeamToRequest = <span class="fstat-no" title="function not covered" >(i</span>d: string, teamId: string, teamName: string, <span class="cstat-no" title="statement not covered" >notes?: string) =&gt;</span>
+  updateDoc(doc(db, 'rescueRequests', id), { status: 'Assigned', teamId, teamName, officerNotes: notes ?? null, updatedAt: serverTimestamp() });
+export const setRescueRequestStatus = <span class="fstat-no" title="function not covered" >(i</span>d: string, status: RescueRequestStatus, <span class="cstat-no" title="statement not covered" >notes?: string) =&gt;</span>
+  updateDoc(doc(db, 'rescueRequests', id), { status, ...(notes !== undefined ? { officerNotes: notes } : {}), updatedAt: serverTimestamp() });
+&nbsp;
+export const createAssignment = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >a</span>: { teamId: string; teamName: string; area: string; notes?: string; createdBy?: string }) =&gt;</span>
+  addDoc(collection(db, 'rescueAssignments'), { ...a, notes: a.notes ?? null, createdBy: a.createdBy ?? null, status: 'In Progress', createdAt: serverTimestamp() });
+export const completeAssignment = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>d: string) =&gt; updateDoc(doc(db, 'rescueAssignments', id), { status: 'Completed' });</span>
+&nbsp;
+/* ───────── resources ───────── */
+export interface ResourceInput { name: string; category: string; unit: string; totalQuantity: number; availableQuantity: number }
+export const createResource = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>: ResourceInput) =&gt; addDoc(collection(db, 'resources'), { ...i, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });</span>
+export const updateResource = <span class="fstat-no" title="function not covered" >(i</span>d: string, <span class="cstat-no" title="statement not covered" >i: Partial&lt;ResourceInput&gt;) =&gt; updateDoc(doc(db, 'resources', id), { ...i, updatedAt: serverTimestamp() });</span>
+export const deleteResource = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>d: string) =&gt; deleteDoc(doc(db, 'resources', id));</span>
+&nbsp;
+/** Records a distribution and deducts stock in ONE transaction so concurrent officers can't over-distribute. */
+export async function <span class="fstat-no" title="function not covered" >recordDistribution(i</span>: { resourceId: string; quantity: number; district: string; distributionDate: string; notes?: string; recordedBy?: string }) {
+  const <span class="cstat-no" title="statement not covered" >resRef = doc(db, 'resources', i.resourceId);</span>
+  const <span class="cstat-no" title="statement not covered" >distRef = doc(collection(db, 'resourceDistributions'));</span>
+<span class="cstat-no" title="statement not covered" >  await runTransaction(db, <span class="fstat-no" title="function not covered" >async (t</span>x) =&gt; {</span>
+    const snap = <span class="cstat-no" title="statement not covered" >await tx.get(resRef);</span>
+<span class="cstat-no" title="statement not covered" >    if (!snap.exists()) <span class="cstat-no" title="statement not covered" >throw new Error('Resource no longer exists.');</span></span>
+    const r = <span class="cstat-no" title="statement not covered" >snap.data() as { name: string; category: string; unit: string; availableQuantity: number };</span>
+<span class="cstat-no" title="statement not covered" >    if (i.quantity &gt; r.availableQuantity) <span class="cstat-no" title="statement not covered" >throw new Error(`Only ${r.availableQuantity} ${r.unit} available.`);</span></span>
+<span class="cstat-no" title="statement not covered" >    tx.update(resRef, { availableQuantity: r.availableQuantity - i.quantity, updatedAt: serverTimestamp() });</span>
+<span class="cstat-no" title="statement not covered" >    tx.set(distRef, {</span>
+      resourceId: i.resourceId, resourceName: r.name, category: r.category, unit: r.unit, quantity: i.quantity, district: i.district,
+      distributionDate: i.distributionDate, notes: i.notes ?? null, recordedBy: i.recordedBy ?? null, createdAt: serverTimestamp(),
+    });
+  });
+}
+&nbsp;
+/* ───────── hazard warnings (same document shape the mobile app reads) ───────── */
+export interface WarningInput {
+  title: string; hazardType: string; riskLevel: RiskLevel; affectedArea: string; latitude: number; longitude: number; radius: number;
+  message: string; expiresAt: Date; createdBy: string; createdByName?: string | null;
+}
+export const createWarning = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >w</span>: WarningInput) =&gt;</span>
+  addDoc(collection(db, 'warnings'), {
+    title: w.title, hazardType: w.hazardType, riskLevel: w.riskLevel, affectedArea: w.affectedArea, latitude: w.latitude, longitude: w.longitude,
+    radius: w.radius, polygon: null, message: w.message, status: 'Active', createdBy: w.createdBy, createdByName: w.createdByName ?? null,
+    sourceReportId: null, createdAt: serverTimestamp(), expiresAt: Timestamp.fromDate(w.expiresAt),
+  });
+export const cancelWarning = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>d: string) =&gt; updateDoc(doc(db, 'warnings', id), { status: 'Cancelled' });</span>
+export const deleteWarning = <span class="fstat-no" title="function not covered" >(<span class="cstat-no" title="statement not covered" >i</span>d: string) =&gt; deleteDoc(doc(db, 'warnings', id));</span>
+&nbsp;
+/* ───────── demo data (Settings → Load Demo Data) ───────── */
+export async function <span class="fstat-no" title="function not covered" >seedDemoData(u</span>id: string): Promise&lt;number&gt; {
+  const S: [string, string, string, number, number, number, number, string[]][] = <span class="cstat-no" title="statement not covered" >[</span>
+    ['Kandy Central School', 'Kandy', 'Kandy, Central Province', 7.2906, 80.6337, 500, 350, ['Classrooms', 'Clean Water', 'Toilets']],
+    ['Gampaha Sports Complex', 'Gampaha', 'Gampaha Town', 7.0873, 79.9925, 300, 300, ['Clean Water', 'Toilets', 'Electricity']],
+    ['Matale University Hall', 'Matale', 'Matale Town', 7.4675, 80.6234, 200, 120, ['Classrooms', 'Kitchen', 'Medical Support']],
+    ['Nuwara Eliya Stadium', 'Nuwara Eliya', 'Nuwara Eliya Town', 6.9497, 80.7891, 400, 250, ['Clean Water', 'Toilets', 'Accessibility (Disabled Friendly)']],
+    ['Colombo District Hall', 'Colombo', 'Colombo 07', 6.9271, 79.8612, 600, 100, ['Classrooms', 'Clean Water', 'Electricity', 'Medical Support']],
+    ['Kalutara Community Center', 'Kalutara', 'Kalutara South', 6.5854, 79.9607, 250, 230, ['Kitchen', 'Toilets']],
+  ];
+<span class="cstat-no" title="statement not covered" >  for (const [name, district, location, latitude, longitude, capacity, occ, facilities] of S)</span>
+<span class="cstat-no" title="statement not covered" >    await createShelter({ name, district, location, latitude, longitude, capacity, currentOccupancy: occ, facilities, status: deriveShelterStatus(capacity, occ) });</span>
+  const T: [string, RescueTeamType, string, number, string, RescueTeamStatus, number, number][] = <span class="cstat-no" title="statement not covered" >[</span>
+    ['Kandy Rescue Team', 'Search &amp; Rescue', 'Kandy', 12, '2 Vehicles, Medical Kit, Rescue Tools', 'Available', 7.2906, 80.6337],
+    ['Gampaha Medical Team', 'Medical Support', 'Gampaha', 8, 'Ambulance, Medical Supplies', 'On Mission', 7.0873, 79.9925],
+    ['Matale Relief Team', 'Relief Distribution', 'Matale', 10, '2 Trucks', 'Available', 7.4675, 80.6234],
+    ['Colombo Support Team', 'Logistics', 'Colombo', 15, '4 Trucks, Generators', 'Unavailable', 6.9271, 79.8612],
+    ['Nuwara Eliya SAR', 'Search &amp; Rescue', 'Nuwara Eliya', 9, '1 Vehicle, Rope Rescue Kit', 'Available', 6.9497, 80.7891],
+  ];
+<span class="cstat-no" title="statement not covered" >  for (const [name, type, district, members, equipment, status, latitude, longitude] of T)</span>
+<span class="cstat-no" title="statement not covered" >    await createTeam({ name, type, district, members, equipment, status, latitude, longitude, currentLocationLabel: district });</span>
+  const R: [string, string, string, number, number][] = <span class="cstat-no" title="statement not covered" >[</span>
+    ['Drinking Water', 'Food &amp; Water', 'Bottles', 5000, 2500], ['Food Packs', 'Food &amp; Water', 'Packs', 3000, 1250],
+    ['Tents', 'Shelter Supplies', 'Tents', 500, 300], ['Medical Kits', 'Medical', 'Kits', 800, 150], ['Blankets', 'Clothing', 'Pieces', 1500, 900],
+  ];
+<span class="cstat-no" title="statement not covered" >  for (const [name, category, unit, totalQuantity, availableQuantity] of R) <span class="cstat-no" title="statement not covered" >await createResource({ name, category, unit, totalQuantity, availableQuantity });</span></span>
+  const W: [string, string, RiskLevel, string, number, number, number, string][] = <span class="cstat-no" title="statement not covered" >[</span>
+    ['Flood Warning', 'flood', 'HIGH', 'Kandy, Matale', 7.35, 80.63, 3000, 'Rising river levels. Move to higher ground and avoid low-lying roads.'],
+    ['Landslide Warning', 'landslide', 'MEDIUM', 'Nuwara Eliya', 6.95, 80.79, 2000, 'Heavy rain may trigger landslides on slopes. Stay alert.'],
+    ['Strong Wind Advisory', 'flood', 'LOW', 'Gampaha', 7.09, 79.99, 1000, 'Strong winds expected. Secure loose objects.'],
+  ];
+<span class="cstat-no" title="statement not covered" >  for (const [title, hazardType, riskLevel, affectedArea, latitude, longitude, radius, message] of W)</span>
+<span class="cstat-no" title="statement not covered" >    await createWarning({ title, hazardType, riskLevel, affectedArea, latitude, longitude, radius, message, expiresAt: new Date(Date.now() + 48 * 3600e3), createdBy: uid });</span>
+<span class="cstat-no" title="statement not covered" >  await logActivity({ type: 'notification', title: 'Demo data loaded', detail: 'Sample shelters, teams, resources and alerts', status: 'Info', createdBy: uid });</span>
+<span class="cstat-no" title="statement not covered" >  return S.length + T.length + R.length + W.length;</span>
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-10-11T13:13:30.883Z
+            </div>
+        <script src="prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="sorter.js"></script>
+        <script src="block-navigation.js"></script>
+    </body>
+</html>
+    
