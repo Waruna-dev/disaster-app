@@ -64,6 +64,7 @@ export default function GroupDetailsScreen() {
           id: w.id,
           title: w.title,
           affectedArea: w.affectedArea,
+          hazardType: w.hazardType,
           riskLevel: w.riskLevel,
           status: getWarningStatus(w),
           centroid: { latitude: w.latitude, longitude: w.longitude },

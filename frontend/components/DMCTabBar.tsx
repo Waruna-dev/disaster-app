@@ -1,27 +1,25 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
 
-type DMCTab = 'home' | 'incidents' | 'map' | 'analytics' | 'reports';
+type DMCTab = 'home' | 'incidents' | 'map' | 'warnings' | 'reports';
 
 interface TabConfig {
   key: DMCTab;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   activeIcon: keyof typeof Ionicons.glyphMap;
-  route?: string;
+  route: string;
 }
 
-// Analytics has no screen yet (out of scope here) — tapping it says so instead of
-// navigating to a dead or fake route.
 const TABS: TabConfig[] = [
   { key: 'home', label: 'Home', icon: 'home-outline', activeIcon: 'home', route: '/(DMC)/dashboard' },
   { key: 'incidents', label: 'Incidents', icon: 'document-text-outline', activeIcon: 'document-text', route: '/(DMC)/report-groups' },
   { key: 'map', label: 'Map', icon: 'location-outline', activeIcon: 'location', route: '/(DMC)/map' },
-  { key: 'analytics', label: 'Analytics', icon: 'bar-chart-outline', activeIcon: 'bar-chart' },
+  { key: 'warnings', label: 'Warnings', icon: 'megaphone-outline', activeIcon: 'megaphone', route: '/(DMC)/alerts' },
   { key: 'reports', label: 'All Reports', icon: 'albums-outline', activeIcon: 'albums', route: '/(DMC)/reports' },
 ];
 
@@ -33,11 +31,7 @@ export function DMCTabBar({ active }: { active?: DMCTab }) {
   const insets = useSafeAreaInsets();
 
   const handlePress = (tab: TabConfig) => {
-    if (tab.route) {
-      router.push(tab.route as any);
-    } else {
-      Alert.alert('Coming soon', `${tab.label} isn't built yet.`);
-    }
+    router.push(tab.route as any);
   };
 
   return (
