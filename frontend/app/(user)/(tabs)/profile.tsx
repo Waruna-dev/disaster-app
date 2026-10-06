@@ -68,8 +68,8 @@ export default function ProfileScreen() {
   });
 
   const headerTranslateY = scrollY.interpolate({
-    inputRange: [-100, 0, 200],
-    outputRange: [0, 0, -50],
+    inputRange: [-100, 0, 500],
+    outputRange: [0, 0, -500],
     extrapolate: 'clamp',
   });
 
@@ -129,7 +129,7 @@ export default function ProfileScreen() {
       <Animated.ScrollView 
         ref={scrollRef}
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 120 }]} 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight - 70 }]} 
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
       >

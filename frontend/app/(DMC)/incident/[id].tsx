@@ -176,7 +176,7 @@ export default function AdminReportDetailsScreen() {
           </View>
           <View style={styles.row}>
             <Ionicons name="list-outline" size={16} color={Colors.textMuted} />
-            <Text style={styles.rowText}>{report.affectedItems?.length > 0 ? report.affectedItems.join(', ') : 'None specified'}</Text>
+            <Text style={styles.rowText}>{(report.affectedItems?.length ?? 0) > 0 ? report.affectedItems!.join(', ') : 'None specified'}</Text>
           </View>
           <View style={styles.row}>
             <Ionicons name="time-outline" size={16} color={Colors.textMuted} />

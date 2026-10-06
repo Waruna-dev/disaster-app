@@ -8,6 +8,7 @@ import {
   deleteUser
 } from 'firebase/auth';
 import { saveUserProfile } from './userService';
+import { serverTimestamp } from 'firebase/firestore';
 
 export const registerUser = async (email: string, password: string, fullName: string, contactNumber: string) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -17,7 +18,7 @@ export const registerUser = async (email: string, password: string, fullName: st
     email,
     contactNumber,
     role: 'user', 
-    createdAt: new Date().toISOString()
+    createdAt: serverTimestamp()
   });
   return userCredential;
 };
