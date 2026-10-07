@@ -42,6 +42,8 @@ export interface ShelterRequest {
   contactNumber?: string | null;
   shelterId?: string | null; // set once assigned by a district officer
   shelterName?: string | null;
+  preferredShelterId?: string | null;
+  preferredShelterName?: string | null;
   latitude: number;
   longitude: number;
   address: string;

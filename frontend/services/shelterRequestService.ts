@@ -56,6 +56,8 @@ export interface ShelterRequestInput {
   peopleCount: number;
   description: string;
   district?: string;
+  preferredShelterId?: string;
+  preferredShelterName?: string;
 }
 
 export const createShelterRequest = async (input: ShelterRequestInput): Promise<string> => {
@@ -66,6 +68,8 @@ export const createShelterRequest = async (input: ShelterRequestInput): Promise<
     district: input.district ?? null,
     shelterId: null,
     shelterName: null,
+    preferredShelterId: input.preferredShelterId ?? null,
+    preferredShelterName: input.preferredShelterName ?? null,
     officerNotes: null,
     status: 'Pending' as ShelterRequestStatus,
     createdAt: serverTimestamp(),
