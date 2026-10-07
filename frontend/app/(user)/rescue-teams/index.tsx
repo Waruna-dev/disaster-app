@@ -66,8 +66,12 @@ export default function RescueTeamsScreen() {
           <Ionicons name="chevron-back" size={24} color={Colors.textDark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Rescue Teams</Text>
-        <TouchableOpacity onPress={() => router.push('/(user)/rescue-teams/my-requests' as any)} style={styles.backBtn}>
-          <Ionicons name="document-text-outline" size={22} color={Colors.textDark} />
+        <TouchableOpacity
+          onPress={() => router.push('/(user)/rescue-teams/my-requests' as any)}
+          style={styles.requestsBtn}
+          accessibilityLabel="View my rescue requests"
+        >
+          <Ionicons name="clipboard-outline" size={27} color={Colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -135,6 +139,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingBottom: 8 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  requestsBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E8F5F2' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark },
   toggleRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8, marginBottom: 10 },
   toggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.inputBorder },
