@@ -11,6 +11,7 @@ import { WebMap, searchLocation } from '../../components/officer/WebMap';
 import { O } from '../../components/officer/theme';
 
 const today = () => new Date().toISOString().slice(0, 10);
+const RESOURCE_UNITS = ['Pieces', 'Bottles', 'Litres', 'Packs', 'Boxes', 'Kits', 'Cans', 'Bags', 'kg', 'Metres', 'Rolls', 'Tents', 'Blankets', 'Mats', 'Sheets', 'Pairs', 'Tubes', 'Bars'];
 
 export default function ResourcesPage() {
   const { user } = useAuth();
@@ -166,7 +167,7 @@ export default function ResourcesPage() {
       <FormModal visible={formOpen} title={editing ? 'Edit Resource' : 'Add Resource'} onClose={() => setFormOpen(false)}>
         <Field label="Name" required><Input value={rName} onChangeText={setRName} placeholder="e.g., Drinking Water" /></Field>
         <Field label="Category" required><Select value={rCat} options={RESOURCE_CATEGORIES} onChange={setRCat} /></Field>
-        <Field label="Unit" required><Input value={rUnit} onChangeText={setRUnit} placeholder="e.g., Bottles, Packs, Tents" /></Field>
+        <Field label="Unit" required><Select value={rUnit || null} options={RESOURCE_UNITS} onChange={(value) => setRUnit(value || '')} placeholder="Select unit" /></Field>
         <Row breakAt="mobile" gap={12}><Col><Field label="Total Quantity" required><Input value={rTotal} onChangeText={setRTotal} keyboardType="number-pad" /></Field></Col>
           <Col><Field label="Available Quantity" hint="Defaults to total"><Input value={rAvail} onChangeText={setRAvail} keyboardType="number-pad" /></Field></Col></Row>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}><Btn label="Cancel" variant="secondary" onPress={() => setFormOpen(false)} /><Btn label="Save Resource" icon="save-outline" loading={busy} onPress={saveResource} /></View>
