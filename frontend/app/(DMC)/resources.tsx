@@ -20,6 +20,7 @@ import {
 
 type Tab = 'manage' | 'record' | 'history';
 const today = () => new Date().toISOString().slice(0, 10);
+const RESOURCE_UNITS = ['Pieces', 'Bottles', 'Litres', 'Packs', 'Boxes', 'Kits', 'Cans', 'Bags', 'kg', 'Metres', 'Rolls', 'Tents', 'Blankets', 'Mats', 'Sheets', 'Pairs', 'Tubes', 'Bars'];
 
 export default function DmcResourcesScreen() {
   const { scrollY, onScroll } = useDMCScrollHeader();
@@ -239,7 +240,7 @@ export default function DmcResourcesScreen() {
             <ScrollView keyboardShouldPersistTaps="handled">
               <FormInput label="Name *" value={rName} onChangeText={setRName} placeholder="e.g., Drinking Water" />
               <SelectField label="Category *" value={rCategory} options={RESOURCE_CATEGORIES} onSelect={setRCategory} />
-              <FormInput label="Unit *" value={rUnit} onChangeText={setRUnit} placeholder="e.g., Bottles, Packs, Tents" />
+              <SelectField label="Unit *" value={rUnit || null} options={RESOURCE_UNITS} onSelect={setRUnit} />
               <FormInput label="Total Quantity *" keyboardType="number-pad" value={rTotal} onChangeText={setRTotal} placeholder="e.g., 5000" />
               <FormInput label="Available Quantity" keyboardType="number-pad" value={rAvailable} onChangeText={setRAvailable} placeholder="Defaults to total" />
               <PrimaryButton title={editing ? 'Save Changes' : 'Save Resource'} loading={saving} onPress={handleSaveResource} />
