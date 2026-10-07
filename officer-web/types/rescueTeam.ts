@@ -36,6 +36,8 @@ export interface RescueRequest {
   address: string;
   teamId?: string | null;
   teamName?: string | null;
+  preferredTeamId?: string | null;
+  preferredTeamName?: string | null;
   status: RescueRequestStatus;
   district?: string | null;
   officerNotes?: string | null;
