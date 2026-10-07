@@ -21,6 +21,14 @@ import {
 type Tab = 'manage' | 'record' | 'history';
 const today = () => new Date().toISOString().slice(0, 10);
 const RESOURCE_UNITS = ['Pieces', 'Bottles', 'Litres', 'Packs', 'Boxes', 'Kits', 'Cans', 'Bags', 'kg', 'Metres', 'Rolls', 'Tents', 'Blankets', 'Mats', 'Sheets', 'Pairs', 'Tubes', 'Bars'];
+const isValidDistributionDate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const todayUtc = new Date();
+  const todayValue = Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth(), todayUtc.getUTCDate());
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day && date.getTime() <= todayValue;
+};
 
 export default function DmcResourcesScreen() {
   const { scrollY, onScroll } = useDMCScrollHeader();
@@ -117,8 +125,8 @@ export default function DmcResourcesScreen() {
       Alert.alert('Missing information', 'Select a resource, quantity and district.');
       return;
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dDate)) {
-      Alert.alert('Invalid date', 'Use the format YYYY-MM-DD.');
+    if (!isValidDistributionDate(dDate)) {
+      Alert.alert('Invalid date', 'Select a valid distribution date that is not in the future.');
       return;
     }
     try {
