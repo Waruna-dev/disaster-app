@@ -94,7 +94,15 @@ export default function MyRescueRequestsScreen() {
                 <Text style={styles.cardDate}>{formatDate(item)}</Text>
                 <StatusPill status={item.status} />
               </View>
-              <Text style={styles.cardTitle}>{item.requestedType}</Text>
+              <View style={styles.requestHeading}>
+                <View style={styles.requestIcon}>
+                  <Ionicons name="people" size={25} color={Colors.primary} />
+                </View>
+                <View style={styles.requestHeadingCopy}>
+                  <Text style={styles.requestEyebrow}>Rescue team request</Text>
+                  <Text style={styles.cardTitle}>{item.requestedType}</Text>
+                </View>
+              </View>
               {item.teamName ? (
                 <View style={styles.teamPanel}>
                   <View style={styles.teamIcon}>
@@ -152,7 +160,11 @@ const styles = StyleSheet.create({
   card: { backgroundColor: Colors.white, borderRadius: 16, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#EEF3F1' },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   cardDate: { fontSize: 11, color: Colors.textMuted, fontWeight: '600' },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: Colors.textDark, marginBottom: 4 },
+  requestHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  requestIcon: { width: 50, height: 50, borderRadius: 16, backgroundColor: '#E8F5F2', alignItems: 'center', justifyContent: 'center' },
+  requestHeadingCopy: { flex: 1 },
+  requestEyebrow: { fontSize: 10, color: Colors.primary, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: Colors.textDark },
   teamPanel: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8F5F2', borderRadius: 12, padding: 10, marginBottom: 10 },
   teamIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.white, alignItems: 'center', justifyContent: 'center' },
   teamCopy: { flex: 1 },
