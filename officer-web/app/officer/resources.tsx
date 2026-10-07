@@ -12,6 +12,14 @@ import { O } from '../../components/officer/theme';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const RESOURCE_UNITS = ['Pieces', 'Bottles', 'Litres', 'Packs', 'Boxes', 'Kits', 'Cans', 'Bags', 'kg', 'Metres', 'Rolls', 'Tents', 'Blankets', 'Mats', 'Sheets', 'Pairs', 'Tubes', 'Bars'];
+const isValidDistributionDate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const todayUtc = new Date();
+  const todayValue = Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth(), todayUtc.getUTCDate());
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day && date.getTime() <= todayValue;
+};
 
 export default function ResourcesPage() {
   const { user } = useAuth();
@@ -68,6 +76,7 @@ export default function ResourcesPage() {
   const record = async () => {
     const qty = parseInt(dQty, 10);
     if (!selected || !dDistrict || !qty || qty < 1) { toast('Select a resource, quantity and district.', 'error'); return; }
+    if (!isValidDistributionDate(dDate)) { toast('Select a valid distribution date that is not in the future.', 'error'); return; }
     if (qty > selected.availableQuantity) { toast(`Only ${selected.availableQuantity.toLocaleString()} ${selected.unit} available.`, 'error'); return; }
     try {
       setBusy(true);
@@ -123,7 +132,7 @@ export default function ResourcesPage() {
               <Row breakAt="mobile" gap={14}>
                 <Col><Field label="Distribute To" required><Select value={dDistrict} options={SRI_LANKA_DISTRICTS} onChange={setDDistrict} placeholder="Select district or affected area" /></Field></Col>
                 <Col><Field label="Distribution Date" required>
-                  <View style={s.dateWrap}>{React.createElement('input', { type: 'date', value: dDate, onChange: (e: any) => setDDate(e.target.value),
+                  <View style={s.dateWrap}>{React.createElement('input', { type: 'date', value: dDate, max: today(), onChange: (e: any) => setDDate(e.target.value),
                     style: { width: '100%', height: 42, border: 'none', outline: 'none', fontSize: 14, color: O.text, background: 'transparent', padding: '0 12px', fontFamily: 'inherit' } })}</View></Field></Col>
               </Row>
               <Field label="Additional Notes (Optional)"><TextArea value={dNotes} onChangeText={setDNotes} placeholder="Enter any additional notes (e.g., special instructions, recipient details, etc.)" /></Field>
