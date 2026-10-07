@@ -96,11 +96,26 @@ export default function MyRescueRequestsScreen() {
               </View>
               <Text style={styles.cardTitle}>{item.requestedType}</Text>
               {item.teamName ? (
-                <Text style={styles.cardTeam}>
-                  <Ionicons name="people" size={13} color={Colors.primary} /> {item.teamName}
-                </Text>
+                <View style={styles.teamPanel}>
+                  <View style={styles.teamIcon}>
+                    <Ionicons name="people" size={18} color={Colors.primary} />
+                  </View>
+                  <View style={styles.teamCopy}>
+                    <Text style={styles.teamLabel}>Assigned rescue team</Text>
+                    <Text style={styles.teamName} numberOfLines={2}>{item.teamName}</Text>
+                  </View>
+                  <Ionicons name="checkmark-circle" size={19} color={Colors.primary} />
+                </View>
               ) : (
-                <Text style={styles.cardTeamPending}>Awaiting team assignment</Text>
+                <View style={styles.teamPanelPending}>
+                  <View style={styles.teamIconPending}>
+                    <Ionicons name="time-outline" size={18} color={Colors.warning} />
+                  </View>
+                  <View style={styles.teamCopy}>
+                    <Text style={styles.teamLabelPending}>Awaiting team assignment</Text>
+                    <Text style={styles.teamPendingText}>A district officer is reviewing your request.</Text>
+                  </View>
+                </View>
               )}
               <Text style={styles.cardMeta} numberOfLines={1}>
                 <Ionicons name="location-outline" size={12} color={Colors.textMuted} /> {item.address}
@@ -138,8 +153,15 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   cardDate: { fontSize: 11, color: Colors.textMuted, fontWeight: '600' },
   cardTitle: { fontSize: 15, fontWeight: '700', color: Colors.textDark, marginBottom: 4 },
-  cardTeam: { fontSize: 13, fontWeight: '700', color: Colors.textDark, marginBottom: 4 },
-  cardTeamPending: { fontSize: 13, fontWeight: '600', color: Colors.warning, marginBottom: 4 },
+  teamPanel: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8F5F2', borderRadius: 12, padding: 10, marginBottom: 10 },
+  teamIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.white, alignItems: 'center', justifyContent: 'center' },
+  teamCopy: { flex: 1 },
+  teamLabel: { fontSize: 10, color: Colors.primary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
+  teamName: { fontSize: 13, color: Colors.textDark, fontWeight: '800', marginTop: 2 },
+  teamPanelPending: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF6E5', borderRadius: 12, padding: 10, marginBottom: 10 },
+  teamIconPending: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.white, alignItems: 'center', justifyContent: 'center' },
+  teamLabelPending: { fontSize: 12, color: '#9A6500', fontWeight: '800' },
+  teamPendingText: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
   cardMeta: { fontSize: 12, color: Colors.textMuted, marginBottom: 2 },
   tracker: { flexDirection: 'row', marginTop: 14 },
   stepWrap: { flex: 1, alignItems: 'center' },
