@@ -34,9 +34,10 @@ export default function ShelterRequests() {
   const rows = useMemo(() => (tab === 'All' ? reqs : reqs.filter((r) => r.status === tab)), [reqs, tab]);
 
   const options = useMemo(() => {
-    if (!sel) return [] as Shelter[];
-    const open = shelters.filter((s) => s.status === 'Available' || s.status === 'Limited');
-    return [...open].sort((a, b) => Number(b.district === sel.district) - Number(a.district === sel.district));
+    if (!sel?.district) return [] as Shelter[];
+    return shelters
+      .filter((s) => (s.status === 'Available' || s.status === 'Limited') && s.district === sel.district)
+      .sort((a, b) => Number(b.id === sel.preferredShelterId) - Number(a.id === sel.preferredShelterId));
   }, [sel, shelters]);
   const labelOf = (s: Shelter) => `${s.name} — ${s.district} (${s.capacity - s.currentOccupancy} free)`;
 
@@ -98,11 +99,12 @@ export default function ShelterRequests() {
                   <KV label="Address">{sel.address}</KV>
                   <KV label="Situation">{sel.description}</KV>
                   <KV label="Status"><Badge text={sel.status} /></KV>
-                  {sel.shelterName ? <KV label="Shelter">{sel.shelterName}</KV> : null}
+                  <KV label="Citizen selected shelter">{sel.preferredShelterName || 'No shelter selected'}</KV>
+                  {sel.shelterName ? <KV label="Assigned shelter">{sel.shelterName}</KV> : null}
                 </View>
                 {sel.status === 'Pending' && (
                   <View style={{ marginTop: 14 }}>
-                    <Field label="Assign shelter" hint="Nearest / same-district shelters with free capacity are listed first.">
+                    <Field label="Assign shelter" hint={options.length ? `Shelters in ${sel.district} are shown.` : `No available shelters in ${sel.district || 'the citizen district'}.`}>
                       <Select value={shelterName} options={options.map(labelOf)} onChange={setShelterName} placeholder="Select a shelter" />
                     </Field>
                     <Field label="Note to citizen (optional)"><TextArea value={notes} onChangeText={setNotes} placeholder="e.g., Bring ID and essential medicines." /></Field>

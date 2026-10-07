@@ -65,9 +65,10 @@ export default function ShelterRequestsScreen() {
   };
 
   const suggestedShelters = useMemo(() => {
-    if (!assignTarget) return [];
-    const inDistrict = shelters.filter((s) => !assignTarget.district || s.district.toLowerCase() === assignTarget.district.toLowerCase());
-    return (inDistrict.length > 0 ? inDistrict : shelters).filter((s) => s.status !== 'Closed');
+    if (!assignTarget?.district) return [];
+    return shelters
+      .filter((s) => s.status !== 'Closed' && s.district.toLowerCase() === assignTarget.district?.toLowerCase())
+      .sort((a, b) => Number(b.id === assignTarget.preferredShelterId) - Number(a.id === assignTarget.preferredShelterId));
   }, [assignTarget, shelters]);
 
   const handleAssign = async (shelter: Shelter) => {
@@ -110,6 +111,12 @@ export default function ShelterRequestsScreen() {
               <Text style={styles.cardMeta}><Ionicons name="people-outline" size={12} /> {item.peopleCount} people{item.district ? ` · ${item.district}` : ''}</Text>
               {item.contactNumber ? <Text style={styles.cardMeta}><Ionicons name="call-outline" size={12} /> {item.contactNumber}</Text> : null}
               <Text style={styles.cardDescription}>{item.description}</Text>
+              {item.preferredShelterName ? (
+                <View style={styles.assignedBox}>
+                  <Ionicons name="home" size={14} color={Colors.primary} />
+                  <Text style={styles.assignedText}>Citizen selected: {item.preferredShelterName}</Text>
+                </View>
+              ) : null}
               {item.shelterName ? (
                 <View style={styles.assignedBox}>
                   <Ionicons name="home" size={14} color={Colors.primary} />
@@ -137,7 +144,7 @@ export default function ShelterRequestsScreen() {
           <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.sheetTitle}>Assign a Shelter</Text>
             <Text style={styles.sheetSubtitle}>
-              {suggestedShelters.length > 0 && assignTarget?.district ? `Showing shelters in ${assignTarget.district}` : 'Showing all shelters'}
+              {suggestedShelters.length > 0 && assignTarget?.district ? `Showing shelters in ${assignTarget.district}` : 'No shelters in the citizen district'}
             </Text>
             <FlatList
               data={suggestedShelters}
