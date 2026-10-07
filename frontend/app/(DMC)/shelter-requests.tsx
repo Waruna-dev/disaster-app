@@ -7,7 +7,7 @@ import { DMCNavHeader, useDMCScrollHeader } from '../../components/DMCNavHeader'
 import { DMCTabBar } from '../../components/DMCTabBar';
 import { StatusPill } from '../../components/StatusPill';
 import { ShelterRequest , Shelter } from '../../types/shelter';
-import { fetchAllShelterRequests, assignShelterToRequest, updateShelterRequestStatus } from '../../services/shelterRequestService';
+import { fetchAllShelterRequests, assignShelterToRequest, syncShelterOccupanciesFromAssignedRequests, updateShelterRequestStatus } from '../../services/shelterRequestService';
 import { fetchAllShelters } from '../../services/shelterService';
 
 type Filter = 'Pending' | 'Assigned' | 'Rejected' | 'All';
@@ -28,6 +28,7 @@ export default function ShelterRequestsScreen() {
 
   const load = useCallback(async () => {
     try {
+      await syncShelterOccupanciesFromAssignedRequests();
       const [reqData, shelterData] = await Promise.all([fetchAllShelterRequests(), fetchAllShelters()]);
       setRequests(reqData);
       setShelters(shelterData);

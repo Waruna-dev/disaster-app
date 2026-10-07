@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { Shelter, ShelterRequest } from '../../types/shelter';
 import { fetchAllShelters } from '../../services/shelterService';
-import { fetchAllShelterRequests, assignShelterToRequest, updateShelterRequestStatus } from '../../services/shelterRequestService';
+import { fetchAllShelterRequests, assignShelterToRequest, syncShelterOccupanciesFromAssignedRequests, updateShelterRequestStatus } from '../../services/shelterRequestService';
 import { logActivity } from '../../services/activityService';
 import { Badge, Btn, Card, Col, EmptyState, Field, KV, PageHeader, Row, Select, Spinner, Table, Tabs, TextArea, fmtDateTime, useUI } from '../../components/officer/ui';
 import { WebMap } from '../../components/officer/WebMap';
@@ -23,6 +23,7 @@ export default function ShelterRequests() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
+    await syncShelterOccupanciesFromAssignedRequests();
     const [r, s] = await Promise.all([fetchAllShelterRequests(), fetchAllShelters()]);
     setReqs(r); setShelters(s);
     setSel((c) => (c ? r.find((x) => x.id === c.id) ?? null : null));

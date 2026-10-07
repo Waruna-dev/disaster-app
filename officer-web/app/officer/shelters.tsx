@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Shelter } from '../../types/shelter';
 import { fetchAllShelters, deleteShelter } from '../../services/shelterService';
-import { fetchAllShelterRequests } from '../../services/shelterRequestService';
+import { fetchAllShelterRequests, syncShelterOccupanciesFromAssignedRequests } from '../../services/shelterRequestService';
 import { logActivity } from '../../services/activityService';
 import { SRI_LANKA_DISTRICTS } from '../../constants/districts';
 import { Badge, Btn, Card, Col, EmptyState, Input, KV, PageHeader, Row, Select, Spinner, Table, useUI } from '../../components/officer/ui';
@@ -25,6 +25,7 @@ export default function SheltersPage() {
   const [sel, setSel] = useState<Shelter | null>(null);
 
   const load = useCallback(async () => {
+    await syncShelterOccupanciesFromAssignedRequests();
     const [s, r] = await Promise.all([fetchAllShelters(), fetchAllShelterRequests().catch(() => [])]);
     setShelters(s);
     setPending(r.filter((x) => x.status === 'Pending').length);

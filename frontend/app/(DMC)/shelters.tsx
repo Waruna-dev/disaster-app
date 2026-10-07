@@ -9,6 +9,7 @@ import { StatTile } from '../../components/StatTile';
 import { StatusPill } from '../../components/StatusPill';
 import { Shelter } from '../../types/shelter';
 import { fetchAllShelters, deleteShelter } from '../../services/shelterService';
+import { syncShelterOccupanciesFromAssignedRequests } from '../../services/shelterRequestService';
 
 type StatusFilter = 'All Status' | 'Available' | 'Limited' | 'Full' | 'Closed';
 
@@ -21,6 +22,7 @@ export default function DmcSheltersScreen() {
 
   const load = useCallback(async () => {
     try {
+      await syncShelterOccupanciesFromAssignedRequests();
       const data = await fetchAllShelters();
       setShelters(data);
     } catch {
