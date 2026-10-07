@@ -114,6 +114,7 @@ export default function RescueRequests() {
                 <KV label="Citizen">{sel.userName || 'Resident'}</KV><KV label="Contact">{sel.contactNumber}</KV>
                 <KV label="Support type">{sel.requestedType}</KV><KV label="People">{String(sel.peopleCount)}</KV>
                 <KV label="Address">{sel.address}</KV><KV label="Status"><Badge text={sel.status} /></KV>
+                  <KV label="Citizen selected team">{sel.preferredTeamName || 'No team selected'}</KV>
                 {sel.teamName ? <KV label="Team">{sel.teamName}</KV> : null}
                 {sel.status === 'Pending' && (
                   <View style={{ marginTop: 14 }}>
