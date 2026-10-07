@@ -11,11 +11,41 @@ import {
   orderBy,
   serverTimestamp,
   runTransaction,
+  writeBatch,
 } from 'firebase/firestore';
-import { ShelterRequest, ShelterRequestStatus } from '../types/shelter';
+import { Shelter, ShelterRequest, ShelterRequestStatus } from '../types/shelter';
 import { deriveShelterStatus } from './shelterService';
 
 const COLLECTION = 'shelterRequests';
+
+export const syncShelterOccupanciesFromAssignedRequests = async (): Promise<void> => {
+  const [requestSnapshot, shelterSnapshot] = await Promise.all([
+    getDocs(collection(db, COLLECTION)),
+    getDocs(collection(db, 'shelters')),
+  ]);
+  const occupancyByShelter = new Map<string, number>();
+
+  requestSnapshot.docs.forEach((requestDoc) => {
+    const request = requestDoc.data() as ShelterRequest;
+    if (request.status !== 'Assigned' || !request.shelterId) return;
+    const peopleCount = Math.max(0, Number(request.peopleCount) || 0);
+    occupancyByShelter.set(request.shelterId, (occupancyByShelter.get(request.shelterId) || 0) + peopleCount);
+  });
+
+  const batch = writeBatch(db);
+  shelterSnapshot.docs.forEach((shelterDoc) => {
+    const shelter = shelterDoc.data() as Shelter;
+    const capacity = Math.max(0, Number(shelter.capacity) || 0);
+    const currentOccupancy = occupancyByShelter.get(shelterDoc.id) || 0;
+    batch.update(shelterDoc.ref, {
+      currentOccupancy,
+      status: deriveShelterStatus(capacity, currentOccupancy, shelter.status === 'Closed'),
+      updatedAt: serverTimestamp(),
+    });
+  });
+
+  if (shelterSnapshot.docs.length > 0) await batch.commit();
+};
 
 export interface ShelterRequestInput {
   userId: string;
