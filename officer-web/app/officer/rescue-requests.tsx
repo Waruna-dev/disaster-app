@@ -41,10 +41,10 @@ export default function RescueRequests() {
   }, [reqs, tab]);
 
   const options = useMemo(() => {
-    if (!sel) return [] as RescueTeam[];
-    const avail = teams.filter((t) => t.status === 'Available');
-    const score = (t: RescueTeam) => (t.type === sel.requestedType ? 0 : 2) + (t.district === sel.district ? 0 : 1);
-    return [...avail].sort((a, b) => score(a) - score(b));
+    if (!sel?.district) return [] as RescueTeam[];
+    return teams
+      .filter((t) => t.status === 'Available' && t.district === sel.district && t.type === sel.requestedType)
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [sel, teams]);
   const labelOf = (t: RescueTeam) => `${t.name} — ${t.type}, ${t.district} (${t.members} members)`;
   const matchingTeams = useMemo(() => {
@@ -119,7 +119,7 @@ export default function RescueRequests() {
                   <View style={{ marginTop: 14 }}>
                     <Field
                       label="Assign team"
-                      hint={options.length ? 'Suitable type and district matches are listed first.' : 'Create a rescue team or mark an existing team as Available.'}
+                      hint={options.length ? `Available ${sel.requestedType} teams in ${sel.district}.` : `No available ${sel.requestedType} teams in ${sel.district || 'the citizen district'}.`}
                     >
                       <Input
                         icon="search"
