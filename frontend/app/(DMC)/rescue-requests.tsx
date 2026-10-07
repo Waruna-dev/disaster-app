@@ -56,13 +56,12 @@ export default function RescueRequestsScreen() {
   }, [requests, filter]);
 
   const candidateTeams = useMemo(() => {
-    if (!assignTarget) return [];
-    const available = teams.filter((t) => t.status === 'Available');
-    const matching = available.filter((t) => t.type === assignTarget.requestedType);
-    return (matching.length > 0 ? matching : available).sort((a, b) => {
-      const sameDistrict = (t: RescueTeam) => (assignTarget.district && t.district === assignTarget.district ? 0 : 1);
-      return sameDistrict(a) - sameDistrict(b);
-    });
+    if (!assignTarget?.district) return [];
+    return teams
+      .filter((t) => t.status === 'Available'
+        && t.district === assignTarget.district
+        && t.type === assignTarget.requestedType)
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [assignTarget, teams]);
 
   const handleAssign = async (team: RescueTeam) => {
@@ -157,7 +156,7 @@ export default function RescueRequestsScreen() {
         <Pressable style={styles.overlay} onPress={() => setAssignTarget(null)}>
           <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.sheetTitle}>Assign a Rescue Team</Text>
-            <Text style={styles.sheetSubtitle}>Available teams, best match for “{assignTarget?.requestedType}” first</Text>
+            <Text style={styles.sheetSubtitle}>Available {assignTarget?.requestedType} teams in {assignTarget?.district || 'the citizen district'}</Text>
             <FlatList
               data={candidateTeams}
               keyExtractor={(t) => t.id}
