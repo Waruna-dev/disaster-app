@@ -2,7 +2,6 @@ import { db } from '../config/firebase';
 import {
   collection,
   addDoc,
-  updateDoc,
   doc,
   getDoc,
   getDocs,
@@ -140,9 +139,33 @@ export const updateShelterRequestStatus = async (
   status: ShelterRequestStatus,
   officerNotes?: string
 ): Promise<void> => {
-  await updateDoc(doc(db, COLLECTION, requestId), {
-    status,
-    ...(officerNotes !== undefined ? { officerNotes } : {}),
-    updatedAt: serverTimestamp(),
+  await runTransaction(db, async (transaction) => {
+    const requestRef = doc(db, COLLECTION, requestId);
+    const requestSnap = await transaction.get(requestRef);
+    if (!requestSnap.exists()) throw new Error('Shelter request no longer exists.');
+
+    const request = requestSnap.data() as ShelterRequest;
+    if (request.status === 'Assigned' && status === 'Completed' && request.shelterId) {
+      const shelterRef = doc(db, 'shelters', request.shelterId);
+      const shelterSnap = await transaction.get(shelterRef);
+      if (shelterSnap.exists()) {
+        const shelter = shelterSnap.data() as Shelter;
+        const capacity = Math.max(0, Number(shelter.capacity) || 0);
+        const peopleCount = Math.max(0, Number(request.peopleCount) || 0);
+        const currentOccupancy = Math.max(0, Number(shelter.currentOccupancy) || 0);
+        const nextOccupancy = Math.max(0, currentOccupancy - peopleCount);
+        transaction.update(shelterRef, {
+          currentOccupancy: nextOccupancy,
+          status: deriveShelterStatus(capacity, nextOccupancy, shelter.status === 'Closed'),
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
+
+    transaction.update(requestRef, {
+      status,
+      ...(officerNotes !== undefined ? { officerNotes } : {}),
+      updatedAt: serverTimestamp(),
+    });
   });
 };
