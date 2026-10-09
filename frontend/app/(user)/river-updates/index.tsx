@@ -28,6 +28,8 @@ import { getRelativeTimeString } from '../../../utils/floodFormatting';
 import { calculateLast24HourRainfall, normalizeStationName } from '../../../utils/floodCalculations';
 import { FloodStatus, FloodReading } from '../../../types/flood';
 
+import { useTranslation } from 'react-i18next';
+
 const STATUS_THEME: Record<
   FloodStatus,
   { labelKey: string; color: string; background: string; icon: keyof typeof Ionicons.glyphMap }
@@ -102,8 +104,6 @@ function getMeaning(status: FloodStatus) {
 function formatLevel(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) ? '—' : value.toFixed(2);
 }
-
-import { useTranslation } from 'react-i18next';
 
 export default function RiverUpdateDetailsScreen() {
   const { t } = useTranslation();

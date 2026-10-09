@@ -13,6 +13,8 @@
     "expo-device": "~57.0.2",
     "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
+    "expo-print": "~57.0.2",
+    "expo-sharing": "~57.0.22",
     "expo-glass-effect": "~57.0.4",
     "expo-image": "~57.0.5",
     "expo-image-manipulator": "~57.0.20",
@@ -51,6 +53,8 @@
   },
   "scripts": {
     "start": "expo start",
+    "mobile": "expo start --lan --port 8083",
+    "mobile:clear": "expo start --lan --port 8083 --clear",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",

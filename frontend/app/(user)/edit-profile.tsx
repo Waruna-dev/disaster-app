@@ -1,30 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert, ActivityIndicator, Modal, Animated, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert, ActivityIndicator, Modal, Animated, BackHandler , AlertButton } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
-const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle } from 'react-native-svg';
 import { HomeArea } from '../../types/location';
-import { removeHomeArea } from '../../services/userService';
+import { removeHomeArea , getUserProfile, saveUserProfile, deleteUserData } from '../../services/userService';
 import { deleteField } from 'firebase/firestore';
 import * as Location from 'expo-location';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
-import { getUserProfile, saveUserProfile, deleteUserData } from '../../services/userService';
+
 import { updateUserPassword, deleteUserAccount } from '../../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
-import { AlertButton } from 'react-native';
+
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { uploadImage } from '../../services/imageUploadService';
 import { getOptimizedAvatarUrl } from '../../utils/cloudinaryUtils';
 import { UserAvatar } from '../../components/UserAvatar';
+
+const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
 
 type ProfilePhotoChange =
   | { type: 'unchanged' }
