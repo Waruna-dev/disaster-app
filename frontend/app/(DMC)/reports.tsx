@@ -9,7 +9,7 @@ import { DMCTabBar } from '../../components/DMCTabBar';
 import { ReportListItem } from '../../components/ReportListItem';
 import { useReports } from '../../hooks/useReports';
 import { ReportStatus } from '../../types/report';
-import { PinnedReport, STATUS_PIN, buildReportsMapHtml } from '../../utils/reportMap';
+import { LANDSLIDE_PIN_COLOR, PinnedReport, STATUS_PIN, buildReportsMapHtml } from '../../utils/reportMap';
 
 type StatusFilter = 'all' | ReportStatus;
 type ViewMode = 'list' | 'map';
@@ -134,6 +134,10 @@ export default function AllReportsScreen() {
                     <Text style={styles.legendLabel}>{s}</Text>
                   </View>
                 ))}
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: LANDSLIDE_PIN_COLOR }]} />
+                  <Text style={styles.legendLabel}>Landslide</Text>
+                </View>
               </View>
             </View>
           </View>
