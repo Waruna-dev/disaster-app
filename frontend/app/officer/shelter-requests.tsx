@@ -35,8 +35,17 @@ export default function ShelterRequests() {
 
   const options = useMemo(() => {
     if (!sel?.district) return [] as Shelter[];
+    const affectedArea = (sel.affectedArea || sel.address)
+      ?.split(',')
+      .pop()
+      ?.trim()
+      .toLowerCase();
     return shelters
-      .filter((s) => (s.status === 'Available' || s.status === 'Limited') && s.district === sel.district)
+      .filter((s) => {
+        if ((s.status !== 'Available' && s.status !== 'Limited') || s.district !== sel.district) return false;
+        if (!affectedArea || s.id === sel.preferredShelterId) return true;
+        return `${s.name} ${s.location}`.toLowerCase().includes(affectedArea);
+      })
       .sort((a, b) => Number(b.id === sel.preferredShelterId) - Number(a.id === sel.preferredShelterId));
   }, [sel, shelters]);
   const labelOf = (s: Shelter) => `${s.name} — ${s.district} (${s.capacity - s.currentOccupancy} free)`;
@@ -104,7 +113,7 @@ export default function ShelterRequests() {
                 </View>
                 {sel.status === 'Pending' && (
                   <View style={{ marginTop: 14 }}>
-                    <Field label="Assign shelter" hint={options.length ? `Shelters in ${sel.district} are shown.` : `No available shelters in ${sel.district || 'the citizen district'}.`}>
+                    <Field label="Assign shelter" hint={options.length ? `Available shelters in ${sel.affectedArea?.split(',').pop()?.trim() || sel.district}, ${sel.district} are shown.` : `No available shelters in the citizen's affected area and district.`}>
                       <Select value={shelterName} options={options.map(labelOf)} onChange={setShelterName} placeholder="Select a shelter" />
                     </Field>
                     <Field label="Note to citizen (optional)"><TextArea value={notes} onChangeText={setNotes} placeholder="e.g., Bring ID and essential medicines." /></Field>
