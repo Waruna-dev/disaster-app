@@ -11,7 +11,7 @@ import { Badge, Btn, Card, Field, Input, KV, Modal, PageHeader, Select, Spinner,
 import { MapView } from '../components/MapView';
 
 export default function Resources() {
-  const { resources, distributions, loading } = useData();
+  const { resources, distributions, warnings, loading } = useData();
   const { user } = useAuth();
   const { toast, confirm } = useUI();
   const [tab, setTab] = useState('manage'); const [busy, setBusy] = useState(false); const [filter, setFilter] = useState('All Categories');
@@ -21,6 +21,14 @@ export default function Resources() {
   const setRf = (k: keyof typeof r) => (v: string) => setR((s) => ({ ...s, [k]: v }));
   const setDf = (k: keyof typeof d) => (v: string) => setD((s) => ({ ...s, [k]: v }));
   const selected = resources.find((x) => x.name === d.resource);
+  const affectedAreas = useMemo(
+    () => warnings
+      .filter((w) => w.status === 'Active' && w.affectedArea.trim())
+      .map((w) => w.affectedArea.trim()),
+    [warnings],
+  );
+  const destinationOptions = useMemo(() => [...new Set([...DISTRICTS, ...affectedAreas])], [affectedAreas]);
+  const selectedWarning = warnings.find((w) => w.status === 'Active' && w.affectedArea.trim() === d.district);
   const shown = useMemo(() => resources.filter((x) => filter === 'All Categories' || x.category === filter), [resources, filter]);
   const low = resources.filter((x) => x.totalQuantity > 0 && x.availableQuantity / x.totalQuantity <= 0.2).length;
 
@@ -59,7 +67,7 @@ export default function Resources() {
   };
 
   if (loading) return <Spinner />;
-  const coords = d.district ? DISTRICT_COORDS[d.district] : undefined;
+  const coords = selectedWarning ? [selectedWarning.latitude, selectedWarning.longitude] as [number, number] : d.district ? DISTRICT_COORDS[d.district] : undefined;
   return (
     <>
       <PageHeader title={tab === 'record' ? 'Record Resource Distribution' : tab === 'history' ? 'Distribution History' : 'Manage Resources'} subtitle={tab === 'record' ? 'Enter distribution details for relief resources.' : 'Track relief stock and distribution across districts.'}
@@ -89,7 +97,7 @@ export default function Resources() {
               <Field label="Unit"><Input value={selected?.unit ?? ''} disabled placeholder="—" /></Field>
             </div>
             <div className="cols">
-              <Field label="Distribute To" required><Select value={d.district} onChange={setDf('district')} options={DISTRICTS} placeholder="Select district or affected area" /></Field>
+              <Field label="Distribute To" required><Select value={d.district} onChange={setDf('district')} options={destinationOptions} placeholder="Select district or affected area" /></Field>
               <Field label="Distribution Date" required><Input type="date" value={d.date} onChange={(e) => setDf('date')(e.target.value)} /></Field>
             </div>
             <Field label="Additional Notes (Optional)"><TextArea value={d.notes} onChange={(e) => setDf('notes')(e.target.value)} placeholder="Enter any additional notes (e.g., special instructions, recipient details, etc.)" /></Field>
@@ -101,7 +109,7 @@ export default function Resources() {
           </Card>
           <div>
             <Card title="Selected Location / Area">
-              <KV label="Name">{d.district ? `${d.district} - Affected Area` : '—'}</KV><KV label="Type">District</KV><KV label="District">{d.district || '—'}</KV>
+              <KV label="Name">{d.district || '—'}</KV><KV label="Type">{selectedWarning ? 'Hazard affected area' : 'District'}</KV><KV label="District">{selectedWarning?.affectedArea || d.district || '—'}</KV>
               <div style={{ marginTop: 12 }}><MapView height={200} zoom={10} center={coords} markers={coords ? [{ id: 'd', lat: coords[0], lng: coords[1], label: d.district, color: '#C62828' }] : []} /></div>
             </Card>
             <Card title="Recent Distributions" action={<Btn variant="ghost" small onClick={() => setTab('history')}>View All</Btn>}>
