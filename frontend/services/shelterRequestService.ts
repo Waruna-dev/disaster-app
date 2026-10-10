@@ -19,6 +19,9 @@ export interface ShelterRequestInput {
   userId: string;
   userName?: string;
   contactNumber?: string;
+  preferredShelterId?: string;
+  preferredShelterName?: string;
+  affectedArea?: string;
   latitude: number;
   longitude: number;
   address: string;
@@ -32,6 +35,9 @@ export const createShelterRequest = async (input: ShelterRequestInput): Promise<
     ...input,
     userName: input.userName ?? null,
     contactNumber: input.contactNumber ?? null,
+    preferredShelterId: input.preferredShelterId ?? null,
+    preferredShelterName: input.preferredShelterName ?? null,
+    affectedArea: input.affectedArea ?? null,
     district: input.district ?? null,
     shelterId: null,
     shelterName: null,
