@@ -2,7 +2,7 @@ import {
   addDoc, collection, deleteDoc, doc, runTransaction, serverTimestamp, Timestamp, updateDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { ActivityStatus, RescueRequestStatus, RescueTeamStatus, RescueTeamType, RiskLevel, Shelter, ShelterRequest, ShelterStatus } from './types';
+import type { ActivityStatus, RescueRequestStatus, RescueTeamStatus, RescueTeamType, RiskLevel, ShelterStatus } from './types';
 
 /* ───────── activity log (powers dashboard + "Information Updated") ───────── */
 export async function logActivity(a: { type: 'shelter' | 'rescue' | 'resource' | 'alert' | 'notification'; title: string; detail: string; location?: string | null; status: ActivityStatus; createdBy?: string | null }) {
@@ -25,66 +25,10 @@ export const createShelter = (i: ShelterInput) => addDoc(collection(db, 'shelter
 export const updateShelter = (id: string, i: Partial<ShelterInput>) => updateDoc(doc(db, 'shelters', id), { ...i, updatedAt: serverTimestamp() });
 export const deleteShelter = (id: string) => deleteDoc(doc(db, 'shelters', id));
 
-export const assignShelter = async (requestId: string, shelterId: string, shelterName: string, notes?: string) => {
-  await runTransaction(db, async (tx) => {
-    const requestRef = doc(db, 'shelterRequests', requestId);
-    const shelterRef = doc(db, 'shelters', shelterId);
-    const requestSnap = await tx.get(requestRef);
-    const shelterSnap = await tx.get(shelterRef);
-
-    if (!requestSnap.exists()) throw new Error('Shelter request no longer exists.');
-    if (!shelterSnap.exists()) throw new Error('Selected shelter no longer exists.');
-
-    const request = requestSnap.data() as ShelterRequest;
-    const shelter = shelterSnap.data() as Shelter;
-    if (request.status !== 'Pending') throw new Error('This request has already been processed.');
-    if (shelter.status === 'Closed') throw new Error('This shelter is currently closed.');
-
-    tx.update(requestRef, {
-      status: 'Assigned',
-      shelterId,
-      shelterName,
-      officerNotes: notes ?? null,
-      updatedAt: serverTimestamp(),
-    });
-  });
-};
-export const setShelterRequestStatus = async (id: string, status: 'Rejected' | 'Completed', notes?: string) => {
-  await runTransaction(db, async (tx) => {
-    const requestRef = doc(db, 'shelterRequests', id);
-    const requestSnap = await tx.get(requestRef);
-    if (!requestSnap.exists()) throw new Error('Shelter request no longer exists.');
-
-    const request = requestSnap.data() as ShelterRequest;
-    if (status === 'Completed') {
-      if (request.status !== 'Assigned') throw new Error('Only assigned requests can be marked as completed.');
-      if (!request.shelterId) throw new Error('Assigned request is missing shelter details.');
-
-      const shelterRef = doc(db, 'shelters', request.shelterId);
-      const shelterSnap = await tx.get(shelterRef);
-      if (!shelterSnap.exists()) throw new Error('Assigned shelter no longer exists.');
-
-      const shelter = shelterSnap.data() as Shelter;
-      const capacity = Math.max(0, Number(shelter.capacity) || 0);
-      const currentOccupancy = Math.max(0, Number(shelter.currentOccupancy) || 0);
-      const peopleCount = Math.max(0, Number(request.peopleCount) || 0);
-      const nextOccupancy = currentOccupancy + peopleCount;
-      if (nextOccupancy > capacity) throw new Error('This shelter does not have enough available capacity.');
-
-      tx.update(shelterRef, {
-        currentOccupancy: nextOccupancy,
-        status: deriveShelterStatus(capacity, nextOccupancy, shelter.status === 'Closed'),
-        updatedAt: serverTimestamp(),
-      });
-    }
-
-    tx.update(requestRef, {
-      status,
-      ...(notes !== undefined ? { officerNotes: notes } : {}),
-      updatedAt: serverTimestamp(),
-    });
-  });
-};
+export const assignShelter = (requestId: string, shelterId: string, shelterName: string, notes?: string) =>
+  updateDoc(doc(db, 'shelterRequests', requestId), { status: 'Assigned', shelterId, shelterName, officerNotes: notes ?? null, updatedAt: serverTimestamp() });
+export const setShelterRequestStatus = (id: string, status: 'Rejected' | 'Completed', notes?: string) =>
+  updateDoc(doc(db, 'shelterRequests', id), { status, ...(notes !== undefined ? { officerNotes: notes } : {}), updatedAt: serverTimestamp() });
 
 /* ───────── rescue teams / requests / assignments ───────── */
 export interface TeamInput {

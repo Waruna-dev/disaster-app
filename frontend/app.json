@@ -32,8 +32,7 @@
           "resizeMode": "cover"
         }
       ],
-      "expo-image",
-      "expo-sharing"
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
