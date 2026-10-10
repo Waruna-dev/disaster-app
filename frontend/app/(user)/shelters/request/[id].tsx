@@ -102,8 +102,6 @@ export default function ShelterRequestFormScreen() {
         peopleCount: people,
         description: description.trim(),
         district: shelter?.district,
-        preferredShelterId: shelter?.id,
-        preferredShelterName: shelter?.name,
       });
       Alert.alert('Request Sent', 'Your shelter request has been sent to the district officer.', [
         { text: 'View My Requests', onPress: () => router.replace('/(user)/shelters/my-requests' as any) },

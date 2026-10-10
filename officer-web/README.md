@@ -1,56 +1,68 @@
-# Welcome to your Expo app 👋
+# District Officer Portal (web)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Standalone **React + TypeScript + Vite + Firebase** web app for District Officers of the
+Smart Disaster Early-Warning System. It lives in its own folder and **does not modify or import
+anything from `frontend/`** (the citizen mobile app). Both apps share the same Firebase project.
 
-## Get started
+| Page | What it does |
+|---|---|
+| Dashboard | Stats, affected-areas map, recent alerts, ongoing activities, auto-generated tasks |
+| Hazard Alerts | Publish / cancel / delete public warnings (shown to citizens in the mobile app) |
+| Shelters | Search + filter + paginate, details + map, register / edit / remove, citizen shelter requests |
+| Rescue Teams | Team management, assign to affected area, active missions, citizen rescue requests with status steps |
+| Resources | Manage stock, record distribution (transactional stock deduction), history + CSV export |
+| Reports | Pie / column / bar charts, tables, decision recommendations, **real PDF download** |
+| Information Updated | Summary + timeline of the latest updates |
+| Settings | Profile, change password, **Load Demo Data** |
 
-1. Install dependencies
+Data is live (Firestore `onSnapshot`) — new citizen requests appear instantly and the sidebar badge updates.
 
-   ```bash
-   npm install
-   ```
+## 1. Run it
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Requirements: **Node.js 18+** (20 or 22 recommended).
 
 ```bash
-npm run reset-project
+cd disaster-app/officer-web
+npm install
+npm run dev          # opens http://localhost:5173
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**Firebase keys:** nothing to configure if `disaster-app/frontend/.env` exists — it is read
+automatically (the `EXPO_PUBLIC_FIREBASE_*` values). Otherwise copy `.env.example` to `.env`
+and fill the `VITE_FIREBASE_*` values (Firebase Console → Project settings → Web app).
+Restart `npm run dev` after changing env files.
 
-### Other setup steps
+## 2. One-time Firebase setup
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+1. **Rules** — open `firestore.rules.additions`, merge those blocks into `disaster-app/firestore.rules`, then
+   `firebase deploy --only firestore:rules` (or paste into Firebase Console → Firestore → Rules → Publish).
+2. **Officer account** — create/register a user, then in Firestore `users/{uid}` set `role` = `admin`.
+3. Sign in at the login page. First time: **Settings → Load Demo Data**.
 
-## Learn more
+## 3. Try the full flow with the mobile app
 
-To learn more about developing your project with Expo, look at the following resources:
+1. Citizen (phone): request a shelter / rescue team.
+2. Officer (web): Shelters → *Citizen Requests* (or Rescue Teams → *Citizen Requests*) → assign.
+3. Citizen: pull to refresh *My Requests* → status updates (Pending → Assigned → On the way → Pickup → Completed).
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Build for deployment
 
-## Join the community
+```bash
+npm run build        # outputs dist/  (host anywhere, e.g. Firebase Hosting: firebase deploy --only hosting)
+npm run typecheck
+```
 
-Join our community of developers creating universal apps.
+## Troubleshooting
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Problem | Fix |
+|---|---|
+| "Firebase is not configured" | Provide `.env` (see above) and restart the dev server |
+| Yellow banner "Firestore denied access" | Deploy the rules and make sure your user has `role: "admin"` |
+| "This account is not authorised" | `users/{uid}.role` must be exactly `admin` |
+| Map is blank | Needs internet (OpenStreetMap tiles). No API key is used |
+| Citizen app doesn't show data | Same Firebase project in both apps; rules deployed |
+
+## Tech
+
+React 19, React Router, TypeScript, Vite, Firebase (Auth + Firestore), Leaflet/OpenStreetMap,
+Recharts, jsPDF + AutoTable, lucide-react. Single stylesheet in `src/index.css`.

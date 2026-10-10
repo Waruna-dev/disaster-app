@@ -1,6 +1,5 @@
 import { Colors } from '../constants/colors';
-import { DisasterType, Report, ReportLocation, ReportStatus } from '../types/report';
-import { getZoneColor } from './warningMapHtml';
+import { Report, ReportLocation, ReportStatus } from '../types/report';
 import { RiskLevel, WarningStatus } from '../types/alert';
 import { IncidentReviewStatus } from '../types/floodIncident';
 import { BOUNDARY_DOTS_SCRIPT } from './leafletBoundaryScript';
@@ -43,8 +42,6 @@ export interface WarningZone {
   id: string;
   title: string;
   affectedArea: string;
-  /** Landslide zones draw brown instead of the risk-level color (see getZoneColor). */
-  hazardType?: DisasterType;
   riskLevel: RiskLevel;
   status: WarningStatus;
   centroid: ReportLocation;
@@ -57,10 +54,6 @@ export const STATUS_PIN: Record<ReportStatus, string> = {
   Verified: Colors.primary,
   Rejected: Colors.danger,
 };
-
-// Landslide pins are filled brown (their status color moves to the pin's ring) so
-// the two hazard types can be told apart at a glance on the map.
-export const LANDSLIDE_PIN_COLOR = '#8A5A2B';
 
 export const DISASTER_SYMBOL: Record<Report['disasterType'], string> = {
   flood: '\u{1F30A}',
@@ -97,8 +90,6 @@ export function buildReportsMapHtml(pins: PinnedReport[], zones: IncidentZone[] 
     lat: p.location.latitude,
     lng: p.location.longitude,
     color: STATUS_PIN[p.status],
-    fill: p.disasterType === 'landslide' ? LANDSLIDE_PIN_COLOR : STATUS_PIN[p.status],
-    ring: p.disasterType === 'landslide' ? STATUS_PIN[p.status] : '#FFFFFF',
     symbol: DISASTER_SYMBOL[p.disasterType],
     area: p.affectedArea,
     ref: p.referenceNumber,
@@ -121,7 +112,7 @@ export function buildReportsMapHtml(pins: PinnedReport[], zones: IncidentZone[] 
     centroid: w.centroid,
     polygon: w.polygon,
     radiusMeters: w.radiusMeters,
-    color: getZoneColor(w.hazardType ?? 'flood', w.riskLevel),
+    color: ZONE_RISK_COLOR[w.riskLevel],
     active: w.status === 'Active',
     label: w.title,
     meta: `${w.affectedArea} · ${w.riskLevel} risk · ${w.status}`,
@@ -225,7 +216,7 @@ export function buildReportsMapHtml(pins: PinnedReport[], zones: IncidentZone[] 
     var markers = [];
     points.forEach(function (p) {
       var icon = L.divIcon({
-        html: '<div class="pin" style="background:' + p.fill + ';border-color:' + p.ring + '">' + p.symbol + '</div>',
+        html: '<div class="pin" style="background:' + p.color + '">' + p.symbol + '</div>',
         className: '',
         iconSize: [28, 28],
         iconAnchor: [14, 14]

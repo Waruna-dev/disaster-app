@@ -17,7 +17,7 @@ import { linkFloodIncidentWarning } from '../../services/floodIncidentReviewServ
 import { DisasterType } from '../../types/report';
 import { RiskLevel, RISK_LEVELS, WarningLocation } from '../../types/alert';
 import { DEFAULT_REGION } from '../../utils/reportMap';
-import { ExistingWarningZone, IncidentPin, LANDSLIDE_ZONE_COLOR } from '../../utils/warningMapHtml';
+import { ExistingWarningZone, IncidentPin } from '../../utils/warningMapHtml';
 import { getWarningStatus } from '../../utils/warningStatus';
 
 // Optional prefill, e.g. from an approved flood incident's "Publish Public Warning"
@@ -54,8 +54,6 @@ const RISK_CONFIG: Record<RiskLevel, { label: string; color: string; bg: string 
   HIGH: { label: 'HIGH', color: Colors.warning, bg: '#FEF5E7' },
   CRITICAL: { label: 'CRITICAL', color: Colors.danger, bg: '#FDEDEC' },
 };
-
-const LANDSLIDE_RISK_STYLE = { color: LANDSLIDE_ZONE_COLOR, bg: '#F1EBE3' };
 
 const DURATION_OPTIONS: { key: string; label: string; hours: number }[] = [
   { key: '6h', label: '6 hours', hours: 6 },
@@ -259,9 +257,7 @@ export default function CreateWarningScreen() {
         <View style={styles.riskRow}>
           {RISK_LEVELS.map((level) => {
             const active = level === riskLevel;
-            // Landslide warnings are brown on the map regardless of risk level, so the
-            // chips drop the per-level colors too and stay brown to match.
-            const config = hazardType === 'landslide' ? { ...LANDSLIDE_RISK_STYLE, label: level } : RISK_CONFIG[level];
+            const config = RISK_CONFIG[level];
             return (
               <TouchableOpacity
                 key={level}

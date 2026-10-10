@@ -2,7 +2,13 @@ import { Colors } from '../constants/colors';
 import { RiskLevel } from '../types/alert';
 import { DisasterType } from '../types/report';
 import { DEFAULT_REGION } from './reportMap';
-import { getZoneColor } from './warningMapHtml';
+
+const RISK_COLOR: Record<RiskLevel, string> = {
+  LOW: '#2E75D6',
+  MEDIUM: '#EAB308',
+  HIGH: Colors.warning,
+  CRITICAL: Colors.danger,
+};
 
 export interface WarningMapItem {
   id: string;
@@ -31,7 +37,7 @@ export function buildWarningsMapHtml(warnings: WarningMapItem[]): string {
     title: w.title,
     area: w.affectedArea,
     hazardLabel: w.hazardType === 'flood' ? 'Flood' : 'Landslide',
-    color: getZoneColor(w.hazardType, w.riskLevel),
+    color: RISK_COLOR[w.riskLevel] ?? Colors.warning,
     riskLevel: w.riskLevel,
     status: w.status,
     lat: w.latitude,

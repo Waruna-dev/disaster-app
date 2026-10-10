@@ -10,7 +10,7 @@ import { fetchAllShelters } from '../../../services/shelterService';
 import { SheltersMapEngine } from '../../../components/SheltersMapEngine';
 import { ShelterListCard } from '../../../components/ShelterListCard';
 
-const STATUS_FILTERS: (ShelterStatus | 'All')[] = ['All', 'Available', 'Limited', 'Full'];
+const STATUS_FILTERS: Array<ShelterStatus | 'All'> = ['All', 'Available', 'Limited', 'Full'];
 
 export default function SheltersScreen() {
   const insets = useSafeAreaInsets();

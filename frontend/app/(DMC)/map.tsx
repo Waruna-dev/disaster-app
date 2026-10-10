@@ -12,7 +12,7 @@ import { useFloodIncidents } from '../../hooks/useFloodIncidents';
 import { useWarnings } from '../../hooks/useWarnings';
 import { ReportStatus } from '../../types/report';
 import { RiskLevel } from '../../types/alert';
-import { IncidentZone, LANDSLIDE_PIN_COLOR, PinnedReport, STATUS_PIN, WarningZone, buildReportsMapHtml } from '../../utils/reportMap';
+import { IncidentZone, PinnedReport, STATUS_PIN, WarningZone, buildReportsMapHtml } from '../../utils/reportMap';
 import { getWarningStatus } from '../../utils/warningStatus';
 
 const WARNING_RISK_COLOR: Record<RiskLevel, string> = {
@@ -84,7 +84,6 @@ export default function MapScreen() {
           id: w.id,
           title: w.title,
           affectedArea: w.affectedArea,
-          hazardType: w.hazardType,
           riskLevel: w.riskLevel,
           status: getWarningStatus(w),
           centroid: { latitude: w.latitude, longitude: w.longitude },
@@ -185,10 +184,6 @@ export default function MapScreen() {
                   <Text style={styles.legendLabel}>{status}</Text>
                 </View>
               ))}
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: LANDSLIDE_PIN_COLOR }]} />
-                <Text style={styles.legendLabel}>Landslide</Text>
-              </View>
               {zones.length > 0 && (
                 <View style={styles.legendItem}>
                   <View style={[styles.legendSwatch, { backgroundColor: Colors.danger }]} />

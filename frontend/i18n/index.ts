@@ -1,7 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 
 import en from './locales/en.json';
 import si from './locales/si.json';
@@ -27,8 +26,6 @@ i18n
 
 // Load saved language
 export const loadLanguage = async () => {
-  if (Platform.OS === 'web' && typeof window === 'undefined') return;
-
   try {
     const savedLang = await AsyncStorage.getItem('appLanguage');
     if (savedLang) {

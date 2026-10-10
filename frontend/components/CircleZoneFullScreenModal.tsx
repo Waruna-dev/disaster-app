@@ -66,7 +66,7 @@ export function CircleZoneFullScreenModal({
   useEffect(() => {
     if (!visible) return;
     webViewRef.current?.injectJavaScript(`window.setLocation && window.setLocation(${latitude}, ${longitude}); true;`);
-     
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latitude, longitude, visible]);
 
   const handleMessage = (event: WebViewMessageEvent) => {

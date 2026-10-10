@@ -75,7 +75,7 @@ export function LocationPickerMap({
   useEffect(() => {
     if (hasPolygon) return;
     webViewRef.current?.injectJavaScript(`window.setLocation && window.setLocation(${latitude}, ${longitude}); true;`);
-     
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latitude, longitude, hasPolygon]);
 
   const handleMessage = (event: WebViewMessageEvent) => {

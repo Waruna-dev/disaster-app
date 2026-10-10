@@ -132,77 +132,40 @@ service cloud.firestore {
     }
 
     // ======================================================================
-    // SHELTERS (District Officer manages; residents can only read)
+    // SHELTERS / RESCUE / RESOURCES / OFFICER LOG (citizen app + officer-web)
     // ======================================================================
 
-    match /shelters/{shelterId} {
+
+    match /shelters/{id} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
-
-    // ======================================================================
-    // SHELTER REQUESTS (resident creates/reads own; officer manages all)
-    // ======================================================================
-
-    match /shelterRequests/{requestId} {
+    match /shelterRequests/{id} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-
-      allow create: if isAuthenticated()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'Pending';
-
-      // Residents may not edit their own request once submitted; only the officer
-      // updates status/assignment fields.
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'Pending';
+      allow update, delete: if isAdmin();
     }
-
-    // ======================================================================
-    // RESCUE TEAMS (District Officer manages; residents can only read)
-    // ======================================================================
-
-    match /rescueTeams/{teamId} {
+    match /rescueTeams/{id} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
-
-    // ======================================================================
-    // RESCUE REQUESTS (resident creates/reads own; officer manages all)
-    // ======================================================================
-
-    match /rescueRequests/{requestId} {
+    match /rescueRequests/{id} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-
-      allow create: if isAuthenticated()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'Pending';
-
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'Pending';
+      allow update, delete: if isAdmin();
     }
-
-    // ======================================================================
-    // RELIEF RESOURCES + DISTRIBUTION LOG (District Officer manages; residents read)
-    // ======================================================================
-
-    match /resources/{resourceId} {
+    match /resources/{id} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
-
-    match /resourceDistributions/{distributionId} {
+    match /resourceDistributions/{id} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
-
-    // ======================================================================
-    // OFFICER ACTIVITY LOG + RESCUE ASSIGNMENTS (district officer only)
-    // ======================================================================
-
+    // Officer-only (new for the web portal)
     match /activities/{id} {
       allow read, create, update, delete: if isAdmin();
     }
-
     match /rescueAssignments/{id} {
       allow read, create, update, delete: if isAdmin();
     }

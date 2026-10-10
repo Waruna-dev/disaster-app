@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet , TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { useTranslation } from 'react-i18next';
 
-
+import { TouchableOpacity } from 'react-native';
 
 interface ReportCardProps {
   type: 'flood' | 'landslide';

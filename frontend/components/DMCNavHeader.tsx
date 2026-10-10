@@ -12,10 +12,6 @@ const MENU_LINKS: { label: string; icon: keyof typeof Ionicons.glyphMap; route: 
   { label: 'Home', icon: 'home-outline', route: '/(DMC)/dashboard' },
   { label: 'Incidents', icon: 'document-text-outline', route: '/(DMC)/incidents' },
   { label: 'Map', icon: 'location-outline', route: '/(DMC)/map' },
-  { label: 'Shelters', icon: 'home-outline', route: '/(DMC)/shelters' },
-  { label: 'Rescue Teams', icon: 'people-outline', route: '/(DMC)/rescue-teams' },
-  { label: 'Resources', icon: 'cube-outline', route: '/(DMC)/resources' },
-  { label: 'Analytics & Reports', icon: 'bar-chart-outline', route: '/(DMC)/analytics' },
   { label: 'All Reports', icon: 'albums-outline', route: '/(DMC)/reports' },
   { label: 'Public Warnings', icon: 'megaphone-outline', route: '/(DMC)/alerts' },
 ];

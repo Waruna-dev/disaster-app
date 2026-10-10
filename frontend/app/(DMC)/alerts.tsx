@@ -1,15 +1,14 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Animated, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
 import { DMCNavHeader, useDMCScrollHeader } from '../../components/DMCNavHeader';
 import { DMCTabBar } from '../../components/DMCTabBar';
 import { WarningsMapModal } from '../../components/WarningsMapModal';
 import { useWarnings } from '../../hooks/useWarnings';
-import { cancelWarning, deleteWarning } from '../../services/alertService';
+import { cancelWarning } from '../../services/alertService';
 import { Warning, RiskLevel } from '../../types/alert';
 import { WarningMapItem } from '../../utils/warningsMapHtml';
 import { getWarningStatus } from '../../utils/warningStatus';
@@ -30,10 +29,10 @@ function formatDateTime(timestamp: Warning['createdAt']) {
 
 export default function AlertsScreen() {
   // Dashboard's "Warnings Map" tile links straight here with ?openMap=1 so it lands
-  // on the full map. The list underneath always starts on Active.
+  // on the full map showing every zone, not the active-only list.
   const { openMap } = useLocalSearchParams<{ openMap?: string }>();
   const { warnings, loading } = useWarnings();
-  const [filter, setFilter] = useState<FilterKey>('active');
+  const [filter, setFilter] = useState<FilterKey>(openMap ? 'all' : 'active');
   const [showMap, setShowMap] = useState(!!openMap);
   const { scrollY, onScroll, headerHeight } = useDMCScrollHeader();
   const insets = useSafeAreaInsets();
@@ -87,26 +86,6 @@ export default function AlertsScreen() {
     if (!warning) return;
     setShowMap(false);
     handleEdit(warning);
-  };
-
-  const swipeRefs = useRef<Record<string, SwipeableMethods | null>>({});
-
-  const handleDelete = (warning: Warning) => {
-    Alert.alert('Delete warning', `Permanently delete "${warning.title}"? This can't be undone.`, [
-      { text: 'Keep it', style: 'cancel', onPress: () => swipeRefs.current[warning.id]?.close() },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteWarning(warning.id);
-          } catch (error: any) {
-            swipeRefs.current[warning.id]?.close();
-            Alert.alert('Failed', error.message || 'Could not delete the warning.');
-          }
-        },
-      },
-    ]);
   };
 
   const handleCancel = (warning: Warning) => {
@@ -164,22 +143,7 @@ export default function AlertsScreen() {
             const status = getWarningStatus(warning);
             const risk = RISK_CONFIG[warning.riskLevel] ?? RISK_CONFIG.HIGH;
             return (
-              <ReanimatedSwipeable
-                key={warning.id}
-                ref={(ref) => {
-                  swipeRefs.current[warning.id] = ref;
-                }}
-                containerStyle={styles.swipeContainer}
-                overshootRight={false}
-                rightThreshold={40}
-                renderRightActions={() => (
-                  <TouchableOpacity style={styles.deleteAction} activeOpacity={0.8} onPress={() => handleDelete(warning)}>
-                    <Ionicons name="trash-outline" size={22} color={Colors.white} />
-                    <Text style={styles.deleteActionText}>Delete</Text>
-                  </TouchableOpacity>
-                )}
-              >
-              <View style={styles.card}>
+              <View key={warning.id} style={styles.card}>
                 <View style={styles.cardHeaderRow}>
                   <View style={styles.cardHeaderLeft}>
                     <View style={[styles.typeIcon, { backgroundColor: risk.bg }]}>
@@ -223,7 +187,6 @@ export default function AlertsScreen() {
                   </View>
                 )}
               </View>
-              </ReanimatedSwipeable>
             );
           })
         )}
@@ -238,13 +201,9 @@ export default function AlertsScreen() {
         warnings={mapItems}
         onClose={() => setShowMap(false)}
         onEditWarning={handleEditById}
-        onViewList={() => {
-          setFilter('active');
-          setShowMap(false);
-        }}
       />
 
-      <DMCTabBar active="warnings" />
+      <DMCTabBar />
     </View>
   );
 }
@@ -301,29 +260,13 @@ const styles = StyleSheet.create({
   filterLabelActive: {
     color: Colors.white,
   },
-  swipeContainer: {
-    marginBottom: 14,
-  },
   card: {
     backgroundColor: Colors.white,
     borderRadius: 18,
     padding: 16,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#F0F5F4',
-  },
-  deleteAction: {
-    width: 84,
-    marginLeft: 8,
-    borderRadius: 18,
-    backgroundColor: Colors.danger,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-  },
-  deleteActionText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.white,
   },
   cardHeaderRow: {
     flexDirection: 'row',

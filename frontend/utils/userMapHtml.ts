@@ -1,7 +1,13 @@
 import { Colors } from '../constants/colors';
 import { Report } from '../types/report';
 import { STATUS_PIN, DISASTER_SYMBOL, DEFAULT_REGION, WarningZone } from './reportMap';
-import { getZoneColor } from './warningMapHtml';
+
+const ZONE_RISK_COLOR: Record<string, string> = {
+  LOW: '#2E75D6',
+  MEDIUM: '#EAB308',
+  HIGH: Colors.warning,
+  CRITICAL: Colors.danger,
+};
 
 type ReportPoint = {
   id: string;
@@ -25,7 +31,7 @@ export function buildUserMapHtml(reports: Report[], warnings: WarningZone[] = []
     centroid: w.centroid,
     polygon: w.polygon,
     radiusMeters: w.radiusMeters,
-    color: getZoneColor(w.hazardType ?? 'flood', w.riskLevel),
+    color: ZONE_RISK_COLOR[w.riskLevel] || Colors.warning,
     active: w.status === 'Active',
     label: w.title,
     meta: `${w.affectedArea} · ${w.riskLevel} risk`,

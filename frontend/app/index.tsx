@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -13,14 +13,7 @@ export default function SplashScreen() {
   const { height, width } = useWindowDimensions();
   const { user, isLoading } = useAuth();
 
-  // The web build is the District Officer portal; the citizen app runs on mobile.
   useEffect(() => {
-    if (Platform.OS === 'web') router.replace('/officer/dashboard' as any);
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-
     // Stage 1: Wait 2.5s on splash, then go to loading
     const splashTimer = setTimeout(() => {
       setStep('loading');

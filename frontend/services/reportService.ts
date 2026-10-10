@@ -2,8 +2,6 @@ import { db } from '../config/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import * as FileSystem from 'expo-file-system/legacy';
 
-import { uploadImage } from './imageUploadService';
-
 interface ReportData {
   userId: string;
   disasterType: 'flood' | 'landslide';
@@ -17,6 +15,8 @@ interface ReportData {
   photoUrls?: string[];
   status?: 'Pending' | 'Verified' | 'Rejected';
 }
+
+import { uploadImage } from './imageUploadService';
 
 /**
  * Uploads a local image URI to Cloudinary via unsigned REST API.

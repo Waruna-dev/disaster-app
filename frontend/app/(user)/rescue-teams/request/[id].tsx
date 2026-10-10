@@ -110,8 +110,6 @@ export default function RescueRequestFormScreen() {
         longitude: coords.longitude,
         address: locationLabel,
         district: team?.district,
-        preferredTeamId: team?.id,
-        preferredTeamName: team?.name,
       });
       Alert.alert('Request Sent', 'Your rescue request has been sent to the district officer.', [
         { text: 'View My Requests', onPress: () => router.replace('/(user)/rescue-teams/my-requests' as any) },

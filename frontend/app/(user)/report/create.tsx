@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Platform, Text, Alert, ActivityIndicator, Animated, TouchableOpacity } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
 import { Colors } from '../../../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { CreateReportHeader, CreateReportStickyBar } from '../../../components/CreateReportHeader';
@@ -17,8 +19,6 @@ import { createReport, uploadReportPhoto } from '../../../services/reportService
 import { getUserProfile } from '../../../services/userService';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const AnimatedKeyboardAwareScrollView = Animated.createAnimatedComponent(KeyboardAwareScrollView);
 
 export default function CreateReportScreen() {
   const { t } = useTranslation();
