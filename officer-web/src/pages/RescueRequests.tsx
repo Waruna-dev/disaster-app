@@ -29,9 +29,11 @@ export default function RescueRequests() {
     return tab === 'All' ? reqs : reqs.filter((r) => r.status === 'Pending');
   }, [reqs, tab]);
   const options = useMemo(() => {
-    if (!sel) return [] as RescueTeam[];
-    const score = (t: RescueTeam) => (t.type === sel.requestedType ? 0 : 2) + (t.district === sel.district ? 0 : 1);
-    return teams.filter((t) => t.status === 'Available').sort((a, b) => score(a) - score(b));
+    if (!sel?.district) return [] as RescueTeam[];
+    const district = sel.district.trim().toLocaleLowerCase();
+    return teams
+      .filter((t) => t.status === 'Available' && t.district.trim().toLocaleLowerCase() === district)
+      .sort((a, b) => Number(b.type === sel.requestedType) - Number(a.type === sel.requestedType) || a.name.localeCompare(b.name));
   }, [sel, teams]);
   const label = (t: RescueTeam) => `${t.name} — ${t.type}, ${t.district} (${t.members} members)`;
 
@@ -77,9 +79,9 @@ export default function RescueRequests() {
             <MapView height={180} zoom={13} center={[sel.latitude, sel.longitude]} markers={[{ id: 'req', lat: sel.latitude, lng: sel.longitude, label: 'Citizen location', color: '#C62828' }]} />
             <div className="steps">{STEPS.map((s, i) => <div key={s} className={`step${sel.status !== 'Rejected' && i <= STEPS.indexOf(sel.status) ? ' on' : ''}`}><i />{s}</div>)}</div>
             <KV label="Citizen">{sel.userName || 'Resident'}</KV><KV label="Contact">{sel.contactNumber}</KV><KV label="Support type">{sel.requestedType}</KV><KV label="People">{sel.peopleCount}</KV>
-            <KV label="Address">{sel.address}</KV><KV label="Status"><Badge text={sel.status} /></KV>{sel.teamName && <KV label="Team">{sel.teamName}</KV>}
+            <KV label="Address">{sel.address}</KV><KV label="Status"><Badge text={sel.status} /></KV><KV label="Citizen selected team">{sel.teamName || 'No team selected'}</KV>
             {sel.status === 'Pending' && <div style={{ marginTop: 14 }}>
-              <Field label="Assign team" hint="Best type / district matches are listed first."><Select value={pick} onChange={setPick} options={options.map(label)} placeholder="Select an available team" /></Field>
+              <Field label="Assign team" hint={sel.district ? `Available teams in ${sel.district} are shown.` : 'The citizen district is unavailable, so no teams can be assigned.'}><Select value={pick} onChange={setPick} options={options.map(label)} placeholder="Select an available team" disabled={!sel.district || options.length === 0} /></Field>
               <Field label="Note to citizen (optional)"><TextArea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g., Team will arrive in 20 minutes." /></Field>
               <div className="actions"><Btn icon={CheckIcon} loading={busy} onClick={assign}>Assign Team</Btn><Btn variant="danger" onClick={reject}>Reject</Btn></div>
             </div>}
