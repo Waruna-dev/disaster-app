@@ -37,7 +37,7 @@ export default function ShelterRequests() {
     if (!sel || !shelter) { toast('Select a shelter to assign.', 'error'); return; }
     try {
       setBusy(true);
-      await assignShelter(sel.id, shelter.id, shelter.name, notes.trim() || undefined);
+      await assignShelter(sel.id, shelter.id, shelter.name, sel.peopleCount, notes.trim() || undefined);
       await logActivity({ type: 'shelter', title: 'Shelter assigned to request', detail: `${sel.userName || 'Resident'} (${sel.peopleCount} people) → ${shelter.name}`, location: shelter.district, status: 'Success', createdBy: user?.uid });
       toast('Shelter assigned. The citizen can see the update.');
     } catch (e) { toast((e as Error).message || 'Could not assign', 'error'); } finally { setBusy(false); }

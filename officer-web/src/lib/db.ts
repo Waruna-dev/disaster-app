@@ -25,8 +25,31 @@ export const createShelter = (i: ShelterInput) => addDoc(collection(db, 'shelter
 export const updateShelter = (id: string, i: Partial<ShelterInput>) => updateDoc(doc(db, 'shelters', id), { ...i, updatedAt: serverTimestamp() });
 export const deleteShelter = (id: string) => deleteDoc(doc(db, 'shelters', id));
 
-export const assignShelter = (requestId: string, shelterId: string, shelterName: string, notes?: string) =>
-  updateDoc(doc(db, 'shelterRequests', requestId), { status: 'Assigned', shelterId, shelterName, officerNotes: notes ?? null, updatedAt: serverTimestamp() });
+export async function assignShelter(requestId: string, shelterId: string, shelterName: string, peopleCount: number, notes?: string) {
+  if (!Number.isInteger(peopleCount) || peopleCount < 1) throw new Error('The request must include at least one person.');
+  const requestRef = doc(db, 'shelterRequests', requestId);
+  const shelterRef = doc(db, 'shelters', shelterId);
+  await runTransaction(db, async (tx) => {
+    const [requestSnap, shelterSnap] = await Promise.all([tx.get(requestRef), tx.get(shelterRef)]);
+    if (!requestSnap.exists()) throw new Error('Shelter request no longer exists.');
+    if (!shelterSnap.exists()) throw new Error('Shelter no longer exists.');
+    const request = requestSnap.data() as { status?: string; peopleCount?: number };
+    const shelter = shelterSnap.data() as { capacity?: number; currentOccupancy?: number; status?: ShelterStatus };
+    if (request.status !== 'Pending') throw new Error('This shelter request has already been processed.');
+    const capacity = Number(shelter.capacity ?? 0);
+    const occupancy = Number(shelter.currentOccupancy ?? 0);
+    const nextOccupancy = occupancy + peopleCount;
+    if (shelter.status === 'Closed' || nextOccupancy > capacity) {
+      throw new Error(`Only ${Math.max(0, capacity - occupancy)} spaces are available in this shelter.`);
+    }
+    tx.update(shelterRef, {
+      currentOccupancy: nextOccupancy,
+      status: deriveShelterStatus(capacity, nextOccupancy),
+      updatedAt: serverTimestamp(),
+    });
+    tx.update(requestRef, { status: 'Assigned', shelterId, shelterName, officerNotes: notes ?? null, updatedAt: serverTimestamp() });
+  });
+}
 export const setShelterRequestStatus = (id: string, status: 'Rejected' | 'Completed', notes?: string) =>
   updateDoc(doc(db, 'shelterRequests', id), { status, ...(notes !== undefined ? { officerNotes: notes } : {}), updatedAt: serverTimestamp() });
 
