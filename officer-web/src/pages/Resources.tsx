@@ -4,7 +4,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { createResource, deleteResource, logActivity, recordDistribution, updateResource } from '../lib/db';
-import { DISTRICTS, DISTRICT_COORDS, RESOURCE_CATEGORIES, RESOURCE_UNITS } from '../lib/constants';
+import { DISTRICT_COORDS, RESOURCE_CATEGORIES, RESOURCE_UNITS } from '../lib/constants';
 import { num, todayISO } from '../lib/format';
 import type { Resource } from '../lib/types';
 import { Badge, Btn, Card, Field, Input, KV, Modal, PageHeader, Select, Spinner, StatCard, Table, Tabs, TextArea } from '../components/ui';
@@ -27,7 +27,7 @@ export default function Resources() {
       .map((w) => w.affectedArea.trim()),
     [warnings],
   );
-  const destinationOptions = useMemo(() => [...new Set([...DISTRICTS, ...affectedAreas])], [affectedAreas]);
+  const destinationOptions = useMemo(() => [...new Set(affectedAreas)], [affectedAreas]);
   const selectedWarning = warnings.find((w) => w.status === 'Active' && w.affectedArea.trim() === d.district);
   const shown = useMemo(() => resources.filter((x) => filter === 'All Categories' || x.category === filter), [resources, filter]);
   const low = resources.filter((x) => x.totalQuantity > 0 && x.availableQuantity / x.totalQuantity <= 0.2).length;
@@ -109,7 +109,7 @@ export default function Resources() {
           </Card>
           <div>
             <Card title="Selected Location / Area">
-              <KV label="Name">{d.district || '—'}</KV><KV label="Type">{selectedWarning ? 'Hazard affected area' : 'District'}</KV><KV label="District">{selectedWarning?.affectedArea || d.district || '—'}</KV>
+              <KV label="Name">{d.district || '—'}</KV><KV label="Type">Hazard affected area</KV><KV label="Affected area">{selectedWarning?.affectedArea || d.district || '—'}</KV>
               <div style={{ marginTop: 12 }}><MapView height={200} zoom={10} center={coords} markers={coords ? [{ id: 'd', lat: coords[0], lng: coords[1], label: d.district, color: '#C62828' }] : []} /></div>
             </Card>
             <Card title="Recent Distributions" action={<Btn variant="ghost" small onClick={() => setTab('history')}>View All</Btn>}>
