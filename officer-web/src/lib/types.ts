@@ -12,6 +12,7 @@ export interface Shelter {
 export type ShelterRequestStatus = 'Pending' | 'Assigned' | 'Rejected' | 'Completed';
 export interface ShelterRequest {
   id: string; userId: string; userName?: string | null; contactNumber?: string | null; shelterId?: string | null; shelterName?: string | null;
+  preferredShelterId?: string | null; preferredShelterName?: string | null; affectedArea?: string | null;
   latitude: number; longitude: number; address: string; peopleCount: number; description: string;
   status: ShelterRequestStatus; district?: string | null; officerNotes?: string | null; createdAt: TS; updatedAt?: TS;
 }

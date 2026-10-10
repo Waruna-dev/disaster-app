@@ -26,7 +26,7 @@ export const syncShelterOccupanciesFromAssignedRequests = async (): Promise<void
 
   requestSnapshot.docs.forEach((requestDoc) => {
     const request = requestDoc.data() as ShelterRequest;
-    if (request.status !== 'Assigned' || !request.shelterId) return;
+    if (request.status !== 'Completed' || !request.shelterId) return;
     const peopleCount = Math.max(0, Number(request.peopleCount) || 0);
     occupancyByShelter.set(request.shelterId, (occupancyByShelter.get(request.shelterId) || 0) + peopleCount);
   });
@@ -114,20 +114,8 @@ export const assignShelterToRequest = async (
 
     const request = requestSnap.data() as ShelterRequest;
     const shelter = shelterSnap.data();
-    const peopleCount = Math.max(0, Number(request.peopleCount) || 0);
-    const capacity = Number(shelter.capacity) || 0;
-    const currentOccupancy = Number(shelter.currentOccupancy) || 0;
-
     if (request.status !== 'Pending') throw new Error('This request has already been processed.');
-    if (shelter.status === 'Closed' || currentOccupancy + peopleCount > capacity) {
-      throw new Error('This shelter does not have enough available capacity.');
-    }
-
-    transaction.update(shelterRef, {
-      currentOccupancy: currentOccupancy + peopleCount,
-      status: deriveShelterStatus(capacity, currentOccupancy + peopleCount),
-      updatedAt: serverTimestamp(),
-    });
+    if (shelter.status === 'Closed') throw new Error('This shelter is currently closed.');
     transaction.update(requestRef, {
       status: 'Assigned' as ShelterRequestStatus,
       shelterId,
@@ -149,21 +137,26 @@ export const updateShelterRequestStatus = async (
     if (!requestSnap.exists()) throw new Error('Shelter request no longer exists.');
 
     const request = requestSnap.data() as ShelterRequest;
-    if (request.status === 'Assigned' && status === 'Completed' && request.shelterId) {
+    if (status === 'Completed') {
+      if (request.status !== 'Assigned') throw new Error('Only assigned requests can be marked as completed.');
+      if (!request.shelterId) throw new Error('Assigned request is missing shelter details.');
+
       const shelterRef = doc(db, 'shelters', request.shelterId);
       const shelterSnap = await transaction.get(shelterRef);
-      if (shelterSnap.exists()) {
-        const shelter = shelterSnap.data() as Shelter;
-        const capacity = Math.max(0, Number(shelter.capacity) || 0);
-        const peopleCount = Math.max(0, Number(request.peopleCount) || 0);
-        const currentOccupancy = Math.max(0, Number(shelter.currentOccupancy) || 0);
-        const nextOccupancy = Math.max(0, currentOccupancy - peopleCount);
-        transaction.update(shelterRef, {
-          currentOccupancy: nextOccupancy,
-          status: deriveShelterStatus(capacity, nextOccupancy, shelter.status === 'Closed'),
-          updatedAt: serverTimestamp(),
-        });
-      }
+      if (!shelterSnap.exists()) throw new Error('Assigned shelter no longer exists.');
+
+      const shelter = shelterSnap.data() as Shelter;
+      const capacity = Math.max(0, Number(shelter.capacity) || 0);
+      const peopleCount = Math.max(0, Number(request.peopleCount) || 0);
+      const currentOccupancy = Math.max(0, Number(shelter.currentOccupancy) || 0);
+      const nextOccupancy = currentOccupancy + peopleCount;
+      if (nextOccupancy > capacity) throw new Error('This shelter does not have enough available capacity.');
+
+      transaction.update(shelterRef, {
+        currentOccupancy: nextOccupancy,
+        status: deriveShelterStatus(capacity, nextOccupancy, shelter.status === 'Closed'),
+        updatedAt: serverTimestamp(),
+      });
     }
 
     transaction.update(requestRef, {

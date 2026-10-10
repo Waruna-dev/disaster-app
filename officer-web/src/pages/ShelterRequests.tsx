@@ -26,7 +26,14 @@ export default function ShelterRequests() {
   const rows = useMemo(() => (tab === 'All' ? reqs : reqs.filter((r) => r.status === tab)), [reqs, tab]);
   const options = useMemo(() => {
     if (!sel) return [] as Shelter[];
-    return shelters.filter((s) => s.status === 'Available' || s.status === 'Limited').sort((a, b) => Number(b.district === sel.district) - Number(a.district === sel.district));
+    const affectedArea = (sel.affectedArea || sel.address)?.split(',').pop()?.trim().toLowerCase();
+    return shelters
+      .filter((s) => {
+        if ((s.status !== 'Available' && s.status !== 'Limited') || s.district !== sel.district) return false;
+        if (!affectedArea || s.id === sel.preferredShelterId) return true;
+        return `${s.name} ${s.location}`.toLowerCase().includes(affectedArea);
+      })
+      .sort((a, b) => Number(b.id === sel.preferredShelterId) - Number(a.id === sel.preferredShelterId));
   }, [sel, shelters]);
   const label = (s: Shelter) => `${s.name} — ${s.district} (${s.capacity - s.currentOccupancy} free)`;
 
@@ -63,10 +70,12 @@ export default function ShelterRequests() {
             <MapView height={180} zoom={13} center={[sel.latitude, sel.longitude]} markers={[{ id: 'req', lat: sel.latitude, lng: sel.longitude, label: 'Citizen location', color: '#C62828' }, ...options.slice(0, 5).map((o) => ({ id: o.id, lat: o.latitude, lng: o.longitude, label: o.name }))]} />
             <div style={{ marginTop: 10 }}>
               <KV label="Citizen">{sel.userName || 'Resident'}</KV>{sel.contactNumber && <KV label="Contact">{sel.contactNumber}</KV>}<KV label="People">{sel.peopleCount}</KV>
-              <KV label="Address">{sel.address}</KV><KV label="Situation">{sel.description}</KV><KV label="Status"><Badge text={sel.status} /></KV>{sel.shelterName && <KV label="Shelter">{sel.shelterName}</KV>}
+              <KV label="Address">{sel.address}</KV><KV label="Situation">{sel.description}</KV><KV label="Status"><Badge text={sel.status} /></KV>
+              <KV label="Citizen selected shelter">{sel.preferredShelterName || 'No shelter selected'}</KV>
+              {sel.shelterName && <KV label="Assigned shelter">{sel.shelterName}</KV>}
             </div>
             {sel.status === 'Pending' && <div style={{ marginTop: 14 }}>
-              <Field label="Assign shelter" hint="Same-district shelters with free capacity are listed first."><Select value={pick} onChange={setPick} options={options.map(label)} placeholder="Select a shelter" /></Field>
+              <Field label="Assign shelter" hint={options.length ? `Available shelters in ${sel.affectedArea?.split(',').pop()?.trim() || sel.district}, ${sel.district} are shown.` : `No available shelters in the citizen's affected area and district.`}><Select value={pick} onChange={setPick} options={options.map(label)} placeholder="Select a shelter" /></Field>
               <Field label="Note to citizen (optional)"><TextArea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g., Bring ID and essential medicines." /></Field>
               <div className="actions"><Btn icon={CheckIcon} loading={busy} onClick={assign}>Assign Shelter</Btn><Btn variant="danger" onClick={reject}>Reject</Btn></div>
             </div>}
