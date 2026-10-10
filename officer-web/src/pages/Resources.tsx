@@ -23,12 +23,12 @@ export default function Resources() {
   const selected = resources.find((x) => x.name === d.resource);
   const affectedAreas = useMemo(
     () => warnings
-      .filter((w) => w.status === 'Active' && w.affectedArea.trim())
+      .filter((w) => w.affectedArea.trim())
       .map((w) => w.affectedArea.trim()),
     [warnings],
   );
   const destinationOptions = useMemo(() => [...new Set(affectedAreas)], [affectedAreas]);
-  const selectedWarning = warnings.find((w) => w.status === 'Active' && w.affectedArea.trim() === d.district);
+  const selectedWarning = warnings.find((w) => w.affectedArea.trim() === d.district);
   const shown = useMemo(() => resources.filter((x) => filter === 'All Categories' || x.category === filter), [resources, filter]);
   const low = resources.filter((x) => x.totalQuantity > 0 && x.availableQuantity / x.totalQuantity <= 0.2).length;
 
@@ -109,7 +109,7 @@ export default function Resources() {
           </Card>
           <div>
             <Card title="Selected Location / Area">
-              <KV label="Name">{d.district || '—'}</KV><KV label="Type">Hazard affected area</KV><KV label="Affected area">{selectedWarning?.affectedArea || d.district || '—'}</KV>
+              <KV label="Name">{d.district || '—'}</KV><KV label="Type">Hazard affected area</KV><KV label="Affected area">{selectedWarning?.affectedArea || d.district || '—'}</KV>{selectedWarning && <KV label="Warning status"><Badge text={selectedWarning.status} /></KV>}
               <div style={{ marginTop: 12 }}><MapView height={200} zoom={10} center={coords} markers={coords ? [{ id: 'd', lat: coords[0], lng: coords[1], label: d.district, color: '#C62828' }] : []} /></div>
             </Card>
             <Card title="Recent Distributions" action={<Btn variant="ghost" small onClick={() => setTab('history')}>View All</Btn>}>
