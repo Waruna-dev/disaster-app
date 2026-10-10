@@ -27,8 +27,9 @@ export default function Resources() {
   const openForm = (e: Resource | null) => { setForm({ edit: e }); setR({ name: e?.name ?? '', category: e?.category ?? '', unit: e?.unit ?? '', total: e ? String(e.totalQuantity) : '', avail: e ? String(e.availableQuantity) : '' }); };
   const unitOptions = r.unit && !RESOURCE_UNITS.includes(r.unit) ? [r.unit, ...RESOURCE_UNITS] : RESOURCE_UNITS;
   const saveResource = async () => {
-    const total = parseInt(r.total, 10); const avail = r.avail.trim() === '' ? total : parseInt(r.avail, 10);
-    if (!r.name.trim() || !r.category || !r.unit.trim() || isNaN(total) || isNaN(avail)) { toast('Fill name, category, unit and total quantity.', 'error'); return; }
+    const total = Number(r.total); const avail = r.avail.trim() === '' ? total : Number(r.avail);
+    if (!r.name.trim() || !r.category || !r.unit.trim() || !Number.isInteger(total) || total <= 0) { toast('Enter a total quantity greater than 0.', 'error'); return; }
+    if (!Number.isInteger(avail) || avail < 0) { toast('Available quantity cannot be negative.', 'error'); return; }
     if (avail > total) { toast('Available quantity cannot exceed total.', 'error'); return; }
     try {
       setBusy(true);
@@ -122,8 +123,8 @@ export default function Resources() {
           <Field label="Category" required><Select value={r.category} onChange={setRf('category')} options={RESOURCE_CATEGORIES} placeholder="Select category" /></Field>
           <Field label="Unit" required><Select value={r.unit} onChange={setRf('unit')} options={unitOptions} placeholder="Select unit" /></Field>
           <div className="cols">
-            <Field label="Total Quantity" required><Input type="number" min={0} value={r.total} onChange={(e) => setRf('total')(e.target.value)} /></Field>
-            <Field label="Available Quantity" hint="Defaults to total"><Input type="number" min={0} value={r.avail} onChange={(e) => setRf('avail')(e.target.value)} /></Field>
+            <Field label="Total Quantity" required><Input type="number" min={1} step={1} value={r.total} onChange={(e) => setRf('total')(e.target.value)} /></Field>
+            <Field label="Available Quantity" hint="Defaults to total"><Input type="number" min={0} step={1} value={r.avail} onChange={(e) => setRf('avail')(e.target.value)} /></Field>
           </div>
           <div className="modal-foot"><Btn variant="secondary" onClick={() => setForm(null)}>Cancel</Btn><Btn icon={Save} loading={busy} onClick={saveResource}>Save Resource</Btn></div>
         </Modal>
