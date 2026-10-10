@@ -4,7 +4,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { createResource, deleteResource, logActivity, recordDistribution, updateResource } from '../lib/db';
-import { DISTRICT_COORDS, RESOURCE_CATEGORIES, RESOURCE_UNITS } from '../lib/constants';
+import { RESOURCE_CATEGORIES, RESOURCE_UNITS } from '../lib/constants';
 import { num, todayISO } from '../lib/format';
 import type { Resource } from '../lib/types';
 import { Badge, Btn, Card, Field, Input, KV, Modal, PageHeader, Select, Spinner, StatCard, Table, Tabs, TextArea } from '../components/ui';
@@ -21,21 +21,13 @@ export default function Resources() {
   const setRf = (k: keyof typeof r) => (v: string) => setR((s) => ({ ...s, [k]: v }));
   const setDf = (k: keyof typeof d) => (v: string) => setD((s) => ({ ...s, [k]: v }));
   const selected = resources.find((x) => x.name === d.resource);
-  const warningDestinations = useMemo(
-    () => warnings
-      .filter((w) => w.affectedArea.trim())
-      .map((w) => ({
-        area: w.affectedArea.trim(),
-        status: w.status === 'Active' && (w.expiresAt?.toMillis() ?? Infinity) < Date.now() ? 'Expired' : w.status,
-      })),
+  const destinationOptions = useMemo(
+    () => [...new Set(warnings
+      .filter((w) => w.status === 'Active' && (w.expiresAt?.toMillis() ?? Infinity) >= Date.now() && w.affectedArea.trim())
+      .map((w) => w.affectedArea.trim()))],
     [warnings],
   );
-  const destinationOptions = useMemo(
-    () => warningDestinations.map(({ area, status }) => `${area} — ${status}`),
-    [warningDestinations],
-  );
-  const selectedDestination = warningDestinations.find(({ area, status }) => `${area} — ${status}` === d.district);
-  const selectedWarning = warnings.find((w) => w.affectedArea.trim() === selectedDestination?.area && w.status === selectedDestination.status);
+  const selectedWarning = warnings.find((w) => w.status === 'Active' && (w.expiresAt?.toMillis() ?? Infinity) >= Date.now() && w.affectedArea.trim() === d.district);
   const shown = useMemo(() => resources.filter((x) => filter === 'All Categories' || x.category === filter), [resources, filter]);
   const low = resources.filter((x) => x.totalQuantity > 0 && x.availableQuantity / x.totalQuantity <= 0.2).length;
 
@@ -58,12 +50,12 @@ export default function Resources() {
 
   const record = async () => {
     const qty = parseInt(d.qty, 10);
-    if (!selected || !selectedDestination || !qty || qty < 1) { toast('Select a resource, quantity and hazard area.', 'error'); return; }
+    if (!selected || !selectedWarning || !qty || qty < 1) { toast('Select a resource, quantity and active hazard area.', 'error'); return; }
     if (qty > selected.availableQuantity) { toast(`Only ${num(selected.availableQuantity)} ${selected.unit} available.`, 'error'); return; }
     try {
       setBusy(true);
-      await recordDistribution({ resourceId: selected.id, quantity: qty, district: selectedDestination.area, distributionDate: d.date, notes: d.notes.trim() || undefined, recordedBy: user?.uid });
-      await logActivity({ type: 'resource', title: 'Resource distribution recorded', detail: `${num(qty)} ${selected.unit} ${selected.name} → ${selectedDestination.area}`, location: selectedDestination.area, status: 'Success', createdBy: user?.uid });
+      await recordDistribution({ resourceId: selected.id, quantity: qty, district: selectedWarning.affectedArea.trim(), distributionDate: d.date, notes: d.notes.trim() || undefined, recordedBy: user?.uid });
+      await logActivity({ type: 'resource', title: 'Resource distribution recorded', detail: `${num(qty)} ${selected.unit} ${selected.name} → ${selectedWarning.affectedArea.trim()}`, location: selectedWarning.affectedArea.trim(), status: 'Success', createdBy: user?.uid });
       toast('Distribution recorded. Stock updated.'); setD((s) => ({ ...s, qty: '', notes: '' }));
     } catch (e) { toast((e as Error).message || 'Could not record distribution', 'error'); } finally { setBusy(false); }
   };
@@ -116,7 +108,7 @@ export default function Resources() {
           </Card>
           <div>
             <Card title="Selected Location / Area">
-              <KV label="Name">{selectedDestination?.area || '—'}</KV><KV label="Type">Hazard affected area</KV><KV label="Affected area">{selectedDestination?.area || '—'}</KV>{selectedWarning && <KV label="Warning status"><Badge text={selectedDestination?.status ?? '—'} /></KV>}
+              <KV label="Name">{selectedWarning?.affectedArea || '—'}</KV><KV label="Type">Active hazard affected area</KV><KV label="Affected area">{selectedWarning?.affectedArea || '—'}</KV>
               <div style={{ marginTop: 12 }}><MapView height={200} zoom={10} center={coords} markers={coords ? [{ id: 'd', lat: coords[0], lng: coords[1], label: d.district, color: '#C62828' }] : []} /></div>
             </Card>
             <Card title="Recent Distributions" action={<Btn variant="ghost" small onClick={() => setTab('history')}>View All</Btn>}>
