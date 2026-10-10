@@ -4,7 +4,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { createResource, deleteResource, logActivity, recordDistribution, updateResource } from '../lib/db';
-import { DISTRICTS, DISTRICT_COORDS, RESOURCE_CATEGORIES } from '../lib/constants';
+import { DISTRICTS, DISTRICT_COORDS, RESOURCE_CATEGORIES, RESOURCE_UNITS } from '../lib/constants';
 import { num, todayISO } from '../lib/format';
 import type { Resource } from '../lib/types';
 import { Badge, Btn, Card, Field, Input, KV, Modal, PageHeader, Select, Spinner, StatCard, Table, Tabs, TextArea } from '../components/ui';
@@ -25,6 +25,7 @@ export default function Resources() {
   const low = resources.filter((x) => x.totalQuantity > 0 && x.availableQuantity / x.totalQuantity <= 0.2).length;
 
   const openForm = (e: Resource | null) => { setForm({ edit: e }); setR({ name: e?.name ?? '', category: e?.category ?? '', unit: e?.unit ?? '', total: e ? String(e.totalQuantity) : '', avail: e ? String(e.availableQuantity) : '' }); };
+  const unitOptions = r.unit && !RESOURCE_UNITS.includes(r.unit) ? [r.unit, ...RESOURCE_UNITS] : RESOURCE_UNITS;
   const saveResource = async () => {
     const total = parseInt(r.total, 10); const avail = r.avail.trim() === '' ? total : parseInt(r.avail, 10);
     if (!r.name.trim() || !r.category || !r.unit.trim() || isNaN(total) || isNaN(avail)) { toast('Fill name, category, unit and total quantity.', 'error'); return; }
@@ -119,7 +120,7 @@ export default function Resources() {
         <Modal title={form.edit ? 'Edit Resource' : 'Add Resource'} onClose={() => setForm(null)}>
           <Field label="Name" required><Input value={r.name} onChange={(e) => setRf('name')(e.target.value)} placeholder="e.g., Drinking Water" /></Field>
           <Field label="Category" required><Select value={r.category} onChange={setRf('category')} options={RESOURCE_CATEGORIES} placeholder="Select category" /></Field>
-          <Field label="Unit" required><Input value={r.unit} onChange={(e) => setRf('unit')(e.target.value)} placeholder="e.g., Bottles, Packs, Tents" /></Field>
+          <Field label="Unit" required><Select value={r.unit} onChange={setRf('unit')} options={unitOptions} placeholder="Select unit" /></Field>
           <div className="cols">
             <Field label="Total Quantity" required><Input type="number" min={0} value={r.total} onChange={(e) => setRf('total')(e.target.value)} /></Field>
             <Field label="Available Quantity" hint="Defaults to total"><Input type="number" min={0} value={r.avail} onChange={(e) => setRf('avail')(e.target.value)} /></Field>
