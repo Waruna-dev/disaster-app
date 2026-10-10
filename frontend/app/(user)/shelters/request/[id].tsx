@@ -96,6 +96,8 @@ export default function ShelterRequestFormScreen() {
         userId: user.uid,
         userName: userProfile?.fullName,
         contactNumber: (userProfile as any)?.contactNumber,
+        shelterId: shelter?.id,
+        shelterName: shelter?.name,
         latitude: coords.latitude,
         longitude: coords.longitude,
         address: locationLabel,
