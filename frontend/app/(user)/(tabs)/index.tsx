@@ -142,6 +142,29 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitleNoMargin}>Emergency Services</Text>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(user)/my-requests' as any)}>
+              <Text style={styles.viewAllText}>My Requests</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.servicesRow}>
+            <TouchableOpacity style={styles.serviceButton} activeOpacity={0.8} onPress={() => router.push('/(user)/shelters' as any)}>
+              <View style={styles.serviceIconWrap}><Ionicons name="home-outline" size={22} color={Colors.primary} /></View>
+              <Text style={styles.serviceLabel}>Shelters</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.serviceButton} activeOpacity={0.8} onPress={() => router.push('/(user)/rescue-teams' as any)}>
+              <View style={styles.serviceIconWrap}><Ionicons name="people-outline" size={22} color={Colors.primary} /></View>
+              <Text style={styles.serviceLabel}>Rescue Teams</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.serviceButton} activeOpacity={0.8} onPress={() => router.push('/(user)/resources' as any)}>
+              <View style={styles.serviceIconWrap}><Ionicons name="cube-outline" size={22} color={Colors.primary} /></View>
+              <Text style={styles.serviceLabel}>Resources</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* TEMP dev shortcut — remove once admin sign-in/redirect is wired up */}
         {isAdmin && (
           <View style={styles.section}>
@@ -273,6 +296,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
   },
+  servicesRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  serviceButton: { flex: 1, backgroundColor: Colors.white, borderRadius: 18, paddingVertical: 16, alignItems: 'center', borderWidth: 1, borderColor: '#EEF3F1' },
+  serviceIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#E8F5F2', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  serviceLabel: { fontSize: 12, fontWeight: '700', color: Colors.textDark },
   quickActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

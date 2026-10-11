@@ -132,6 +132,45 @@ service cloud.firestore {
     }
 
     // ======================================================================
+    // SHELTERS / RESCUE / RESOURCES / OFFICER LOG (citizen app + officer-web)
+    // ======================================================================
+
+
+    match /shelters/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    match /shelterRequests/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'Pending';
+      allow update, delete: if isAdmin();
+    }
+    match /rescueTeams/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    match /rescueRequests/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'Pending';
+      allow update, delete: if isAdmin();
+    }
+    match /resources/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    match /resourceDistributions/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    // Officer-only (new for the web portal)
+    match /activities/{id} {
+      allow read, create, update, delete: if isAdmin();
+    }
+    match /rescueAssignments/{id} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    // ======================================================================
     // DEFAULT DENY
     // ======================================================================
 

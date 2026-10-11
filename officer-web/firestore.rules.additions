@@ -1,0 +1,40 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// District Officer portal — Firestore rules to MERGE into  disaster-app/firestore.rules
+// Paste these `match` blocks INSIDE `match /databases/{database}/documents { ... }`,
+// above the final "DEFAULT DENY" block. They reuse your existing isAuthenticated()/isAdmin().
+// Skip any block that already exists (the citizen-app work may have added some).
+// ─────────────────────────────────────────────────────────────────────────────
+
+    match /shelters/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    match /shelterRequests/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'Pending';
+      allow update, delete: if isAdmin();
+    }
+    match /rescueTeams/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    match /rescueRequests/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'Pending';
+      allow update, delete: if isAdmin();
+    }
+    match /resources/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    match /resourceDistributions/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    // Officer-only (new for the web portal)
+    match /activities/{id} {
+      allow read, create, update, delete: if isAdmin();
+    }
+    match /rescueAssignments/{id} {
+      allow read, create, update, delete: if isAdmin();
+    }
