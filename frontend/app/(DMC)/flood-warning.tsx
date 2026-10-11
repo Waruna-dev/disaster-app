@@ -118,17 +118,16 @@ export default function FloodWarningScreen() {
           <>
             <View style={styles.summaryGrid}>
               <StatTile
-                icon="notifications"
+                icon="notifications-outline"
                 value={String(statusCounts.alert)}
                 label="Alert Stations"
                 onPress={() => setLevelPopup('alert')}
                 tint={Colors.warning}
-                tintBg="#F0F7F4"
-                iconColor="#C0C5C3"
+                tintBg="#FEF5E7"
                 compact
               />
               <StatTile
-                materialIcon="waves"
+                icon="water-outline"
                 value={String(statusCounts.minor)}
                 label="Minor Flood"
                 onPress={() => setLevelPopup('minor')}
@@ -137,7 +136,7 @@ export default function FloodWarningScreen() {
                 compact
               />
               <StatTile
-                materialIcon="home-flood"
+                icon="warning-outline"
                 value={String(statusCounts.major)}
                 label="Major Flood"
                 onPress={() => setLevelPopup('major')}
