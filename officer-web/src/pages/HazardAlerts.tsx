@@ -29,7 +29,9 @@ export default function HazardAlerts() {
   const current = sel ? rows.find((w) => w.id === sel.id) ?? null : null;
 
   const doSearch = async () => { const r = await searchPlace(f.search + ', Sri Lanka'); if (r) { setPick([r.lat, r.lng]); if (!f.area) set('area')(f.search); } else toast('Location not found', 'error'); };
+  //Alert publish method
   const publish = async () => {
+
     if (!f.title.trim() || !f.area.trim() || !f.message.trim() || !pick) { toast('Fill title, area, message and pick a map location.', 'error'); return; }
     try {
       setBusy(true);
@@ -37,7 +39,11 @@ export default function HazardAlerts() {
         expiresAt: new Date(Date.now() + EXPIRY[f.expiry] * 3600e3), createdBy: user!.uid, createdByName: profile?.fullName ?? null });
       await logActivity({ type: 'alert', title: `Hazard alert: ${f.title.trim()}`, detail: `${f.risk} risk — ${f.area.trim()}`, location: f.area.trim(), status: 'In Progress', createdBy: user?.uid });
       toast('Hazard alert published to citizens.'); setOpen(false); setF({ title: '', hazard: 'flood', risk: 'HIGH', area: '', radius: '1000', expiry: '24 hours', message: '', search: '' }); setPick(null);
-    } catch (e) { toast((e as Error).message || 'Could not publish', 'error'); } finally { setBusy(false); }
+    } catch (e) { 
+      toast((e as Error).message || 'Could not publish', 'error'); 
+    } finally { 
+      setBusy(false); 
+    }
   };
   const cancel = async (w: Warning) => { if (await confirm({ title: 'Cancel alert', message: `Cancel "${w.title}"? Citizens will no longer see it as active.`, confirmLabel: 'Cancel alert', danger: true })) { await cancelWarning(w.id); toast('Alert cancelled.'); } };
   const remove = async (w: Warning) => { if (await confirm({ title: 'Delete alert', message: `Permanently delete "${w.title}"?`, confirmLabel: 'Delete', danger: true })) { await deleteWarning(w.id); setSel(null); toast('Alert deleted.'); } };
