@@ -19,6 +19,8 @@ export interface ShelterRequestInput {
   userId: string;
   userName?: string;
   contactNumber?: string;
+  shelterId?: string;
+  shelterName?: string;
   latitude: number;
   longitude: number;
   address: string;
@@ -33,8 +35,8 @@ export const createShelterRequest = async (input: ShelterRequestInput): Promise<
     userName: input.userName ?? null,
     contactNumber: input.contactNumber ?? null,
     district: input.district ?? null,
-    shelterId: null,
-    shelterName: null,
+    shelterId: input.shelterId ?? null,
+    shelterName: input.shelterName ?? null,
     officerNotes: null,
     status: 'Pending' as ShelterRequestStatus,
     createdAt: serverTimestamp(),

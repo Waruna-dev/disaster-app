@@ -104,6 +104,8 @@ export default function RescueRequestFormScreen() {
         userId: user.uid,
         userName: userProfile?.fullName,
         contactNumber: contactNumber.trim(),
+        teamId: team?.id,
+        teamName: team?.name,
         requestedType: teamType as RescueTeamType,
         peopleCount: peopleToNumber(people || '1'),
         latitude: coords.latitude,

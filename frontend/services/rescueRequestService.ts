@@ -19,6 +19,8 @@ export interface RescueRequestInput {
   userId: string;
   userName?: string;
   contactNumber: string;
+  teamId?: string;
+  teamName?: string;
   requestedType: RescueTeamType;
   peopleCount: number;
   latitude: number;
@@ -32,8 +34,8 @@ export const createRescueRequest = async (input: RescueRequestInput): Promise<st
     ...input,
     userName: input.userName ?? null,
     district: input.district ?? null,
-    teamId: null,
-    teamName: null,
+    teamId: input.teamId ?? null,
+    teamName: input.teamName ?? null,
     officerNotes: null,
     status: 'Pending' as RescueRequestStatus,
     createdAt: serverTimestamp(),

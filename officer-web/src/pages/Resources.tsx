@@ -4,14 +4,14 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { createResource, deleteResource, logActivity, recordDistribution, updateResource } from '../lib/db';
-import { DISTRICTS, DISTRICT_COORDS, RESOURCE_CATEGORIES } from '../lib/constants';
+import { RESOURCE_CATEGORIES, RESOURCE_UNITS } from '../lib/constants';
 import { num, todayISO } from '../lib/format';
 import type { Resource } from '../lib/types';
 import { Badge, Btn, Card, Field, Input, KV, Modal, PageHeader, Select, Spinner, StatCard, Table, Tabs, TextArea } from '../components/ui';
 import { MapView } from '../components/MapView';
 
 export default function Resources() {
-  const { resources, distributions, loading } = useData();
+  const { resources, distributions, warnings, loading } = useData();
   const { user } = useAuth();
   const { toast, confirm } = useUI();
   const [tab, setTab] = useState('manage'); const [busy, setBusy] = useState(false); const [filter, setFilter] = useState('All Categories');
@@ -21,13 +21,22 @@ export default function Resources() {
   const setRf = (k: keyof typeof r) => (v: string) => setR((s) => ({ ...s, [k]: v }));
   const setDf = (k: keyof typeof d) => (v: string) => setD((s) => ({ ...s, [k]: v }));
   const selected = resources.find((x) => x.name === d.resource);
+  const destinationOptions = useMemo(
+    () => [...new Set(warnings
+      .filter((w) => w.status === 'Active' && (w.expiresAt?.toMillis() ?? Infinity) >= Date.now() && w.affectedArea.trim())
+      .map((w) => w.affectedArea.trim()))],
+    [warnings],
+  );
+  const selectedWarning = warnings.find((w) => w.status === 'Active' && (w.expiresAt?.toMillis() ?? Infinity) >= Date.now() && w.affectedArea.trim() === d.district);
   const shown = useMemo(() => resources.filter((x) => filter === 'All Categories' || x.category === filter), [resources, filter]);
   const low = resources.filter((x) => x.totalQuantity > 0 && x.availableQuantity / x.totalQuantity <= 0.2).length;
 
   const openForm = (e: Resource | null) => { setForm({ edit: e }); setR({ name: e?.name ?? '', category: e?.category ?? '', unit: e?.unit ?? '', total: e ? String(e.totalQuantity) : '', avail: e ? String(e.availableQuantity) : '' }); };
+  const unitOptions = r.unit && !RESOURCE_UNITS.includes(r.unit) ? [r.unit, ...RESOURCE_UNITS] : RESOURCE_UNITS;
   const saveResource = async () => {
-    const total = parseInt(r.total, 10); const avail = r.avail.trim() === '' ? total : parseInt(r.avail, 10);
-    if (!r.name.trim() || !r.category || !r.unit.trim() || isNaN(total) || isNaN(avail)) { toast('Fill name, category, unit and total quantity.', 'error'); return; }
+    const total = Number(r.total); const avail = r.avail.trim() === '' ? total : Number(r.avail);
+    if (!r.name.trim() || !r.category || !r.unit.trim() || !Number.isInteger(total) || total <= 0) { toast('Enter a total quantity greater than 0.', 'error'); return; }
+    if (!Number.isInteger(avail) || avail < 0) { toast('Available quantity cannot be negative.', 'error'); return; }
     if (avail > total) { toast('Available quantity cannot exceed total.', 'error'); return; }
     try {
       setBusy(true);
@@ -41,12 +50,12 @@ export default function Resources() {
 
   const record = async () => {
     const qty = parseInt(d.qty, 10);
-    if (!selected || !d.district || !qty || qty < 1) { toast('Select a resource, quantity and district.', 'error'); return; }
+    if (!selected || !selectedWarning || !qty || qty < 1) { toast('Select a resource, quantity and active hazard area.', 'error'); return; }
     if (qty > selected.availableQuantity) { toast(`Only ${num(selected.availableQuantity)} ${selected.unit} available.`, 'error'); return; }
     try {
       setBusy(true);
-      await recordDistribution({ resourceId: selected.id, quantity: qty, district: d.district, distributionDate: d.date, notes: d.notes.trim() || undefined, recordedBy: user?.uid });
-      await logActivity({ type: 'resource', title: 'Resource distribution recorded', detail: `${num(qty)} ${selected.unit} ${selected.name} → ${d.district}`, location: d.district, status: 'Success', createdBy: user?.uid });
+      await recordDistribution({ resourceId: selected.id, quantity: qty, district: selectedWarning.affectedArea.trim(), distributionDate: d.date, notes: d.notes.trim() || undefined, recordedBy: user?.uid });
+      await logActivity({ type: 'resource', title: 'Resource distribution recorded', detail: `${num(qty)} ${selected.unit} ${selected.name} → ${selectedWarning.affectedArea.trim()}`, location: selectedWarning.affectedArea.trim(), status: 'Success', createdBy: user?.uid });
       toast('Distribution recorded. Stock updated.'); setD((s) => ({ ...s, qty: '', notes: '' }));
     } catch (e) { toast((e as Error).message || 'Could not record distribution', 'error'); } finally { setBusy(false); }
   };
@@ -57,7 +66,7 @@ export default function Resources() {
   };
 
   if (loading) return <Spinner />;
-  const coords = d.district ? DISTRICT_COORDS[d.district] : undefined;
+  const coords = selectedWarning ? [selectedWarning.latitude, selectedWarning.longitude] as [number, number] : undefined;
   return (
     <>
       <PageHeader title={tab === 'record' ? 'Record Resource Distribution' : tab === 'history' ? 'Distribution History' : 'Manage Resources'} subtitle={tab === 'record' ? 'Enter distribution details for relief resources.' : 'Track relief stock and distribution across districts.'}
@@ -87,7 +96,7 @@ export default function Resources() {
               <Field label="Unit"><Input value={selected?.unit ?? ''} disabled placeholder="—" /></Field>
             </div>
             <div className="cols">
-              <Field label="Distribute To" required><Select value={d.district} onChange={setDf('district')} options={DISTRICTS} placeholder="Select district or affected area" /></Field>
+              <Field label="Distribute To" required><Select value={d.district} onChange={setDf('district')} options={destinationOptions} placeholder="Select district or affected area" /></Field>
               <Field label="Distribution Date" required><Input type="date" value={d.date} onChange={(e) => setDf('date')(e.target.value)} /></Field>
             </div>
             <Field label="Additional Notes (Optional)"><TextArea value={d.notes} onChange={(e) => setDf('notes')(e.target.value)} placeholder="Enter any additional notes (e.g., special instructions, recipient details, etc.)" /></Field>
@@ -99,7 +108,7 @@ export default function Resources() {
           </Card>
           <div>
             <Card title="Selected Location / Area">
-              <KV label="Name">{d.district ? `${d.district} - Affected Area` : '—'}</KV><KV label="Type">District</KV><KV label="District">{d.district || '—'}</KV>
+              <KV label="Name">{selectedWarning?.affectedArea || '—'}</KV><KV label="Type">Active hazard affected area</KV><KV label="Affected area">{selectedWarning?.affectedArea || '—'}</KV>
               <div style={{ marginTop: 12 }}><MapView height={200} zoom={10} center={coords} markers={coords ? [{ id: 'd', lat: coords[0], lng: coords[1], label: d.district, color: '#C62828' }] : []} /></div>
             </Card>
             <Card title="Recent Distributions" action={<Btn variant="ghost" small onClick={() => setTab('history')}>View All</Btn>}>
@@ -119,10 +128,10 @@ export default function Resources() {
         <Modal title={form.edit ? 'Edit Resource' : 'Add Resource'} onClose={() => setForm(null)}>
           <Field label="Name" required><Input value={r.name} onChange={(e) => setRf('name')(e.target.value)} placeholder="e.g., Drinking Water" /></Field>
           <Field label="Category" required><Select value={r.category} onChange={setRf('category')} options={RESOURCE_CATEGORIES} placeholder="Select category" /></Field>
-          <Field label="Unit" required><Input value={r.unit} onChange={(e) => setRf('unit')(e.target.value)} placeholder="e.g., Bottles, Packs, Tents" /></Field>
+          <Field label="Unit" required><Select value={r.unit} onChange={setRf('unit')} options={unitOptions} placeholder="Select unit" /></Field>
           <div className="cols">
-            <Field label="Total Quantity" required><Input type="number" min={0} value={r.total} onChange={(e) => setRf('total')(e.target.value)} /></Field>
-            <Field label="Available Quantity" hint="Defaults to total"><Input type="number" min={0} value={r.avail} onChange={(e) => setRf('avail')(e.target.value)} /></Field>
+            <Field label="Total Quantity" required><Input type="number" min={1} step={1} value={r.total} onChange={(e) => setRf('total')(e.target.value)} /></Field>
+            <Field label="Available Quantity" hint="Defaults to total"><Input type="number" min={0} step={1} value={r.avail} onChange={(e) => setRf('avail')(e.target.value)} /></Field>
           </div>
           <div className="modal-foot"><Btn variant="secondary" onClick={() => setForm(null)}>Cancel</Btn><Btn icon={Save} loading={busy} onClick={saveResource}>Save Resource</Btn></div>
         </Modal>

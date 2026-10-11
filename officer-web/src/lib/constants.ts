@@ -9,6 +9,7 @@ export const DISTRICTS = Object.keys(DISTRICT_COORDS);
 export const SHELTER_FACILITIES = ['Classrooms', 'Clean Water', 'Toilets', 'Medical Support', 'Kitchen', 'Electricity', 'Accessibility (Disabled Friendly)', 'Other'];
 export const TEAM_TYPES = ['Search & Rescue', 'Medical Support', 'Relief Distribution', 'Logistics'] as const;
 export const RESOURCE_CATEGORIES = ['Food & Water', 'Medical', 'Shelter Supplies', 'Clothing', 'Hygiene', 'Other'];
+export const RESOURCE_UNITS = ['Pieces', 'Bottles', 'Litres', 'Packs', 'Boxes', 'Kits', 'Cans', 'Bags', 'kg', 'Metres', 'Rolls', 'Tents', 'Blankets', 'Mats', 'Sheets', 'Pairs', 'Tubes', 'Bars'];
 export const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 export const SL_CENTER: [number, number] = [7.8731, 80.7718];
 export const RISK_COLOR: Record<string, string> = { LOW: '#2E7D32', MEDIUM: '#F9A825', HIGH: '#E65100', CRITICAL: '#C62828' };
