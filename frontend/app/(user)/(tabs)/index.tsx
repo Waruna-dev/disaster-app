@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { AppState, View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert } from 'react-native';
 import { Colors } from '../../../constants/colors';
 import { DashboardHeader, DashboardStickyBar } from '../../../components/DashboardHeader';
-import { AlertCard } from '../../../components/AlertCard';
+import { AlertCard, NoAlertsCard } from '../../../components/AlertCard';
+import { useNearbyWarnings } from '../../../hooks/useNearbyWarnings';
 import { QuickActionCard } from '../../../components/QuickActionCard';
 import { UpdateListItem } from '../../../components/UpdateListItem';
 import { router, useFocusEffect } from 'expo-router';
@@ -20,6 +21,7 @@ import { ActivityIndicator } from 'react-native';
 import { HomeArea } from '../../../types/location';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { setupAlertNotifications, showAlertNotification } from '../../../utils/alertNotifications';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
@@ -95,6 +97,22 @@ export default function DashboardScreen() {
 
   const dashboardAlerts = activeAlerts.slice(0, 5);
 
+  // Hazard alerts published by the officer web portal, filtered to the user's area
+  const { alerts: nearbyAlerts, loading: nearbyLoading, error: nearbyError } = useNearbyWarnings((w) => {
+    if (AppState.currentState === 'active') {
+      // App is open: pop-up (existing behaviour)
+      Alert.alert(`⚠️ ${w.title}`, `${w.affectedArea}\n\n${w.message}`, [{ text: 'OK' }]);
+    } else {
+      // App is in the background: system notification
+      showAlertNotification(w.title, `${w.affectedArea} - ${w.message}`);
+    }
+  });
+
+  // Ask notification permission once when the dashboard opens
+  useEffect(() => {
+    setupAlertNotifications();
+  }, []);
+
   useFocusEffect(
     React.useCallback(() => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -115,7 +133,17 @@ export default function DashboardScreen() {
         <DashboardHeader scrollY={scrollY} firstName={firstName} homeArea={homeArea} currentLocationName={currentLocationName} />
 
         <View style={styles.alertWrapper}>
-          <AlertCard />
+          {nearbyLoading ? (
+            <NoAlertsCard message="Checking for alerts in your area…" />
+          ) : nearbyError ? (
+            <NoAlertsCard message="Could not load hazard alerts." />
+          ) : nearbyAlerts.length === 0 ? (
+            <NoAlertsCard message="No active hazard alerts in your area." />
+          ) : (
+            nearbyAlerts.slice(0, 5).map((w, i) => (
+              <AlertCard key={w.id} warning={w} style={i === 0 ? undefined : { marginTop: 16 }} />
+            ))
+          )}
         </View>
 
         <View style={styles.section}>
